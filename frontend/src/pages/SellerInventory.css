@@ -1,0 +1,70 @@
+.warehouses-grid-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.warehouse-card {
+  margin-bottom: 0 !important;
+}
+
+.wh-info-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.wh-info-block {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--color-on-surface-variant);
+}
+
+.wh-info-icon {
+  color: var(--color-outline);
+  flex-shrink: 0;
+}
+
+.inventory-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-xl);
+}
+
+.inventory-form-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.inventory-subfields {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--spacing-md);
+}
+
+.inventory-alert {
+  padding: 12px 16px;
+  border-left: 4px solid transparent;
+  margin-bottom: var(--spacing-md);
+}
+
+.inventory-alert-success {
+  background-color: #e8f5e9;
+  border-left-color: #2e7d32;
+  color: #1b5e20;
+}
+
+.inventory-alert-error {
+  background-color: var(--color-error-container);
+  border-left-color: var(--color-error);
+  color: var(--color-on-error-container);
+}
+
+@media (max-width: 800px) {
+  .inventory-form-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+  }
+}

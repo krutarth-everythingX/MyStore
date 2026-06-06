@@ -1,0 +1,136 @@
+.product-form-card {
+  width: 100%;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-xl);
+}
+
+.form-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-section-title {
+  color: var(--color-primary);
+  border-bottom: 1px solid var(--color-outline-variant);
+  padding-bottom: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+}
+
+.form-subfields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+}
+
+.cat-checkbox-list {
+  border: 1px solid var(--color-outline);
+  background-color: var(--color-surface-container-lowest);
+  padding: var(--spacing-sm);
+  max-height: 220px;
+  overflow-y: auto;
+  margin-bottom: var(--spacing-md);
+  border-radius: 0px !important;
+}
+
+.cat-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+
+.cat-checkbox-item.depth-0 {
+  font-weight: 600;
+  color: var(--color-on-surface);
+  margin-top: 6px;
+}
+
+.cat-checkbox-item.depth-1 {
+  font-weight: normal;
+  color: var(--color-on-surface-variant);
+}
+
+.cat-checkbox-item.depth-2 {
+  font-size: 13px;
+  color: var(--color-outline);
+}
+
+.form-stock-switch {
+  margin-bottom: var(--spacing-md);
+}
+
+.form-buttons-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-outline-variant);
+}
+
+.form-alert {
+  padding: 12px 16px;
+  border-left: 4px solid transparent;
+  margin-bottom: var(--spacing-md);
+}
+
+.form-alert-success {
+  background-color: #e8f5e9;
+  border-left-color: #2e7d32;
+  color: #1b5e20;
+}
+
+.form-alert-error {
+  background-color: var(--color-error-container);
+  border-left-color: var(--color-error);
+  color: var(--color-on-error-container);
+}
+
+.table-prod-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.table-prod-sku {
+  font-size: 11px;
+  color: var(--color-outline);
+}
+
+.table-price-old {
+  text-decoration: line-through;
+  color: var(--color-outline);
+  font-size: 12px;
+  margin-left: var(--spacing-sm);
+}
+
+.table-price-sale {
+  color: var(--color-tertiary);
+  font-weight: 700;
+}
+
+.table-stock-badge {
+  padding: 4px 8px;
+  font-weight: 700;
+}
+
+.table-stock-badge.in-stock {
+  background-color: #e8f5e9;
+  color: #1b5e20;
+}
+
+.table-stock-badge.out-of-stock {
+  background-color: var(--color-error-container);
+  color: var(--color-on-error-container);
+}
+
+@media (max-width: 900px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+  }
+}

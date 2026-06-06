@@ -1,0 +1,338 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { Sidebar } from '../components/Sidebar';
+import { Card } from '../components/Card';
+import { Button } from '../components/Button';
+import { DataTable } from '../components/DataTable';
+import { Input } from '../components/Input';
+import { Warehouse, Plus, Archive, MapPin, Truck, LayoutList } from 'lucide-react';
+import './SellerInventory.css';
+
+export const SellerInventory = () => {
+  const { token, user } = useAuth();
+
+  const [warehouses, setWarehouses] = useState([]);
+  const [carriers, setCarriers] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // New warehouse states
+  const [showAddWh, setShowAddWh] = useState(false);
+  const [whName, setWhName] = useState('');
+  const [whCode, setWhCode] = useState('');
+  const [whAddress, setWhAddress] = useState('');
+  const [whCity, setWhCity] = useState('');
+  const [whState, setWhState] = useState('');
+  const [whZip, setWhZip] = useState('');
+  const [whCarrier, setWhCarrier] = useState('Blue Dart');
+
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const API_BASE = 'http://127.0.0.1:8000/api';
+
+  const fetchData = () => {
+    setLoading(true);
+    // Fetch warehouses
+    fetch(`${API_BASE}/warehouses`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(res => res.json())
+    .then(data => setWarehouses(data))
+    .catch(err => console.error(err));
+
+    // Fetch products to show current allocations
+    fetch(`${API_BASE}/products?seller_id=${user.id}`)
+      .then(res => res.json())
+      .then(data => setProducts(data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    if (token) {
+      fetchData();
+
+      // Fetch carriers list
+      fetch(`${API_BASE}/shipping-carriers`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => setCarriers(data.carriers || []));
+    }
+  }, [token]);
+
+  const handleSubmitWarehouse = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!whName || !whCode || !whCarrier) {
+      setError('Please fill out all required fields.');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/warehouses`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: whName,
+          code: whCode,
+          address: whAddress,
+          city: whCity,
+          state: whState,
+          postal_code: whZip,
+          default_carrier: whCarrier
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to add warehouse');
+      }
+
+      setSuccess('Warehouse added successfully!');
+      setWhName('');
+      setWhCode('');
+      setWhAddress('');
+      setWhCity('');
+      setWhState('');
+      setWhZip('');
+      setWhCarrier('Blue Dart');
+      
+      setTimeout(() => {
+        setShowAddWh(false);
+        fetchData();
+      }, 1000);
+    } catch (err) {
+      setError(err.message || 'An error occurred.');
+    }
+  };
+
+  // Prepare table data for inventory allocations
+  // We extract entries from products that have warehouse relationships loaded
+  const inventoryRows = [];
+  products.forEach(p => {
+    if (p.warehouses && p.warehouses.length > 0) {
+      p.warehouses.forEach(wh => {
+        inventoryRows.push({
+          id: `${p.id}-${wh.id}`,
+          prodName: p.name,
+          sku: p.sku || 'N/A',
+          whName: wh.name,
+          whCode: wh.code,
+          qty: wh.pivot?.quantity || 0,
+          bin: wh.pivot?.bin_location || 'Unassigned',
+          carrier: wh.default_carrier
+        });
+      });
+    }
+  });
+
+  const columns = [
+    {
+      header: 'Product',
+      render: (row) => (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <strong>{row.prodName}</strong>
+          <span style={{ fontSize: 11, color: 'var(--color-outline)' }}>SKU: {row.sku}</span>
+        </div>
+      )
+    },
+    {
+      header: 'Warehouse',
+      render: (row) => (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <strong>{row.whName}</strong>
+          <span style={{ fontSize: 11, color: 'var(--color-outline)' }}>{row.whCode}</span>
+        </div>
+      )
+    },
+    {
+      header: 'Shelf Bin Location',
+      field: 'bin'
+    },
+    {
+      header: 'Fulfillment Courier',
+      render: (row) => (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <Truck size={14} style={{ color: 'var(--color-outline)' }} />
+          {row.carrier}
+        </span>
+      )
+    },
+    {
+      header: 'In Stock Qty',
+      align: 'right',
+      render: (row) => (
+        <strong style={{ color: row.qty <= 2 ? 'var(--color-error)' : 'var(--color-primary)' }}>
+          {row.qty}
+        </strong>
+      )
+    }
+  ];
+
+  return (
+    <div className="seller-dashboard-layout">
+      <Sidebar />
+
+      <div className="seller-dashboard-content animate-fade-in">
+        <div className="seller-dashboard-container container">
+          {/* Header */}
+          <div className="seller-page-header">
+            <div>
+              <h2 className="headline-lg">Inventory & Warehouses</h2>
+              <p className="body-md" style={{ color: 'var(--color-outline)' }}>
+                Configure warehouses, shipping carriers, and track exact product stock shelf locations.
+              </p>
+            </div>
+            {!showAddWh && (
+              <Button variant="primary" onClick={() => setShowAddWh(true)}>
+                <Plus size={16} style={{ marginRight: 6 }} />
+                Add Warehouse
+              </Button>
+            )}
+          </div>
+
+          {showAddWh ? (
+            /* Add Warehouse Form */
+            <Card title="Add New Warehouse Location">
+              {error && <div className="inventory-alert inventory-alert-error body-md">{error}</div>}
+              {success && <div className="inventory-alert inventory-alert-success body-md">{success}</div>}
+
+              <form onSubmit={handleSubmitWarehouse}>
+                <div className="inventory-form-grid">
+                  <div className="inventory-form-section">
+                    <h5 className="form-section-title label-md">Warehouse Identifiers</h5>
+                    <Input
+                      label="Warehouse Name *"
+                      type="text"
+                      placeholder="E.g. Central Depot LA"
+                      value={whName}
+                      onChange={(e) => setWhName(e.target.value)}
+                      required
+                    />
+                    <Input
+                      label="Unique Warehouse Code *"
+                      type="text"
+                      placeholder="E.g. WH-LA-02"
+                      value={whCode}
+                      onChange={(e) => setWhCode(e.target.value)}
+                      required
+                    />
+                    <div className="input-container">
+                      <label className="input-label label-md">Default Shipping Carrier *</label>
+                      <select
+                        className="input-field"
+                        value={whCarrier}
+                        onChange={(e) => setWhCarrier(e.target.value)}
+                        required
+                      >
+                        {carriers.map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="inventory-form-section">
+                    <h5 className="form-section-title label-md">Location Address</h5>
+                    <div className="input-container">
+                      <label className="input-label label-md">Street Address</label>
+                      <input
+                        type="text"
+                        className="input-field"
+                        placeholder="E.g. 50 Commerce Way"
+                        value={whAddress}
+                        onChange={(e) => setWhAddress(e.target.value)}
+                      />
+                    </div>
+                    <div className="inventory-subfields">
+                      <Input
+                        label="City"
+                        type="text"
+                        placeholder="Los Angeles"
+                        value={whCity}
+                        onChange={(e) => setWhCity(e.target.value)}
+                      />
+                      <Input
+                        label="State"
+                        type="text"
+                        placeholder="CA"
+                        value={whState}
+                        onChange={(e) => setWhState(e.target.value)}
+                      />
+                    </div>
+                    <Input
+                      label="ZIP / Postal Code"
+                      type="text"
+                      placeholder="90015"
+                      value={whZip}
+                      onChange={(e) => setWhZip(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-buttons-row" style={{ marginTop: 24 }}>
+                  <Button variant="secondary" onClick={() => setShowAddWh(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" variant="primary">
+                    Create Warehouse
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          ) : (
+            <>
+              {/* Warehouses Grid List */}
+              <div className="warehouses-grid-list">
+                {warehouses.map((wh) => (
+                  <Card key={wh.id} title={wh.name} className="warehouse-card">
+                    <div className="wh-info-blocks">
+                      <div className="wh-info-block body-md">
+                        <Archive className="wh-info-icon" size={16} />
+                        <span>Code: <strong>{wh.code}</strong></span>
+                      </div>
+                      <div className="wh-info-block body-md">
+                        <MapPin className="wh-info-icon" size={16} />
+                        <span>Address: {wh.address ? `${wh.address}, ${wh.city || ''}, ${wh.state || ''} ${wh.postal_code || ''}` : 'No address provided'}</span>
+                      </div>
+                      <div className="wh-info-block body-md">
+                        <Truck className="wh-info-icon" size={16} />
+                        <span>Default Carrier: <strong style={{ color: 'var(--color-primary)' }}>{wh.default_carrier}</strong></span>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Inventory Stock Allocations Table */}
+              <Card title="Product Shelf Allocations (Bin Locations)" style={{ marginTop: 24 }}>
+                <DataTable
+                  columns={columns}
+                  data={inventoryRows}
+                  emptyMessage={
+                    <div className="empty-catalog-message flex-center" style={{ flexDirection: 'column', padding: '24px 0' }}>
+                      <LayoutList size={48} style={{ color: 'var(--color-outline)', marginBottom: 16 }} />
+                      <h4 className="title-lg">No Shelf Allocations</h4>
+                      <p className="body-md" style={{ color: 'var(--color-outline)', marginTop: 8 }}>
+                        Assign products to warehouses during creation or edit to monitor bin locations.
+                      </p>
+                    </div>
+                  }
+                />
+              </Card>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+export default SellerInventory;

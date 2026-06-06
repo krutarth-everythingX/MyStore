@@ -1,0 +1,135 @@
+.seller-orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.seller-order-card {
+  margin-bottom: 0 !important;
+}
+
+.seller-order-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.meta-block {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+}
+
+.meta-icon {
+  color: var(--color-outline);
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.meta-label {
+  display: block;
+  color: var(--color-on-surface-variant);
+  margin-bottom: 2px;
+}
+
+.order-divider {
+  height: 1px;
+  background-color: var(--color-outline-variant);
+  margin: var(--spacing-lg) 0;
+}
+
+.seller-ordered-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.seller-ordered-items .section-title {
+  color: var(--color-on-surface-variant);
+  margin-bottom: var(--spacing-sm);
+}
+
+.ordered-items-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.ordered-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px dashed var(--color-outline-variant);
+}
+
+.ordered-item-row:last-child {
+  border-bottom: none;
+}
+
+.ordered-prod-name {
+  color: var(--color-on-surface);
+}
+
+.ordered-prod-price {
+  color: var(--color-on-surface);
+}
+
+.seller-order-subtotal {
+  color: var(--color-on-surface);
+}
+
+.logistics-fulfillment-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.logistics-fulfillment-section .section-title {
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.logistics-controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 220px;
+  gap: var(--spacing-md);
+  align-items: flex-end;
+}
+
+.fulfill-alert {
+  padding: 12px 16px;
+  border-left: 4px solid transparent;
+  margin-bottom: var(--spacing-md);
+}
+
+.fulfill-alert-success {
+  background-color: #e8f5e9;
+  border-left-color: #2e7d32;
+  color: #1b5e20;
+}
+
+.fulfill-alert-error {
+  background-color: var(--color-error-container);
+  border-left-color: var(--color-error);
+  color: var(--color-on-error-container);
+}
+
+@media (max-width: 1100px) {
+  .logistics-controls-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+  }
+  .logistics-action-btn {
+    grid-column: span 2;
+  }
+  .logistics-action-btn button {
+    margin-top: 0 !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .logistics-controls-grid {
+    grid-template-columns: 1fr;
+  }
+  .logistics-action-btn {
+    grid-column: span 1;
+  }
+}

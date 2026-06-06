@@ -1,0 +1,111 @@
+.checkout-main {
+  padding-top: var(--spacing-xl);
+  padding-bottom: var(--spacing-3xl);
+}
+
+.checkout-page-title {
+  margin-bottom: var(--spacing-lg);
+}
+
+.checkout-alert-error {
+  background-color: var(--color-error-container);
+  color: var(--color-on-error-container);
+  border-left: 4px solid var(--color-error);
+  padding: 12px 16px;
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  align-items: center;
+}
+
+.checkout-grid-layout {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: var(--spacing-xl);
+}
+
+.checkout-details-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.checkout-textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.checkout-card-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.checkout-card-subfields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+}
+
+.checkout-summary-column {
+  width: 100%;
+}
+
+.checkout-summary-card {
+  position: sticky;
+  top: 94px;
+  margin-bottom: 0 !important;
+}
+
+.checkout-items-mini-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: var(--spacing-md);
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.checkout-mini-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mini-name {
+  color: var(--color-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.mini-price {
+  color: var(--color-on-surface-variant);
+  font-weight: 600;
+}
+
+.checkout-summary-divider {
+  height: 1px;
+  background-color: var(--color-outline-variant);
+  margin: var(--spacing-md) 0;
+}
+
+.checkout-place-btn {
+  width: 100%;
+  margin-top: var(--spacing-md);
+  padding: 12px !important;
+}
+
+.checkout-security-tag {
+  margin-top: var(--spacing-md);
+  color: #1b5e20;
+  background-color: #e8f5e9;
+  border-left: 4px solid #2e7d32;
+  padding: 8px 12px;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .checkout-grid-layout {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+  }
+}

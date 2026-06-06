@@ -1,0 +1,192 @@
+/* ─────────────────────────────────────────────────────────────────────────── */
+/* All Categories Page                                                          */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+.all-categories-main {
+  min-height: calc(100vh - 70px);
+  background-color: var(--color-background);
+  padding-bottom: var(--spacing-3xl);
+}
+
+/* ── Page Header ── */
+.ac-page-header {
+  background-color: var(--color-surface-container-low);
+  border-bottom: 1px solid var(--color-outline-variant);
+  padding: var(--spacing-lg) 0;
+  margin-bottom: var(--spacing-xl);
+}
+
+.ac-header-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ac-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  font-family: var(--font-family);
+  width: fit-content;
+  margin-bottom: 4px;
+  transition: opacity 0.2s;
+}
+
+.ac-back-btn:hover {
+  opacity: 0.75;
+}
+
+.ac-page-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--color-on-surface);
+  line-height: 1.1;
+}
+
+.ac-page-subtitle {
+  color: var(--color-outline);
+}
+
+/* ── Loading / Empty ── */
+.ac-loading,
+.ac-empty {
+  display: flex;
+  justify-content: center;
+  padding: 60px 0;
+  color: var(--color-outline);
+}
+
+/* ── Responsive Category Grid ── */
+.ac-content {
+  padding-top: 0;
+}
+
+.ac-categories-grid {
+  display: grid;
+  /* Default: 4 columns on large screens */
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-md);
+}
+
+/* 3 columns on medium screens */
+@media (max-width: 1100px) {
+  .ac-categories-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* 2 columns on small screens */
+@media (max-width: 640px) {
+  .ac-categories-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
+  }
+}
+
+/* ── Category Tile ── */
+.ac-category-tile {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface-container-lowest);
+  border: 1px solid var(--color-outline-variant);
+  border-top: 3px solid var(--color-primary);
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+  overflow: hidden;
+}
+
+.ac-category-tile:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+}
+
+/* Icon area */
+.ac-tile-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: var(--spacing-lg) 0;
+  font-size: 0;
+}
+
+/* Info */
+.ac-tile-info {
+  padding: 12px 14px;
+  flex: 1;
+}
+
+.ac-tile-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-on-surface);
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+/* Sub-categories list */
+.ac-tile-subs {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ac-tile-sub-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-on-surface-variant);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 0;
+  transition: color 0.15s;
+}
+
+.ac-tile-sub-item:hover {
+  color: var(--color-primary);
+}
+
+.ac-tile-sub-more {
+  color: var(--color-outline);
+  font-size: 11px;
+  padding: 2px 0;
+  font-style: italic;
+}
+
+/* Footer */
+.ac-tile-footer {
+  padding: 10px 14px;
+  border-top: 1px solid var(--color-outline-variant);
+  background-color: var(--color-surface-container-low);
+}
+
+.ac-tile-cta {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+/* ── Small screen tile adjustments ── */
+@media (max-width: 640px) {
+  .ac-tile-name {
+    font-size: 13px;
+  }
+
+  .ac-tile-icon {
+    padding: var(--spacing-md) 0;
+  }
+
+  .ac-tile-subs {
+    display: none; /* hide sub-categories on very small tiles */
+  }
+}
