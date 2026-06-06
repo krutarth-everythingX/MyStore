@@ -65,13 +65,6 @@ export const Navbar = ({ onSearch }) => {
               <Search size={18} />
             </button>
           </form>
-          
-          {user && user.role === 'seller' && (
-            <Link to="/seller" className="nav-link label-md nav-link-highlight" onClick={() => setMobileMenuOpen(false)}>
-              <Layout size={16} style={{ marginRight: 6 }} />
-              Seller Panel
-            </Link>
-          )}
 
           {/* Fallback links in mobile menu if guest */}
           {!user && mobileMenuOpen && (
@@ -81,27 +74,36 @@ export const Navbar = ({ onSearch }) => {
             </div>
           )}
         </nav>
-
+        {/* Desktop search bar */}
+        <form className="navbar-search hide-on-mobile" onSubmit={handleSearchSubmit}>
+          <input
+            type="text"
+            placeholder="Search products..."
+            className="navbar-search-input"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <button type="submit" className="navbar-search-btn">
+            <Search size={18} />
+          </button>
+        </form>
         {/* Right actions section */}
         <div className="navbar-actions">
           {/* Home Icon close to search bar */}
-          <Link to="/" className="nav-home-icon-link" title="Home">
-            <HomeIcon size={20} />
-          </Link>
+          {/* if user === "buyer" then Home icon and if user === "seller" then Layout icon and also link take to the "/seller" */}
+          {
+            user?.role === "buyer" ? (
+              <Link to="/" className="nav-home-icon-link" title="Home">
+                <HomeIcon size={20} />
+              </Link>
+            ) : (
+              <Link to="/seller" className="nav-home-icon-link" title="Seller Panel">
+                <Layout size={20} />
+              </Link>
+            )
+          }
 
-          {/* Desktop search bar */}
-          <form className="navbar-search hide-on-mobile" onSubmit={handleSearchSubmit}>
-            <input
-              type="text"
-              placeholder="Search products..."
-              className="navbar-search-input"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <button type="submit" className="navbar-search-btn">
-              <Search size={18} />
-            </button>
-          </form>
+
 
           {/* Cart link placed before profile avatar */}
           {(!user || user.role !== 'seller') && (

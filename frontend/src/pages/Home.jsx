@@ -320,6 +320,18 @@ export const Home = () => {
         setSearchParams(newParams);
       }} />
 
+      {/* Hero Banner (Shown only on Home page) */}
+      {!showCatalog && (
+        <div className="home-hero">
+          <div className="container hero-container animate-fade-in">
+            <span className="hero-badge label-md">Premium Marketplace</span>
+            <h1 className="hero-title display-text">Welcome to MyStore</h1>
+            <p className="hero-subtitle body-lg">
+              Shop directly from verified independent sellers. Manage your warehouses, shipping carriers, and checkout seamlessly.
+            </p>
+          </div>
+        </div>
+      )}
       {/* Category Header Row with Icons (Homepage only) */}
       {!showCatalog && (
         <div className="category-header-boxes shadow-sm">
@@ -341,18 +353,7 @@ export const Home = () => {
         </div>
       )}
 
-      {/* Hero Banner (Shown only on Home page) */}
-      {!showCatalog && (
-        <div className="home-hero">
-          <div className="container hero-container animate-fade-in">
-            <span className="hero-badge label-md">Premium Marketplace</span>
-            <h1 className="hero-title display-text">Welcome to MyStore</h1>
-            <p className="hero-subtitle body-lg">
-              Shop directly from verified independent sellers. Manage your warehouses, shipping carriers, and checkout seamlessly.
-            </p>
-          </div>
-        </div>
-      )}
+
 
       <main className="container home-main">
         {!showCatalog ? (
