@@ -28,6 +28,9 @@ class User extends Authenticatable
         'role',
         'brand_name',
         'address',
+        'gst_number',
+        'shiprocket_email',
+        'shiprocket_password',
         'card_number',
         'card_expiry',
         'card_cvv',
@@ -40,6 +43,11 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
+        'verification_code',
+        'card_number',
+        'card_expiry',
+        'card_cvv',
+        'shiprocket_password',
         'remember_token',
     ];
 
@@ -86,4 +94,3 @@ class User extends Authenticatable
         return $this->hasMany(OrderItem::class, 'seller_id');
     }
 }
-

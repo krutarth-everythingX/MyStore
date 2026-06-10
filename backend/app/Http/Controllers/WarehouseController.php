@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Warehouse;
+use App\Rules\IndianPostalCode;
 use Illuminate\Http\Request;
 
 class WarehouseController extends Controller
@@ -29,7 +30,7 @@ class WarehouseController extends Controller
             'address' => 'nullable|string',
             'city' => 'nullable|string',
             'state' => 'nullable|string',
-            'postal_code' => 'nullable|string',
+            'postal_code' => ['nullable', 'string', new IndianPostalCode()],
             'default_carrier' => 'required|string'
         ]);
 
@@ -43,6 +44,10 @@ class WarehouseController extends Controller
             'postal_code' => $fields['postal_code'] ?? null,
             'default_carrier' => $fields['default_carrier']
         ]);
+
+        if ($request->header('X-Inertia')) {
+            return back()->with('success', 'Warehouse added successfully!');
+        }
 
         return response($warehouse, 201);
     }

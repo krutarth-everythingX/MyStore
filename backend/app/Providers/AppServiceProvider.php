@@ -2,6 +2,15 @@
 
 namespace App\Providers;
 
+use App\Events\OrderPlaced;
+use App\Listeners\SendOrderPlacedNotification;
+use App\Models\Order;
+use App\Models\Product;
+use App\Observers\ProductObserver;
+use App\Policies\OrderPolicy;
+use App\Policies\ProductPolicy;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +28,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::policy(Order::class, OrderPolicy::class);
+        Gate::policy(Product::class, ProductPolicy::class);
+        Product::observe(ProductObserver::class);
+        Event::listen(OrderPlaced::class, SendOrderPlacedNotification::class);
+
         \Illuminate\Support\Facades\RateLimiter::for('auth', function (\Illuminate\Http\Request $request) {
             return \Illuminate\Cache\RateLimiting\Limit::perMinute(5)->by($request->ip());
         });

@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MyStore Inertia Overview</title>
+  <style>
+    :root {
+      --ink: #132238;
+      --muted: #526173;
+      --accent: #0f766e;
+      --accent-soft: #d9f3ef;
+      --line: #d7dee7;
+      --panel: #f6f8fb;
+      --paper: #ffffff;
+      --code-bg: #0f172a;
+      --code-ink: #e2e8f0;
+      --callout: #f8fafc;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    @page {
+      size: A4;
+      margin: 0.6in;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top right, #e8f7f4 0, #f7fbfc 26%, #ffffff 60%);
+      line-height: 1.45;
+      font-size: 11pt;
+    }
+
+    main {
+      max-width: 8.1in;
+      margin: 0 auto;
+      padding: 0.1in 0;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #0f766e, #164e63);
+      color: #fff;
+      padding: 0.45in;
+      border-radius: 22px;
+      margin-bottom: 0.28in;
+      box-shadow: 0 18px 45px rgba(15, 118, 110, 0.18);
+    }
+
+    .eyebrow {
+      font-size: 9pt;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      opacity: 0.8;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    h1 {
+      font-size: 27pt;
+      line-height: 1.08;
+      margin: 0 0 10px;
+    }
+
+    .hero p {
+      margin: 0;
+      font-size: 12pt;
+      max-width: 6.7in;
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin: 0.2in 0 0.28in;
+    }
+
+    .meta-card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px 18px;
+    }
+
+    .meta-card h3 {
+      margin: 0 0 6px;
+      font-size: 10.5pt;
+      color: var(--accent);
+    }
+
+    .meta-card p {
+      margin: 0;
+      font-size: 10pt;
+      color: var(--muted);
+    }
+
+    section {
+      margin-bottom: 0.25in;
+      break-inside: avoid;
+    }
+
+    h2 {
+      font-size: 17pt;
+      margin: 0 0 8px;
+      color: var(--ink);
+    }
+
+    h3 {
+      font-size: 12pt;
+      margin: 0 0 8px;
+    }
+
+    p {
+      margin: 0 0 10px;
+    }
+
+    .lede {
+      font-size: 11.2pt;
+      color: var(--muted);
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px 20px;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1.03fr 0.97fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .steps {
+      margin: 10px 0 0;
+      padding-left: 18px;
+    }
+
+    .steps li,
+    .bullets li {
+      margin: 0 0 7px;
+    }
+
+    .bullets {
+      margin: 10px 0 0;
+      padding-left: 18px;
+    }
+
+    .callout {
+      background: var(--callout);
+      border-left: 5px solid var(--accent);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: var(--ink);
+      margin-top: 10px;
+    }
+
+    .code-block {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: 16px;
+      padding: 14px 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      margin-top: 10px;
+      break-inside: avoid;
+    }
+
+    .code-block .label {
+      display: inline-block;
+      margin-bottom: 8px;
+      font-size: 8.5pt;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #86efac;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 8.8pt;
+      line-height: 1.5;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      background: #fff;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .table th,
+    .table td {
+      padding: 11px 12px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--line);
+      font-size: 9.8pt;
+    }
+
+    .table th {
+      background: #eef4f8;
+      color: var(--ink);
+      font-size: 9pt;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .small {
+      font-size: 9.4pt;
+      color: var(--muted);
+    }
+
+    .footer-note {
+      margin-top: 0.18in;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 9pt;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <div class="eyebrow">MyStore Architecture Guide</div>
+      <h1>How Inertia.js Works and How We Implemented It in This Project</h1>
+      <p>
+        This overview explains the Inertia mental model, the Laravel + React wiring now used in MyStore,
+        and the temporary compatibility layer that lets the migrated UI keep working while we replace old API-style patterns.
+      </p>
+    </section>
+
+    <section class="meta-grid">
+      <div class="meta-card">
+        <h3>Before</h3>
+        <p>A separate React SPA in <strong>frontend/</strong> called Laravel JSON APIs at <strong>/api</strong>.</p>
+      </div>
+      <div class="meta-card">
+        <h3>Now</h3>
+        <p>The app runs from <strong>backend/</strong> with Inertia.js, React, Laravel routes, and server-rendered props.</p>
+      </div>
+      <div class="meta-card">
+        <h3>Current State</h3>
+        <p>A hybrid migration: Inertia handles page visits and auth flow, while some legacy data fetches still use mapped JSON endpoints.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>1. What Inertia.js Actually Does</h2>
+      <div class="panel">
+        <p class="lede">
+          Inertia sits between classic server-rendered apps and a full SPA. Laravel still owns the routes and data loading,
+          but instead of returning Blade pages for every screen, it returns an Inertia page name plus props. React then renders that page component.
+        </p>
+        <div class="two-col">
+          <div>
+            <h3>Request flow</h3>
+            <ol class="steps">
+              <li>The browser visits a normal Laravel URL like <strong>/profile</strong> or <strong>/seller/products</strong>.</li>
+              <li>Laravel route/controller returns <strong>Inertia::render('App', props)</strong>.</li>
+              <li>Inertia serializes the props into the page response.</li>
+              <li>React receives those props and renders the page without a separate API bootstrap call.</li>
+              <li>Future navigations use Inertia links or router actions, so the page updates without a full reload.</li>
+            </ol>
+          </div>
+          <div>
+            <h3>Why teams like it</h3>
+            <ul class="bullets">
+              <li>No need to maintain a separate SPA router and REST bootstrap layer for every page.</li>
+              <li>Auth, redirects, validation errors, and flash messages stay in Laravel where they already fit naturally.</li>
+              <li>React still builds the UI, but page data comes directly from controllers.</li>
+              <li>It is a strong migration path when a project started as an API-driven SPA.</li>
+            </ul>
+            <div class="callout">
+              Inertia is not replacing React here. It is replacing the “React app calls many page-level APIs just to load” pattern.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>2. The MyStore Implementation</h2>
+      <p class="lede">
+        We moved the runtime center of gravity into Laravel. The root SPA folder was removed, and the active UI now lives under
+        <strong>backend/resources/js</strong>.
+      </p>
+      <table class="table">
+        <tr>
+          <th>Layer</th>
+          <th>File</th>
+          <th>Role</th>
+        </tr>
+        <tr>
+          <td>Blade root</td>
+          <td><strong>backend/resources/views/app.blade.php</strong></td>
+          <td>Loads Vite assets, CSRF token, and the Inertia mount point.</td>
+        </tr>
+        <tr>
+          <td>React entry</td>
+          <td><strong>backend/resources/js/app.js</strong></td>
+          <td>Boots Inertia and resolves the top-level page component.</td>
+        </tr>
+        <tr>
+          <td>Middleware</td>
+          <td><strong>backend/app/Http/Middleware/HandleInertiaRequests.php</strong></td>
+          <td>Shares auth user, wishlist, and flash messages with every page.</td>
+        </tr>
+        <tr>
+          <td>Controller layer</td>
+          <td><strong>backend/app/Http/Controllers/PageController.php</strong></td>
+          <td>Builds page-specific props by calling existing controllers and returning <strong>Inertia::render()</strong>.</td>
+        </tr>
+        <tr>
+          <td>Routes</td>
+          <td><strong>backend/routes/web.php</strong></td>
+          <td>Defines normal Laravel web URLs for buyer and seller pages.</td>
+        </tr>
+        <tr>
+          <td>UI source</td>
+          <td><strong>backend/resources/js/frontend/</strong></td>
+          <td>Contains the migrated React components and pages that were copied from the old SPA.</td>
+        </tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>3. Code Example: Inertia Client Bootstrapping</h2>
+      <p>
+        The React entry no longer mounts a standalone SPA with its own router root. Instead, it creates an Inertia app and resolves page names returned by Laravel.
+      </p>
+      <div class="code-block">
+        <div class="label">backend/resources/js/app.js</div>
+        <pre>import './bootstrap';
+import '../css/app.css';
+import { createElement } from 'react';
+import { createRoot } from 'react-dom/client';
+import { createInertiaApp } from '@inertiajs/react';
+import AppPage from './Pages/App.jsx';
+
+createInertiaApp({
+    resolve: (name) =&gt; {
+        if (name === 'App') {
+            return AppPage;
+        }
+
+        throw new Error(`Unknown Inertia page: ${name}`);
+    },
+    setup({ el, App, props }) {
+        createRoot(el).render(createElement(App, props));
+    },
+    progress: {
+        color: '#0f766e',
+    },
+});</pre>
+      </div>
+      <div class="callout">
+        In this project we currently resolve a single Inertia page name, <strong>App</strong>, and that page re-exports the migrated React app shell.
+      </div>
+    </section>
+
+    <section>
+      <h2>4. Code Example: Laravel Route and Controller</h2>
+      <div class="two-col">
+        <div class="panel">
+          <h3>Route layer</h3>
+          <p>
+            MyStore now uses normal Laravel web routes for buyer and seller pages. For example, <strong>/</strong>, <strong>/orders</strong>, and <strong>/seller/products</strong> all point to page controller methods.
+          </p>
+          <div class="code-block">
+            <div class="label">backend/routes/web.php</div>
+            <pre>Route::get('/', [PageController::class, 'home']);
+Route::get('/categories', [PageController::class, 'categories']);
+Route::get('/products/{id}', [PageController::class, 'product']);
+
+Route::middleware('auth')->group(function () {
+    Route::get('/orders', [PageController::class, 'buyerOrders']);
+    Route::get('/profile', [PageController::class, 'profile']);
+    Route::get('/seller/products', [PageController::class, 'sellerProducts']);
+});</pre>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Controller layer</h3>
+          <p>
+            The controller gathers data and sends it directly as page props instead of forcing the page to fetch everything after render.
+          </p>
+          <div class="code-block">
+            <div class="label">backend/app/Http/Controllers/PageController.php</div>
+            <pre>public function home(Request $request)
+{
+    return Inertia::render('App', [
+        'products' =&gt; $this-&gt;responseData(
+            app(ProductController::class)-&gt;index($request)
+        ),
+        'categories' =&gt; $this-&gt;responseData(
+            app(CategoryController::class)-&gt;index()
+        ),
+        'brands' =&gt; $this-&gt;responseData(
+            app(BrandController::class)-&gt;index()
+        ),
+    ]);
+}</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>5. Code Example: Shared Props for Auth and Wishlist</h2>
+      <p>
+        Inertia middleware is one of the biggest wins in this migration. Instead of fetching the current user on every page load,
+        we share it once from Laravel so React can read it with <strong>usePage()</strong>.
+      </p>
+      <div class="code-block">
+        <div class="label">backend/app/Http/Middleware/HandleInertiaRequests.php</div>
+        <pre>public function share(Request $request): array
+{
+    $user = $request-&gt;user();
+
+    return [
+        ...parent::share($request),
+        'auth' =&gt; [
+            'user' =&gt; $user ? [
+                'id' =&gt; $user-&gt;id,
+                'name' =&gt; $user-&gt;name,
+                'email' =&gt; $user-&gt;email,
+                'role' =&gt; $user-&gt;role,
+            ] : null,
+        ],
+        'wishlist' =&gt; $user &amp;&amp; $user-&gt;role === 'buyer'
+            ? Wishlist::where('user_id', $user-&gt;id)-&gt;latest()-&gt;get()
+            : [],
+        'flash' =&gt; [
+            'success' =&gt; fn () =&gt; $request-&gt;session()-&gt;get('success'),
+            'error' =&gt; fn () =&gt; $request-&gt;session()-&gt;get('error'),
+        ],
+    ];
+}</pre>
+      </div>
+
+      <div class="code-block">
+        <div class="label">backend/resources/js/frontend/context/AuthContext.jsx</div>
+        <pre>const { props } = usePage();
+const user = props.auth?.user ?? null;
+
+router.post('/login', { email, password }, {
+  preserveScroll: true,
+  onSuccess: (page) =&gt; {
+    resolve(page.props.auth?.user ?? null);
+  },
+  onError: (errors) =&gt; {
+    reject(new Error(errors.email || errors.password || 'Login failed'));
+  },
+});</pre>
+      </div>
+    </section>
+
+    <section>
+      <h2>6. Code Example: Real Page Hydration in React</h2>
+      <p>
+        A migrated page can now consume server props immediately. In <strong>Home.jsx</strong>, the page first reads
+        <strong>props.products</strong>, <strong>props.categories</strong>, and <strong>props.brands</strong> from Inertia.
+      </p>
+      <div class="code-block">
+        <div class="label">backend/resources/js/frontend/pages/Home.jsx</div>
+        <pre>const { props } = usePage();
+const [products, setProducts] = useState(props.products || []);
+const [categories, setCategories] = useState(props.categories || []);
+const [brands, setBrands] = useState(props.brands || []);
+
+useEffect(() =&gt; {
+  if (props.categories) {
+    setCategories(props.categories);
+  }
+  if (props.brands) {
+    setBrands(props.brands);
+  }
+  if (props.products) {
+    setProducts(props.products);
+    setLoading(false);
+  }
+}, [props.brands, props.categories, props.products]);</pre>
+      </div>
+      <p class="small">
+        Some fallback fetch logic still exists in a few pages. That is part of the transition state and can be removed page-by-page as we finish the migration.
+      </p>
+    </section>
+
+    <section>
+      <h2>7. The Hybrid Migration Layer We Added</h2>
+      <div class="panel">
+        <p>
+          We did not fully rewrite the old UI in one pass. To keep momentum, we added a compatibility layer so older client code could keep working while page routing, auth, and initial data moved to Inertia.
+        </p>
+        <ul class="bullets">
+          <li><strong>Router shim:</strong> <strong>backend/resources/js/inertia-router-dom.jsx</strong> mimics key <strong>react-router-dom</strong> APIs using Inertia navigation underneath.</li>
+          <li><strong>Vite alias:</strong> <strong>backend/vite.config.js</strong> redirects imports of <strong>react-router-dom</strong> to that shim.</li>
+          <li><strong>Fetch remap:</strong> <strong>backend/resources/js/bootstrap.js</strong> rewrites old <strong>/api</strong> and <strong>http://127.0.0.1:8000/api</strong> calls to <strong>/data</strong>, adds CSRF, and keeps requests same-origin.</li>
+        </ul>
+        <div class="code-block">
+          <div class="label">backend/resources/js/bootstrap.js</div>
+          <pre>window.fetch = (input, init = {}) =&gt; {
+    const requestUrl = typeof input === 'string' ? input : input.url;
+    const normalizedUrl = requestUrl.replace('http://127.0.0.1:8000/api', '/data');
+    const mappedUrl = normalizedUrl.startsWith('/api/')
+        ? normalizedUrl.replace('/api/', '/data/')
+        : normalizedUrl;
+
+    return originalFetch(mappedUrl, {
+        ...init,
+        credentials: 'same-origin',
+        headers,
+    });
+};</pre>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>8. Why We No Longer Need a Separate Frontend Folder</h2>
+      <p>
+        In a full Inertia setup, the React UI belongs to the Laravel app. That means the project does not need a separate root-level frontend application just to talk to backend APIs.
+      </p>
+      <ul class="bullets">
+        <li>The old top-level <strong>frontend/</strong> folder was retired because it was a standalone SPA shell.</li>
+        <li>The live UI now runs through Laravel Vite assets in <strong>backend/resources/js</strong>.</li>
+        <li>We still have a folder named <strong>backend/resources/js/frontend</strong>, but that is just where the copied React app currently lives inside Laravel.</li>
+        <li>A later cleanup can rename that folder to something clearer like <strong>app</strong> or <strong>ui</strong>.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>9. Recommended Next Steps</h2>
+      <table class="table">
+        <tr>
+          <th>Priority</th>
+          <th>Next step</th>
+          <th>Why it matters</th>
+        </tr>
+        <tr>
+          <td>High</td>
+          <td>Finish converting remaining pages to rely on <strong>usePage()</strong> props first.</td>
+          <td>Removes duplicate loading logic and makes page loads more predictable.</td>
+        </tr>
+        <tr>
+          <td>High</td>
+          <td>Replace leftover <strong>fetch('/data/...')</strong> page hydration with controller-supplied props.</td>
+          <td>Moves more logic into the real Inertia model instead of the compatibility layer.</td>
+        </tr>
+        <tr>
+          <td>Medium</td>
+          <td>Rename <strong>backend/resources/js/frontend</strong> to a clearer app folder.</td>
+          <td>Reduces migration confusion for future contributors.</td>
+        </tr>
+        <tr>
+          <td>Medium</td>
+          <td>Eventually remove the <strong>react-router-dom</strong> shim.</td>
+          <td>Simplifies the client stack once all pages navigate through direct Inertia patterns.</td>
+        </tr>
+      </table>
+    </section>
+
+    <section class="footer-note">
+      Prepared for the current MyStore codebase as of the Inertia migration state visible in
+      <strong>backend/routes/web.php</strong>, <strong>backend/resources/js/app.js</strong>,
+      <strong>backend/resources/js/bootstrap.js</strong>, <strong>backend/app/Http/Middleware/HandleInertiaRequests.php</strong>,
+      and <strong>backend/app/Http/Controllers/PageController.php</strong>.
+    </section>
+  </main>
+</body>
+</html>

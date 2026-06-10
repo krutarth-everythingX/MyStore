@@ -29,6 +29,9 @@ class WishlistController extends Controller
 
         if ($existing) {
             $existing->delete();
+            if ($request->header('X-Inertia')) {
+                return back()->with('success', 'Removed from wishlist');
+            }
             return response(['wishlisted' => false, 'message' => 'Removed from wishlist'], 200);
         }
 
@@ -36,6 +39,10 @@ class WishlistController extends Controller
             'user_id'    => $userId,
             'product_id' => $productId,
         ]);
+
+        if ($request->header('X-Inertia')) {
+            return back()->with('success', 'Added to wishlist');
+        }
 
         return response(['wishlisted' => true, 'message' => 'Added to wishlist'], 201);
     }

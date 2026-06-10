@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\OrderStatus;
 use App\Models\Review;
 use App\Models\Product;
 use App\Models\Order;
@@ -48,7 +49,7 @@ class ReviewController extends Controller
 
         // Verify that the user has actually purchased the product
         $hasPurchased = Order::where('buyer_id', $user->id)
-            ->whereIn('status', ['processing', 'completed']) // purchased and paid
+            ->whereIn('status', OrderStatus::reviewEligibleValues()) // purchased and paid
             ->whereHas('items', function ($query) use ($productId) {
                 $query->where('product_id', $productId);
             })
@@ -77,6 +78,10 @@ class ReviewController extends Controller
             'rating' => $fields['rating'],
             'comment' => $fields['comment'] ?? '',
         ]);
+
+        if ($request->header('X-Inertia')) {
+            return back()->with('success', 'Review submitted successfully!');
+        }
 
         return response($review->load('user:id,name'), 201);
     }

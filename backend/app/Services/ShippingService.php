@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\DTOs\ShippableItemData;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -10,7 +11,7 @@ class ShippingService
     /**
      * Calculate shipping rates based on items weight, dimensions and destination.
      *
-     * @param array $items Array of items containing weight, quantity, etc.
+     * @param ShippableItemData[] $items
      * @param string $address Destination address or ZIP code.
      * @return array Array of available shipping options with rates.
      */
@@ -19,8 +20,8 @@ class ShippingService
         // 1. Calculate total weight
         $totalWeight = 0; 
         foreach ($items as $item) {
-            $weight = $item['product']['weight_kg'] ?? $item['product']['weight'] ?? 0.5; // default 0.5
-            $qty = $item['quantity'] ?? 1;
+            $weight = $item->product->weight_kg ?? $item->product->weight ?? 0.5; // default 0.5
+            $qty = $item->quantity;
             $totalWeight += floatval($weight) * $qty;
         }
 
@@ -35,14 +36,8 @@ class ShippingService
             // Try to find the seller's pickup zip code
             if (!empty($items)) {
                 $productOwner = null;
-                $itemProduct = $items[0]['product'] ?? null;
-                if ($itemProduct) {
-                    if (is_array($itemProduct) && isset($itemProduct['user_id'])) {
-                        $productOwner = \App\Models\User::find($itemProduct['user_id']);
-                    } else if (is_object($itemProduct)) {
-                        $productOwner = $itemProduct->user;
-                    }
-                }
+                $itemProduct = $items[0]->product ?? null;
+                $productOwner = $itemProduct?->user;
                 if ($productOwner) {
                     if (isset($productOwner->postal_code) && $productOwner->postal_code) {
                         $pickup = $productOwner->postal_code;

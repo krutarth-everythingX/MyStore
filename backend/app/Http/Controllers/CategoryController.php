@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class CategoryController extends Controller
 {
@@ -27,7 +26,6 @@ class CategoryController extends Controller
         $category = Category::create([
             'user_id' => $request->user()->id,
             'name' => $fields['name'],
-            'slug' => Str::slug($fields['name']) . '-' . uniqid(),
             'parent_id' => $fields['parent_id'] ?? null
         ]);
 

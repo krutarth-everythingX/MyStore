@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Brand;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class BrandController extends Controller
 {
@@ -27,7 +26,6 @@ class BrandController extends Controller
         $brand = Brand::create([
             'user_id' => $request->user()->id,
             'name' => $fields['name'],
-            'slug' => Str::slug($fields['name']) . '-' . uniqid(),
             'logo' => $fields['logo'] ?? null
         ]);
 

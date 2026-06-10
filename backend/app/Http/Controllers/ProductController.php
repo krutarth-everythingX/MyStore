@@ -63,9 +63,7 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-        if ($request->user()->role !== 'seller') {
-            return response(['message' => 'Unauthorized. Sellers only.'], 403);
-        }
+        $this->authorize('create', Product::class);
 
         $fields = $request->validate([
             'name' => 'required|string',
@@ -100,8 +98,7 @@ class ProductController extends Controller
         $sellerBrand = \App\Models\Brand::firstOrCreate(
             ['user_id' => $request->user()->id],
             [
-                'name' => $request->user()->brand_name ?? ($request->user()->name . "'s Store"),
-                'slug' => Str::slug($request->user()->brand_name ?? ($request->user()->name . "'s Store")) . '-' . uniqid(),
+                'name' => seller_brand_name($request->user()->brand_name, $request->user()->name),
             ]
         );
         $fields['brand_id'] = $sellerBrand->id;
@@ -116,7 +113,6 @@ class ProductController extends Controller
                 ['name' => $fields['new_category_name']],
                 [
                     'user_id' => $request->user()->id,
-                    'slug' => Str::slug($fields['new_category_name']) . '-' . uniqid(),
                     'parent_id' => null
                 ]
             );
@@ -172,7 +168,13 @@ class ProductController extends Controller
             }
         }
 
-        return response($product->load(['brand', 'categories', 'warehouses', 'variations']), 201);
+        $product = $product->load(['brand', 'categories', 'warehouses', 'variations']);
+
+        if ($request->header('X-Inertia')) {
+            return redirect('/seller/products')->with('success', 'Product created successfully!');
+        }
+
+        return response($product, 201);
     }
 
     /**
@@ -186,9 +188,7 @@ class ProductController extends Controller
             return response(['message' => 'Product not found'], 404);
         }
 
-        if ($request->user()->role !== 'seller' || $product->user_id !== $request->user()->id) {
-            return response(['message' => 'Unauthorized. Owner seller only.'], 403);
-        }
+        $this->authorize('update', $product);
 
         $fields = $request->validate([
             'name' => 'required|string',
@@ -219,8 +219,7 @@ class ProductController extends Controller
         $sellerBrand = \App\Models\Brand::firstOrCreate(
             ['user_id' => $request->user()->id],
             [
-                'name' => $request->user()->brand_name ?? ($request->user()->name . "'s Store"),
-                'slug' => Str::slug($request->user()->brand_name ?? ($request->user()->name . "'s Store")) . '-' . uniqid(),
+                'name' => seller_brand_name($request->user()->brand_name, $request->user()->name),
             ]
         );
         $fields['brand_id'] = $sellerBrand->id;
@@ -235,7 +234,6 @@ class ProductController extends Controller
                 ['name' => $fields['new_category_name']],
                 [
                     'user_id' => $request->user()->id,
-                    'slug' => Str::slug($fields['new_category_name']) . '-' . uniqid(),
                     'parent_id' => null
                 ]
             );
@@ -310,7 +308,13 @@ class ProductController extends Controller
                 ->delete();
         }
 
-        return response($product->load(['brand', 'categories', 'warehouses', 'variations']), 200);
+        $product = $product->load(['brand', 'categories', 'warehouses', 'variations']);
+
+        if ($request->header('X-Inertia')) {
+            return redirect('/seller/products')->with('success', 'Product updated successfully!');
+        }
+
+        return response($product, 200);
     }
 
     /**
@@ -324,11 +328,13 @@ class ProductController extends Controller
             return response(['message' => 'Product not found'], 404);
         }
 
-        if ($request->user()->role !== 'seller' || $product->user_id !== $request->user()->id) {
-            return response(['message' => 'Unauthorized.'], 403);
-        }
+        $this->authorize('delete', $product);
 
         $product->delete();
+
+        if ($request->header('X-Inertia')) {
+            return back()->with('success', 'Product deleted successfully');
+        }
 
         return response(['message' => 'Product deleted successfully'], 200);
     }

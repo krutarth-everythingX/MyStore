@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\OrderStatus;
+use App\Jobs\SendOrderShippedNotificationJob;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -24,7 +26,7 @@ class SellerDashboardController extends Controller
         // 1. Total revenue (sum of item prices * quantities)
         $revenue = OrderItem::where('seller_id', $sellerId)
             ->whereHas('order', function($q) {
-                $q->where('status', '!=', 'cancelled');
+                $q->where('status', '!=', OrderStatus::Cancelled->value);
             })
             ->sum(DB::raw('price * quantity'));
 
@@ -53,7 +55,7 @@ class SellerDashboardController extends Controller
         $thirtyDaysAgo = now()->subDays(30);
         $orderItems = OrderItem::where('seller_id', $sellerId)
             ->whereHas('order', function($q) use ($thirtyDaysAgo) {
-                $q->where('status', '!=', 'cancelled')
+                $q->where('status', '!=', OrderStatus::Cancelled->value)
                   ->where('created_at', '>=', $thirtyDaysAgo);
             })
             ->get();
@@ -83,7 +85,7 @@ class SellerDashboardController extends Controller
         $categorySplitRaw = OrderItem::with(['product.categories'])
             ->where('seller_id', $sellerId)
             ->whereHas('order', function($q) {
-                $q->where('status', '!=', 'cancelled');
+                $q->where('status', '!=', OrderStatus::Cancelled->value);
             })
             ->get();
 
@@ -185,7 +187,7 @@ class SellerDashboardController extends Controller
                         $order->buyer->name ?? 'N/A',
                         $order->buyer->email ?? 'N/A',
                         $order->created_at->toDateTimeString(),
-                        $order->status,
+                        $order->status?->value,
                         $order->refund_status ?? 'None',
                         $order->payment_method,
                         $order->shipping_carrier ?? 'N/A',
@@ -310,7 +312,7 @@ class SellerDashboardController extends Controller
         }
 
         $fields = $request->validate([
-            'status' => 'required|string|in:pending,processing,shipped,out_for_delivery,completed,cancelled',
+            'status' => 'required|string|in:' . implode(',', OrderStatus::values()),
             'shipping_carrier' => 'nullable|string',
             'tracking_number' => 'nullable|string'
         ]);
@@ -318,19 +320,18 @@ class SellerDashboardController extends Controller
         $oldStatus = $order->status;
 
         $order->update([
-            'status' => $fields['status'],
+            'status' => OrderStatus::from($fields['status']),
             'shipping_carrier' => $fields['shipping_carrier'] ?? $order->shipping_carrier,
             'tracking_number' => $fields['tracking_number'] ?? $order->tracking_number,
         ]);
 
         // Dispatch Shipped Notification if status transitions to shipped
-        if ($fields['status'] === 'shipped' && $oldStatus !== 'shipped') {
-            try {
-                $notifier = new \App\Services\NotificationService();
-                $notifier->sendOrderShippedNotification($order);
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error("Shipping notification dispatch failed: " . $e->getMessage());
-            }
+        if ($order->status === OrderStatus::Shipped && $oldStatus !== OrderStatus::Shipped) {
+            SendOrderShippedNotificationJob::dispatch($order->id);
+        }
+
+        if ($request->header('X-Inertia')) {
+            return back()->with('success', 'Order updated successfully');
         }
 
         return response([
