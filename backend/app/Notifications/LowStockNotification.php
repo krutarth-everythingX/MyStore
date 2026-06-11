@@ -24,11 +24,15 @@ class LowStockNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage())
+            ->error()
             ->subject("Inventory Alert: Low Stock Warning for '{$this->product->name}'")
-            ->greeting("Hi {$notifiable->name},")
-            ->line("Product '{$this->product->name}' (SKU: {$this->product->sku}) has reached its low stock warning threshold.")
-            ->line("Current quantity: {$this->product->stock_quantity}")
-            ->line("Low Stock Threshold: {$this->product->low_stock_amount}")
-            ->line('Please update your inventory to restore stock availability.');
+            ->markdown('emails.low_stock', [
+                'name' => $notifiable->name,
+                'productName' => $this->product->name,
+                'sku' => $this->product->sku,
+                'stockQuantity' => $this->product->stock_quantity,
+                'lowStockAmount' => $this->product->low_stock_amount,
+                'url' => url('/seller/inventory'),
+            ]);
     }
 }

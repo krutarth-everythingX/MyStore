@@ -8,6 +8,7 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Footer } from '../components/Footer';
 import { ShoppingCart, ArrowLeft, Archive, CheckCircle, AlertTriangle, Truck, Heart, Star } from 'lucide-react';
+import { Breadcrumbs } from '../components/Breadcrumbs';
 import './ProductDetails.css';
 
 const StarSelector = ({ rating, onChange, readonly = false }) => {
@@ -107,13 +108,21 @@ export const ProductDetails = () => {
 
   useEffect(() => {
     if (props.productDetails && token && user?.role === 'buyer') {
-      router.post(`/recently-viewed/${props.productDetails.id}`, {}, {
-        preserveScroll: true,
-        preserveState: true,
-        replace: true,
+      // Use native fetch (not Inertia router) — this endpoint returns plain JSON,
+      // not an Inertia response, so router.post() would throw a mismatch error.
+      fetch(`/recently-viewed/${props.productDetails.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        },
+        credentials: 'same-origin',
+      }).catch(() => {
+        // Silently ignore tracking errors — non-critical
       });
     }
-  }, [props.productDetails, token, user]);
+  }, [props.productDetails?.id, token, user?.id]);
 
   useEffect(() => {
     if (product && product.type === 'variable' && product.variations) {
@@ -208,11 +217,23 @@ export const ProductDetails = () => {
   const isSale = currentProduct.sale_price !== null && currentProduct.sale_price !== undefined;
   const outOfStock = currentProduct.manage_stock && currentProduct.stock_quantity <= 0;
 
+  // Build breadcrumb items
+  const buildBreadcrumbs = () => {
+    const crumbs = [];
+    if (product.categories && product.categories.length > 0) {
+      const cat = product.categories[0];
+      crumbs.push({ label: cat.name, url: `/?category=${cat.id}` });
+    }
+    crumbs.push({ label: product.name });
+    return crumbs;
+  };
+
   return (
     <div className="buyer-layout">
       <Navbar />
 
       <main className="container details-main animate-fade-in">
+        <Breadcrumbs items={buildBreadcrumbs()} />
         <Link href="/" className="details-back-link label-md">
           <ArrowLeft size={16} style={{ marginRight: 6 }} />
           Back to Catalog

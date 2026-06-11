@@ -7,6 +7,7 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Footer } from '../components/Footer';
 import { ArrowLeft, Trash2, ShoppingBag, Tag, AlertCircle } from 'lucide-react';
+import { Breadcrumbs } from '../components/Breadcrumbs';
 import { Input } from '../components/Input';
 import './Cart.css';
 
@@ -69,6 +70,7 @@ export const Cart = () => {
       <Navbar />
 
       <main className="container cart-main animate-fade-in">
+        <Breadcrumbs items={[{ label: 'Shopping Cart' }]} />
         <h1 className="headline-lg cart-page-title">Shopping Cart</h1>
 
         {cart.length === 0 ? (

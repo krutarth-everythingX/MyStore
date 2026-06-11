@@ -7,9 +7,10 @@ import { Card } from '../components/Card';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { Footer } from '../components/Footer';
-import { ShieldCheck, AlertCircle, Truck, CreditCard } from 'lucide-react';
+import { ShieldCheck, AlertCircle, Truck, CreditCard, Wallet, Smartphone, DollarSign } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { CardElement, Elements, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Breadcrumbs } from '../components/Breadcrumbs';
 import './Checkout.css';
 
 // Safe check for Stripe Publishable Key
@@ -49,10 +50,12 @@ const CheckoutForm = ({ stripe, elements }) => {
   const [stateName, setStateName] = useState('');
   const [pincode, setPincode] = useState('');
   const [country, setCountry] = useState('India');
-  const [companyName, setCompanyName] = useState('');
-  const [buyerGst, setBuyerGst] = useState('');
   
-  const [billingAddress, setBillingAddress] = useState('');
+  const [billingStreet, setBillingStreet] = useState('');
+  const [billingCity, setBillingCity] = useState('');
+  const [billingState, setBillingState] = useState('');
+  const [billingCountry, setBillingCountry] = useState('India');
+  const [billingPincode, setBillingPincode] = useState('');
   const [useDifferentBilling, setUseDifferentBilling] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('Credit Card');
 
@@ -89,12 +92,12 @@ const CheckoutForm = ({ stripe, elements }) => {
             const paymentResult = await stripe.confirmCardPayment(result.client_secret, {
               payment_method: {
                 card: cardElement,
-                billing_details: {
-                  name: user ? user.name : 'Store Customer',
-                  address: {
-                    line1: useDifferentBilling ? billingAddress : address
+                  billing_details: {
+                    name: user ? user.name : 'Store Customer',
+                    address: {
+                      line1: useDifferentBilling ? billingStreet : address
+                    }
                   }
-                }
               }
             });
 
@@ -118,7 +121,7 @@ const CheckoutForm = ({ stripe, elements }) => {
       setLoading(false);
       setFetchingRates(false);
     }
-  }, [address, billingAddress, clearCart, elements, paymentMethod, props.flash, stripe, user, useDifferentBilling]);
+  }, [address, billingStreet, billingCity, billingState, billingCountry, billingPincode, clearCart, elements, paymentMethod, props.flash, stripe, user, useDifferentBilling]);
 
   useEffect(() => {
     if (cart.length === 0) {
@@ -134,8 +137,12 @@ const CheckoutForm = ({ stripe, elements }) => {
       setEmail(user.email || '');
       setPhone(user.phone || '');
       setAddress(user.address || '');
+      setCity(user.city || '');
+      setStateName(user.state || '');
+      setCountry(user.country || 'India');
+      setPincode(user.pincode || '');
     }
-  }, [user]);
+  }, [user?.id]);
 
   // Live Pincode Serviceability & Rates checker
   useEffect(() => {
@@ -238,17 +245,21 @@ const CheckoutForm = ({ stripe, elements }) => {
     }));
 
     const fullAddr = `${address}, ${city}, ${stateName}, ${country} - ${pincode}`;
+    const fullBillingAddr = useDifferentBilling
+      ? `${billingStreet}, ${billingCity}, ${billingState}, ${billingCountry} - ${billingPincode}`
+      : fullAddr;
+
     router.post('/checkout', {
       items: checkoutItems,
       shipping_address: fullAddr,
-      billing_address: useDifferentBilling ? billingAddress : fullAddr,
+      billing_address: fullBillingAddr,
       buyer_phone: phone,
       country,
       city,
       state: stateName,
       postal_code: pincode,
-      company_name: companyName,
-      buyer_gstin: buyerGst,
+      company_name: '',
+      buyer_gstin: '',
       payment_method: paymentMethod,
       shipping_carrier: selectedRate ? selectedRate.carrier : 'Free Shipping',
       shipping_service: selectedRate ? selectedRate.service : 'Standard',
@@ -279,6 +290,10 @@ const CheckoutForm = ({ stripe, elements }) => {
       <Navbar />
 
       <main className="container checkout-main animate-fade-in">
+        <Breadcrumbs items={[
+          { label: 'Shopping Cart', url: '/cart' },
+          { label: 'Secure Checkout' }
+        ]} />
         <h1 className="headline-lg checkout-page-title">Secure Checkout</h1>
 
         {error && (
@@ -293,6 +308,15 @@ const CheckoutForm = ({ stripe, elements }) => {
             <AlertCircle size={18} style={{ marginRight: 8, color: 'var(--color-error)' }} />
             <span>
               <strong>Email Verification Required:</strong> You must verify your email address before placing an order. <Link href="/profile" style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>Verify email now</Link>.
+            </span>
+          </div>
+        )}
+
+        {user && (!user.phone || !user.address || !user.city || !user.state || !user.country || !user.pincode) && (
+          <div className="checkout-alert checkout-alert-info body-md" style={{ background: 'rgba(37, 99, 235, 0.1)', borderColor: 'var(--color-primary)', color: 'var(--color-on-surface)', marginBottom: 24 }}>
+            <AlertCircle size={18} style={{ marginRight: 8, color: 'var(--color-primary)' }} />
+            <span>
+              <strong>Profile Incomplete:</strong> Please complete your profile details (Phone, Address, City, State, Country, Pincode) in your <Link href="/profile?tab=account-settings" style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>Profile Settings</Link> to enable automatic checkout.
             </span>
           </div>
         )}
@@ -339,24 +363,6 @@ const CheckoutForm = ({ stripe, elements }) => {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     required
-                  />
-                </div>
-
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <Input
-                    label="Company Name (Optional)"
-                    type="text"
-                    placeholder="E.g. Acme Corp"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                  />
-                  <Input
-                    label="GSTIN Number (Optional)"
-                    type="text"
-                    placeholder="15-digit GST number"
-                    maxLength={15}
-                    value={buyerGst}
-                    onChange={(e) => setBuyerGst(e.target.value)}
                   />
                 </div>
 
@@ -490,28 +496,68 @@ const CheckoutForm = ({ stripe, elements }) => {
                 </div>
 
                 {useDifferentBilling && (
-                  <div className="input-container animate-fade-in" style={{ marginBottom: 0 }}>
-                    <label className="input-label label-md">Billing Street Address</label>
-                    <textarea
-                      className="input-field checkout-textarea"
-                      rows="2"
-                      placeholder="Enter billing address"
-                      value={billingAddress}
-                      onChange={(e) => setBillingAddress(e.target.value)}
-                      required={useDifferentBilling}
-                    />
+                  <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div className="input-container" style={{ marginBottom: 0 }}>
+                      <label className="input-label label-md">Billing Street Address *</label>
+                      <textarea
+                        className="input-field checkout-textarea"
+                        rows="2"
+                        placeholder="Enter street name, building number"
+                        value={billingStreet}
+                        onChange={(e) => setBillingStreet(e.target.value)}
+                        required={useDifferentBilling}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: 12 }}>
+                      <Input
+                        label="Billing City *"
+                        type="text"
+                        placeholder="Enter city"
+                        value={billingCity}
+                        onChange={(e) => setBillingCity(e.target.value)}
+                        required={useDifferentBilling}
+                      />
+                      <Input
+                        label="Billing State / Region *"
+                        type="text"
+                        placeholder="Enter state"
+                        value={billingState}
+                        onChange={(e) => setBillingState(e.target.value)}
+                        required={useDifferentBilling}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: 12 }}>
+                      <Input
+                        label="Billing Country *"
+                        type="text"
+                        placeholder="Enter country"
+                        value={billingCountry}
+                        onChange={(e) => setBillingCountry(e.target.value)}
+                        required={useDifferentBilling}
+                      />
+                      <Input
+                        label="Billing PIN / Postal Code *"
+                        type="text"
+                        placeholder="6-digit pin code"
+                        maxLength={6}
+                        value={billingPincode}
+                        onChange={(e) => setBillingPincode(e.target.value)}
+                        required={useDifferentBilling}
+                      />
+                    </div>
                   </div>
                 )}
               </Card>
 
               {/* Payment Methods Options Card */}
               <Card title="3. Choose Payment Method">
-                <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 20 }}>
+                  
+                  {/* Credit Card */}
                   <label 
                     className={`payment-method-selector-label ${paymentMethod === 'Credit Card' ? 'active' : ''}`}
                     style={{
-                      flex: 1,
-                      padding: '16px',
+                      padding: '16px 12px',
                       border: '2px solid ' + (paymentMethod === 'Credit Card' ? 'var(--color-primary)' : 'var(--color-outline-variant)'),
                       borderRadius: '12px',
                       cursor: 'pointer',
@@ -530,14 +576,92 @@ const CheckoutForm = ({ stripe, elements }) => {
                       style={{ display: 'none' }}
                     />
                     <CreditCard size={24} style={{ color: paymentMethod === 'Credit Card' ? 'var(--color-primary)' : 'var(--color-outline)' }} />
-                    <strong className="body-md">Credit / Debit Card</strong>
+                    <strong className="body-md">Credit Card</strong>
                   </label>
-                  
+
+                  {/* Google Pay */}
+                  <label 
+                    className={`payment-method-selector-label ${paymentMethod === 'Google Pay' ? 'active' : ''}`}
+                    style={{
+                      padding: '16px 12px',
+                      border: '2px solid ' + (paymentMethod === 'Google Pay' ? 'var(--color-primary)' : 'var(--color-outline-variant)'),
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 8
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="payment_type"
+                      checked={paymentMethod === 'Google Pay'}
+                      onChange={() => setPaymentMethod('Google Pay')}
+                      style={{ display: 'none' }}
+                    />
+                    <Smartphone size={24} style={{ color: paymentMethod === 'Google Pay' ? 'var(--color-primary)' : 'var(--color-outline)' }} />
+                    <strong className="body-md">Google Pay</strong>
+                  </label>
+
+                  {/* PayPal */}
+                  <label 
+                    className={`payment-method-selector-label ${paymentMethod === 'PayPal' ? 'active' : ''}`}
+                    style={{
+                      padding: '16px 12px',
+                      border: '2px solid ' + (paymentMethod === 'PayPal' ? 'var(--color-primary)' : 'var(--color-outline-variant)'),
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 8
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="payment_type"
+                      checked={paymentMethod === 'PayPal'}
+                      onChange={() => setPaymentMethod('PayPal')}
+                      style={{ display: 'none' }}
+                    />
+                    <DollarSign size={24} style={{ color: paymentMethod === 'PayPal' ? 'var(--color-primary)' : 'var(--color-outline)' }} />
+                    <strong className="body-md">PayPal</strong>
+                  </label>
+
+                  {/* Paytm */}
+                  <label 
+                    className={`payment-method-selector-label ${paymentMethod === 'Paytm' ? 'active' : ''}`}
+                    style={{
+                      padding: '16px 12px',
+                      border: '2px solid ' + (paymentMethod === 'Paytm' ? 'var(--color-primary)' : 'var(--color-outline-variant)'),
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 8
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="payment_type"
+                      checked={paymentMethod === 'Paytm'}
+                      onChange={() => setPaymentMethod('Paytm')}
+                      style={{ display: 'none' }}
+                    />
+                    <Wallet size={24} style={{ color: paymentMethod === 'Paytm' ? 'var(--color-primary)' : 'var(--color-outline)' }} />
+                    <strong className="body-md">Paytm</strong>
+                  </label>
+
+                  {/* COD */}
                   <label 
                     className={`payment-method-selector-label ${paymentMethod === 'COD' ? 'active' : ''}`}
                     style={{
-                      flex: 1,
-                      padding: '16px',
+                      padding: '16px 12px',
                       border: '2px solid ' + (paymentMethod === 'COD' ? 'var(--color-primary)' : 'var(--color-outline-variant)'),
                       borderRadius: '12px',
                       cursor: 'pointer',
@@ -556,7 +680,7 @@ const CheckoutForm = ({ stripe, elements }) => {
                       style={{ display: 'none' }}
                     />
                     <Truck size={24} style={{ color: paymentMethod === 'COD' ? 'var(--color-primary)' : 'var(--color-outline)' }} />
-                    <strong className="body-md">Cash On Delivery</strong>
+                    <strong className="body-md">COD</strong>
                   </label>
                 </div>
 
@@ -606,6 +730,28 @@ const CheckoutForm = ({ stripe, elements }) => {
                         </span>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {paymentMethod === 'Google Pay' && (
+                  <div className="animate-fade-in" style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--color-outline-variant)', borderRadius: '8px', minHeight: 90, display: 'flex', alignItems: 'center' }}>
+                    <p className="body-md" style={{ color: 'var(--color-outline)', margin: 0 }}>
+                      You will be prompted to authenticate with <strong>Google Pay</strong> on order submission simulation.
+                    </p>
+                  </div>
+                )}
+                {paymentMethod === 'PayPal' && (
+                  <div className="animate-fade-in" style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--color-outline-variant)', borderRadius: '8px', minHeight: 90, display: 'flex', alignItems: 'center' }}>
+                    <p className="body-md" style={{ color: 'var(--color-outline)', margin: 0 }}>
+                      You will be redirected to the secure <strong>PayPal</strong> gateway on order submission simulation.
+                    </p>
+                  </div>
+                )}
+                {paymentMethod === 'Paytm' && (
+                  <div className="animate-fade-in" style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--color-outline-variant)', borderRadius: '8px', minHeight: 90, display: 'flex', alignItems: 'center' }}>
+                    <p className="body-md" style={{ color: 'var(--color-outline)', margin: 0 }}>
+                      Pay securely using UPI or <strong>Paytm wallet</strong> on order submission simulation.
+                    </p>
                   </div>
                 )}
               </Card>

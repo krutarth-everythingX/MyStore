@@ -19,8 +19,9 @@ class VerificationCodeNotification extends Notification
     {
         return (new MailMessage())
             ->subject('Verify your MyStore account')
-            ->greeting("Hi {$notifiable->name},")
-            ->line("Thank you for registering at MyStore! Your 6-digit email verification code is: {$notifiable->verification_code}")
-            ->line('Please enter this code on the verification screen to activate your account.');
+            ->markdown('emails.verification', [
+                'name' => $notifiable->name,
+                'code' => $notifiable->verification_code,
+            ]);
     }
 }

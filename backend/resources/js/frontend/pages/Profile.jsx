@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
+import { useToast } from '../context/ToastContext';
 import { Link, router, usePage } from '@inertiajs/react';
 import { Navbar } from '../components/Navbar';
 import { Sidebar } from '../components/Sidebar';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { Footer } from '../components/Footer';
+import { Breadcrumbs } from '../components/Breadcrumbs';
 import {
   User, ShoppingBag, Heart, MailCheck, Clock, Settings, MapPin,
   MessageSquare, HelpCircle, LogOut, Package, Calendar,
@@ -22,6 +24,7 @@ export const Profile = () => {
   const { props } = usePage();
   const { user, logout, updateProfile, verifyEmailCode, resendVerificationCode } = useAuth();
   const { wishlist } = useWishlist();
+  const { showToast } = useToast();
 
   // Which accordion section is open
   const [openSection, setOpenSection] = useState('orders');
@@ -48,8 +51,13 @@ export const Profile = () => {
   const [verifyError, setVerifyError] = useState('');
   const [verifyLoading, setVerifyLoading] = useState(false);
 
-  // ── Address ──
+  // ── Address Details ──
   const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [stateName, setStateName] = useState('');
+  const [country, setCountry] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [countryCode, setCountryCode] = useState('');
   const [addrSuccess, setAddrSuccess] = useState('');
   const [addrLoading, setAddrLoading] = useState(false);
 
@@ -65,8 +73,28 @@ export const Profile = () => {
       setEmail(user.email || '');
       setPhone(user.phone || '');
       setAddress(user.address || '');
+      setCity(user.city || '');
+      setStateName(user.state || '');
+      setCountry(user.country || '');
+      setPincode(user.pincode || '');
+      setCountryCode(user.country_code || '');
     }
-  }, [user]);
+  }, [user?.id]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab) {
+      setOpenSection(tab);
+      // Scroll to verify email section if that's the tab
+      setTimeout(() => {
+        const element = document.getElementById(tab);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  }, []);
 
   useEffect(() => {
     setOrders(Array.isArray(props.buyerOrders) ? props.buyerOrders : []);
@@ -81,13 +109,25 @@ export const Profile = () => {
     e.preventDefault();
     setProfileSuccess(''); setProfileError(''); setProfileLoading(true);
     try {
-      const data = { name, email, phone };
+      const data = {
+        name,
+        email,
+        phone,
+        country_code: countryCode,
+        address,
+        city,
+        state: stateName,
+        country,
+        pincode
+      };
       if (password) data.password = password;
       await updateProfile(data);
       setProfileSuccess('Profile updated successfully!');
+      showToast('Profile settings updated successfully!', 'success');
       setPassword('');
     } catch (err) {
       setProfileError(err.message || 'Failed to update profile');
+      showToast(err.message || 'Failed to update profile', 'error');
     } finally {
       setProfileLoading(false);
     }
@@ -97,9 +137,22 @@ export const Profile = () => {
     e.preventDefault();
     setAddrSuccess(''); setAddrLoading(true);
     try {
-      await updateProfile({ address });
+      await updateProfile({
+        name,
+        email,
+        phone,
+        country_code: countryCode,
+        address,
+        city,
+        state: stateName,
+        country,
+        pincode
+      });
       setAddrSuccess('Address saved!');
-    } catch {}
+      showToast('Delivery address updated successfully!', 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to save address', 'error');
+    }
     finally { setAddrLoading(false); }
   };
 
@@ -111,9 +164,11 @@ export const Profile = () => {
     try {
       await verifyEmailCode(verificationCode);
       setVerifyMsg('Email verified successfully!');
+      showToast('Email verified successfully! Welcome to MyStore.', 'success');
       setVerificationCode('');
     } catch (err) {
       setVerifyError(err.message || 'Verification failed');
+      showToast(err.message || 'Verification failed', 'error');
     } finally {
       setVerifyLoading(false);
     }
@@ -125,8 +180,10 @@ export const Profile = () => {
     try {
       const data = await resendVerificationCode();
       setVerifyMsg(data.message || 'Verification code resent successfully!');
+      showToast(data.message || 'Verification code resent successfully.', 'success');
     } catch (err) {
       setVerifyError(err.message || 'Failed to resend code');
+      showToast(err.message || 'Failed to resend code', 'error');
     }
   };
 
@@ -160,32 +217,13 @@ export const Profile = () => {
     );
   }
 
-  /* ─── Accordion Section Component ─── */
-  const Section = ({ id, icon: Icon, label, badge, children }) => {
-    const open = openSection === id;
-    return (
-      <div className={`pv-section ${open ? 'open' : ''}`}>
-        <button className="pv-section-header" onClick={() => toggleSection(id)}>
-          <span className="pv-section-icon"><Icon size={18} /></span>
-          <span className="pv-section-label">{label}</span>
-          {badge != null && badge > 0 && (
-            <span className="pv-section-badge">{badge}</span>
-          )}
-          <span className="pv-section-chevron">
-            {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </span>
-        </button>
-        {open && <div className="pv-section-body">{children}</div>}
-      </div>
-    );
-  };
-
   return (
     <div className="buyer-layout">
       <Navbar />
 
       <main className="pv-main">
         <div className="pv-container container">
+          <Breadcrumbs items={[{ label: 'My Account' }]} />
 
           {/* ── User Info Card ── */}
           <div className="pv-user-card">
@@ -203,14 +241,14 @@ export const Profile = () => {
           <div className="pv-sections">
 
             {/* ORDERS */}
-            <Section id="orders" icon={ShoppingBag} label="My Orders" badge={orders.length}>
+            <Section id="orders" icon={ShoppingBag} label="My Orders" badge={orders.length} openSection={openSection} toggleSection={toggleSection}>
               {ordersLoading ? (
                 <div className="pv-loading">Loading orders...</div>
               ) : orders.length === 0 ? (
                 <div className="pv-empty-state">
                   <Package size={40} className="pv-empty-icon" />
                   <p>No orders placed yet.</p>
-                  <Link href="/"><Button variant="primary">Start Shopping</Button></Link>
+                  <Link href="/" className="btn btn-primary" style={{ textDecoration: 'none' }}>Start Shopping</Link>
                 </div>
               ) : (
                 <div className="pv-orders-list">
@@ -249,12 +287,12 @@ export const Profile = () => {
             </Section>
 
             {/* WISHLIST */}
-            <Section id="wishlist" icon={Heart} label="Wishlist" badge={wishlist.length}>
+            <Section id="wishlist" icon={Heart} label="Wishlist" badge={wishlist.length} openSection={openSection} toggleSection={toggleSection}>
               {wishlist.length === 0 ? (
                 <div className="pv-empty-state">
                   <Heart size={40} className="pv-empty-icon" />
                   <p>Your wishlist is empty.</p>
-                  <Link href="/"><Button variant="primary">Browse Products</Button></Link>
+                  <Link href="/" className="btn btn-primary" style={{ textDecoration: 'none' }}>Browse Products</Link>
                 </div>
               ) : (
                 <div className="pv-product-grid">
@@ -279,7 +317,7 @@ export const Profile = () => {
             </Section>
 
             {/* VERIFY EMAIL */}
-            <Section id="verify-email" icon={MailCheck} label="Verify Email">
+            <Section id="verify-email" icon={MailCheck} label="Verify Email" openSection={openSection} toggleSection={toggleSection}>
               <div className="pv-verify-block">
                 {user?.email_verified_at ? (
                   <div className="pv-verify-row success">
@@ -327,14 +365,14 @@ export const Profile = () => {
             </Section>
 
             {/* RECENTLY VIEWED */}
-            <Section id="recently-viewed" icon={Clock} label="Recently Viewed">
+            <Section id="recently-viewed" icon={Clock} label="Recently Viewed" openSection={openSection} toggleSection={toggleSection}>
               {rvLoading ? (
                 <div className="pv-loading">Loading...</div>
               ) : recentlyViewed.length === 0 ? (
                 <div className="pv-empty-state">
                   <Clock size={40} className="pv-empty-icon" />
                   <p>No recently viewed products.</p>
-                  <Link href="/"><Button variant="primary">Go Shopping</Button></Link>
+                  <Link href="/" className="btn btn-primary" style={{ textDecoration: 'none' }}>Go Shopping</Link>
                 </div>
               ) : (
                 <div className="pv-product-grid">
@@ -362,23 +400,28 @@ export const Profile = () => {
             </Section>
 
             {/* ACCOUNT SETTINGS */}
-            <Section id="account-settings" icon={Settings} label="Account Settings">
+            <Section id="account-settings" icon={Settings} label="Account Settings" openSection={openSection} toggleSection={toggleSection}>
               {/* Sub-tab row inside section */}
               <AccountSettings
                 name={name} setName={setName}
                 email={email} setEmail={setEmail}
                 phone={phone} setPhone={setPhone}
+                countryCode={countryCode} setCountryCode={setCountryCode}
                 password={password} setPassword={setPassword}
                 profileSuccess={profileSuccess} profileError={profileError}
                 profileLoading={profileLoading} handleSaveProfile={handleSaveProfile}
                 address={address} setAddress={setAddress}
+                city={city} setCity={setCity}
+                stateName={stateName} setStateName={setStateName}
+                country={country} setCountry={setCountry}
+                pincode={pincode} setPincode={setPincode}
                 addrSuccess={addrSuccess} addrLoading={addrLoading}
                 handleSaveAddress={handleSaveAddress}
               />
             </Section>
 
             {/* MY ACTIVITY */}
-            <Section id="my-activity" icon={Star} label="My Activity">
+            <Section id="my-activity" icon={Star} label="My Activity" openSection={openSection} toggleSection={toggleSection}>
               <ActivitySection />
             </Section>
 
@@ -422,15 +465,47 @@ export const Profile = () => {
   );
 };
 
+/* ─── Accordion Section Component ─── */
+const Section = ({ id, icon: Icon, label, badge, openSection, toggleSection, children }) => {
+  const open = openSection === id;
+  return (
+    <div className={`pv-section ${open ? 'open' : ''}`}>
+      <button className="pv-section-header" onClick={() => toggleSection(id)}>
+        <span className="pv-section-icon"><Icon size={18} /></span>
+        <span className="pv-section-label">{label}</span>
+        {badge != null && badge > 0 && (
+          <span className="pv-section-badge">{badge}</span>
+        )}
+        <span className="pv-section-chevron">
+          {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </span>
+      </button>
+      {open && <div className="pv-section-body">{children}</div>}
+    </div>
+  );
+};
+
 /* ── Account Settings inner component with sub-tabs ── */
 const AccountSettings = ({
-  name, setName, email, setEmail, phone, setPhone, password, setPassword,
-  profileSuccess, profileError, profileLoading, handleSaveProfile,
-  address, setAddress, addrSuccess, addrLoading, handleSaveAddress,
+  name, setName, email, setEmail, phone, setPhone, countryCode, setCountryCode,
+  password, setPassword, profileSuccess, profileError, profileLoading, handleSaveProfile,
+  address, setAddress, city, setCity, stateName, setStateName, country, setCountry,
+  pincode, setPincode, addrSuccess, addrLoading, handleSaveAddress,
 }) => {
   const [sub, setSub] = useState('edit-profile');
+  const isProfileIncomplete = !phone || !address || !city || !stateName || !country || !pincode;
+
   return (
     <div>
+      {isProfileIncomplete && (
+        <div className="pv-toast info" style={{ marginBottom: 16, borderLeft: '4px solid var(--color-primary)' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <AlertTriangle size={18} style={{ color: 'var(--color-primary)' }} />
+            <strong className="body-md">Complete your profile details (Phone, Address, City, State/Region, Country, Pincode) to enable faster one-click checkout.</strong>
+          </div>
+        </div>
+      )}
+
       <div className="pv-subtab-bar">
         <button className={`pv-subtab-btn ${sub === 'edit-profile' ? 'active' : ''}`} onClick={() => setSub('edit-profile')}>
           <Edit3 size={13} /> Edit Profile
@@ -447,7 +522,16 @@ const AccountSettings = ({
           <form onSubmit={handleSaveProfile} className="pv-form">
             <Input label="Full Name" type="text" value={name} onChange={(e) => setName(e.target.value)} required />
             <Input label="Email Address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <Input label="Phone Number" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            
+            <div style={{ display: 'flex', gap: 12 }}>
+              <div style={{ flex: 2 }}>
+                <Input label="Phone Number" type="tel" placeholder="e.g. 9876543210" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <Input label="Phone Country" type="text" placeholder="e.g. India" value={countryCode} onChange={(e) => setCountryCode(e.target.value)} />
+              </div>
+            </div>
+
             <Input label="New Password (leave blank to keep current)" type="password" placeholder="New password" value={password} onChange={(e) => setPassword(e.target.value)} />
             <Button type="submit" variant="primary" disabled={profileLoading}>
               {profileLoading ? 'Saving...' : 'Save Changes'}
@@ -461,15 +545,27 @@ const AccountSettings = ({
           {addrSuccess && <div className="pv-toast success">{addrSuccess}</div>}
           <form onSubmit={handleSaveAddress} className="pv-form">
             <div className="input-container">
-              <label className="input-label label-md">Delivery Address</label>
+              <label className="input-label label-md">Street Address</label>
               <textarea
                 className="input-field pv-textarea"
-                rows={4}
-                placeholder="Enter your full delivery address"
+                rows={2}
+                placeholder="Enter street name, building number, and area"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
+                required
               />
             </div>
+            
+            <div style={{ display: 'flex', gap: 12 }}>
+              <Input label="City" type="text" placeholder="e.g. Mumbai" value={city} onChange={(e) => setCity(e.target.value)} required />
+              <Input label="State / Region" type="text" placeholder="e.g. Maharashtra" value={stateName} onChange={(e) => setStateName(e.target.value)} required />
+            </div>
+
+            <div style={{ display: 'flex', gap: 12 }}>
+              <Input label="Country" type="text" placeholder="e.g. India" value={country} onChange={(e) => setCountry(e.target.value)} required />
+              <Input label="Pincode" type="text" placeholder="e.g. 400001" value={pincode} onChange={(e) => setPincode(e.target.value)} required />
+            </div>
+
             <Button type="submit" variant="primary" disabled={addrLoading}>
               {addrLoading ? 'Saving...' : 'Save Address'}
             </Button>

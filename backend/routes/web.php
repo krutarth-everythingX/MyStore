@@ -1,67 +1,101 @@
 <?php
 
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\CouponController;
-use App\Http\Controllers\OrderController;
-use App\Http\Controllers\PageController;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\ReviewController;
-use App\Http\Controllers\SellerDashboardController;
-use App\Http\Controllers\WarehouseController;
-use App\Http\Controllers\WishlistController;
+use App\Http\Controllers\AuthController\LoginWeb;
+use App\Http\Controllers\AuthController\LogoutWeb;
+use App\Http\Controllers\AuthController\RegisterWeb;
+use App\Http\Controllers\AuthController\ResendVerification;
+use App\Http\Controllers\AuthController\UpdateProfile;
+use App\Http\Controllers\AuthController\VerifyEmail;
+use App\Http\Controllers\CouponController\ValidateCoupon;
+use App\Http\Controllers\OrderController\Cancel;
+use App\Http\Controllers\OrderController\Checkout as OrderCheckout;
+use App\Http\Controllers\OrderController\Invoice;
+use App\Http\Controllers\OrderController\ReturnOrder;
+use App\Http\Controllers\OrderController\Ship;
+use App\Http\Controllers\OrderController\ShippingRates;
+use App\Http\Controllers\PageController\BuyerOrders;
+use App\Http\Controllers\PageController\Cart;
+use App\Http\Controllers\PageController\Categories;
+use App\Http\Controllers\PageController\Checkout;
+use App\Http\Controllers\PageController\Home;
+use App\Http\Controllers\PageController\Login;
+use App\Http\Controllers\PageController\Product;
+use App\Http\Controllers\PageController\Notifications;
+use App\Http\Controllers\PageController\Profile;
+use App\Http\Controllers\PageController\Register;
+use App\Http\Controllers\PageController\SellerInventory;
+use App\Http\Controllers\PageController\SellerOrders;
+use App\Http\Controllers\PageController\SellerOverview;
+use App\Http\Controllers\PageController\SellerProducts;
+use App\Http\Controllers\PageController\SellerProfile;
+use App\Http\Controllers\ProductController\Destroy;
+use App\Http\Controllers\ProductController\Index;
+use App\Http\Controllers\ProductController\Show;
+use App\Http\Controllers\ProductController\Store;
+use App\Http\Controllers\ProductController\Update;
+use App\Http\Controllers\RecentlyViewedController\Track as RecentlyViewedTrack;
+use App\Http\Controllers\ReviewController\Store as ReviewStore;
+use App\Http\Controllers\SellerDashboardController\ExportInventory;
+use App\Http\Controllers\SellerDashboardController\ExportOrders;
+use App\Http\Controllers\SellerDashboardController\UpdateOrderStatus;
+use App\Http\Controllers\WarehouseController\Index as WarehouseIndex;
+use App\Http\Controllers\WarehouseController\Store as WarehouseStore;
+use App\Http\Controllers\WarehouseController\GetCarriers as WarehouseGetCarriers;
+use App\Http\Controllers\WishlistController\Toggle as WishlistToggle;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [PageController::class, 'home']);
-Route::get('/categories', [PageController::class, 'categories']);
-Route::get('/cart', [PageController::class, 'cart']);
-Route::get('/products/{id}', [PageController::class, 'product'])->whereNumber('id');
+Route::get('/', Home::class);
+Route::get('/categories', Categories::class);
+Route::get('/cart', Cart::class);
+Route::get('/products/{id}', Product::class)->whereNumber('id');
 
 Route::middleware('guest')->group(function () {
-    Route::get('/login', [PageController::class, 'login']);
-    Route::post('/login', [AuthController::class, 'loginWeb']);
-    Route::get('/register', [PageController::class, 'register']);
-    Route::post('/register', [AuthController::class, 'registerWeb']);
+    Route::get('/login', Login::class);
+    Route::post('/login', LoginWeb::class);
+    Route::get('/register', Register::class);
+    Route::post('/register', RegisterWeb::class);
 });
 
-Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products', Index::class);
 
 Route::middleware('auth')->group(function () {
-    Route::post('/logout', [AuthController::class, 'logoutWeb']);
-    Route::get('/checkout', [PageController::class, 'checkout']);
-    Route::get('/orders', [PageController::class, 'buyerOrders']);
-    Route::get('/profile', [PageController::class, 'profile']);
+    Route::post('/logout', LogoutWeb::class);
+    Route::get('/checkout', Checkout::class);
+    Route::get('/orders', BuyerOrders::class)->name('orders');
+    Route::get('/profile', Profile::class);
+    Route::get('/notifications', Notifications::class);
 
-    Route::put('/profile', [AuthController::class, 'updateProfile']);
-    Route::post('/verify-email', [AuthController::class, 'verifyEmail']);
-    Route::post('/resend-verification', [AuthController::class, 'resendVerification']);
+    Route::put('/profile', UpdateProfile::class);
+    Route::post('/verify-email', VerifyEmail::class);
+    Route::post('/resend-verification', ResendVerification::class);
 
-    Route::post('/wishlist/{productId}', [WishlistController::class, 'toggle']);
-    Route::post('/products/{id}/reviews', [ReviewController::class, 'store']);
-    Route::post('/coupons/validate', [CouponController::class, 'validateCoupon']);
-    Route::post('/shipping/rates', [OrderController::class, 'shippingRates']);
-    Route::post('/checkout', [OrderController::class, 'checkout']);
-    Route::post('/orders/{id}/cancel', [OrderController::class, 'cancel']);
-    Route::post('/orders/{id}/return', [OrderController::class, 'returnOrder']);
-    Route::post('/orders/{id}/ship', [OrderController::class, 'ship']);
-    Route::get('/orders/{id}/invoice', [OrderController::class, 'invoice']);
-    Route::post('/recently-viewed/{productId}', [\App\Http\Controllers\RecentlyViewedController::class, 'track']);
+    Route::post('/wishlist/{productId}', WishlistToggle::class);
+    Route::post('/products/{id}/reviews', ReviewStore::class);
+    Route::post('/coupons/validate', ValidateCoupon::class);
+    Route::post('/shipping/rates', ShippingRates::class);
+    Route::post('/checkout', OrderCheckout::class);
+    Route::post('/orders/{id}/cancel', Cancel::class);
+    Route::post('/orders/{id}/return', ReturnOrder::class);
+    Route::post('/orders/{id}/ship', Ship::class);
+    Route::get('/orders/{id}/invoice', Invoice::class);
+    Route::post('/recently-viewed/{productId}', RecentlyViewedTrack::class);
 
-    Route::get('/seller', [PageController::class, 'sellerOverview']);
-    Route::get('/seller/products', [PageController::class, 'sellerProducts']);
-    Route::get('/seller/inventory', [PageController::class, 'sellerInventory']);
-    Route::get('/seller/orders', [PageController::class, 'sellerOrders']);
-    Route::get('/seller/profile', [PageController::class, 'sellerProfile']);
+    Route::get('/seller', SellerOverview::class);
+    Route::get('/seller/products', SellerProducts::class);
+    Route::get('/seller/inventory', SellerInventory::class);
+    Route::get('/seller/orders', SellerOrders::class);
+    Route::get('/seller/profile', SellerProfile::class);
 
-    Route::get('/products/{id}/data', [ProductController::class, 'show'])->whereNumber('id');
-    Route::post('/products', [ProductController::class, 'store']);
-    Route::put('/products/{id}', [ProductController::class, 'update'])->whereNumber('id');
-    Route::delete('/products/{id}', [ProductController::class, 'destroy'])->whereNumber('id');
+    Route::get('/products/{id}/data', Show::class)->whereNumber('id');
+    Route::post('/products', Store::class);
+    Route::put('/products/{id}', Update::class)->whereNumber('id');
+    Route::delete('/products/{id}', Destroy::class)->whereNumber('id');
 
-    Route::get('/warehouses', [WarehouseController::class, 'index']);
-    Route::post('/warehouses', [WarehouseController::class, 'store']);
-    Route::get('/shipping-carriers', [WarehouseController::class, 'getCarriers']);
+    Route::get('/warehouses', WarehouseIndex::class);
+    Route::post('/warehouses', WarehouseStore::class);
+    Route::get('/shipping-carriers', WarehouseGetCarriers::class);
 
-    Route::put('/seller/orders/{id}', [SellerDashboardController::class, 'updateOrderStatus']);
-    Route::get('/seller/export/orders', [SellerDashboardController::class, 'exportOrders']);
-    Route::get('/seller/export/inventory', [SellerDashboardController::class, 'exportInventory']);
+    Route::put('/seller/orders/{id}', UpdateOrderStatus::class);
+    Route::get('/seller/export/orders', ExportOrders::class);
+    Route::get('/seller/export/inventory', ExportInventory::class);
 });

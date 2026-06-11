@@ -41,7 +41,7 @@ export const SellerProfile = () => {
       setShiprocketEmail(user.shiprocket_email || '');
       setShiprocketPassword(user.shiprocket_password || '');
     }
-  }, [user]);
+  }, [user?.id]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

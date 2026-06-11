@@ -1,15 +1,16 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
 import { useCart } from '../context/CartContext';
-import { Button } from './Button';
-import { ShoppingCart } from 'lucide-react';
+import { ArrowUpRight, ShoppingCart } from 'lucide-react';
 import './ProductCard.css';
 
 export const ProductCard = ({ product }) => {
   const { addToCart } = useCart();
   const isSale = product.sale_price !== null && product.sale_price !== undefined;
-  const price = isSale ? product.sale_price : product.regular_price;
   const outOfStock = product.manage_stock && product.stock_quantity <= 0;
+  const price = parseFloat(product.sale_price ?? product.regular_price ?? 0);
+  const regularPrice = parseFloat(product.regular_price ?? 0);
+  const savings = isSale && regularPrice > price ? Math.round(((regularPrice - price) / regularPrice) * 100) : 0;
 
   const handleAddToCart = (e) => {
     e.preventDefault();
@@ -18,48 +19,59 @@ export const ProductCard = ({ product }) => {
   };
 
   return (
-    <Link href={`/products/${product.id}`} className="product-card-container shadow-sm">
+    <Link href={`/products/${product.id}`} className="product-card-container">
       <div className="product-card-image-box">
-        {/* Placeholder image that looks clean and modern */}
-        <div className="product-card-img-placeholder flex-center">
-          <span className="product-card-img-letter headline-md">{product.name.charAt(0)}</span>
+        <div className="product-card-image-glow" />
+        <div className="product-card-img-placeholder">
+          <span className="product-card-img-letter">{product.name.charAt(0)}</span>
         </div>
-        {isSale && <span className="product-card-sale-badge label-md">Sale</span>}
+
+        <div className="product-card-topline">
+          <span className="product-card-brand">{product.brand?.name || 'MyStore'}</span>
+          <span className="product-card-link-icon">
+            <ArrowUpRight size={16} />
+          </span>
+        </div>
+
+        {isSale && <span className="product-card-sale-badge">{savings > 0 ? `${savings}% Off` : 'Sale'}</span>}
+
+        {!outOfStock && (
+          <div className="product-card-quick-add">
+            <button
+              className="product-card-quick-add-btn"
+              onClick={handleAddToCart}
+              title="Add to cart"
+            >
+              <ShoppingCart size={13} />
+              Quick Add
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="product-card-info">
-        <span className="product-card-brand label-md">{product.brand?.name || 'Store Item'}</span>
-        <h4 className="product-card-title body-lg">{product.name}</h4>
-        
-        <div className="product-card-meta">
-          <span className="product-card-seller body-md">Seller: {product.user?.brand_name || product.user?.name}</span>
-        </div>
+        <h4 className="product-card-title">{product.name}</h4>
+        <p className="product-card-seller">by {product.user?.brand_name || product.user?.name}</p>
 
         <div className="product-card-price-row">
           <div className="product-card-pricing">
             {isSale ? (
               <>
-                <span className="product-card-regular-price-old">${parseFloat(product.regular_price).toFixed(2)}</span>
-                <span className="product-card-sale-price">${parseFloat(product.sale_price).toFixed(2)}</span>
+                <span className="product-card-regular-price-old">${regularPrice.toFixed(2)}</span>
+                <span className="product-card-sale-price">${price.toFixed(2)}</span>
               </>
             ) : (
-              <span className="product-card-price">${parseFloat(product.regular_price).toFixed(2)}</span>
+              <span className="product-card-price">${price.toFixed(2)}</span>
             )}
           </div>
 
-          {outOfStock ? (
-            <span className="product-card-stock-badge out-of-stock label-md">Out of Stock</span>
-          ) : (
-            <Button
-              variant="secondary"
-              className="product-card-cart-btn"
-              onClick={handleAddToCart}
-            >
-              <ShoppingCart size={14} />
-            </Button>
+          {outOfStock && (
+            <span className="product-card-stock-badge out-of-stock">Sold Out</span>
           )}
         </div>
       </div>
     </Link>
   );
 };
+
+export default ProductCard;

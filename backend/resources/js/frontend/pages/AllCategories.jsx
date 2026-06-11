@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import { Navbar } from '../components/Navbar';
+import { Footer } from '../components/Footer';
+import { Breadcrumbs } from '../components/Breadcrumbs';
 import {
   Car, Baby, Laptop, BookOpen, Gamepad2, Shirt, ShoppingBag,
   Home as HomeIcon, Wrench, Watch, Smile, Briefcase, Music,
@@ -105,9 +107,7 @@ export const AllCategories = () => {
         {/* Page Header */}
         <div className="ac-page-header">
           <div className="ac-header-inner container">
-            <button className="ac-back-btn" onClick={() => router.visit('/')}>
-              ← Back to Home
-            </button>
+            <Breadcrumbs items={[{ label: 'All Categories' }]} />
             <h1 className="ac-page-title">All Categories</h1>
             <p className="ac-page-subtitle body-md">
               Browse all product categories available on MyStore.
@@ -181,6 +181,7 @@ export const AllCategories = () => {
           )}
         </div>
       </main>
+      <Footer />
     </div>
   );
 };

@@ -5,6 +5,7 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Footer } from '../components/Footer';
 import { CheckCircle2, Package, Truck, Calendar, CreditCard, ArrowRight } from 'lucide-react';
+import { Breadcrumbs } from '../components/Breadcrumbs';
 import './BuyerOrders.css';
 
 export const BuyerOrders = () => {
@@ -87,6 +88,7 @@ export const BuyerOrders = () => {
       <Navbar />
 
       <main className="container orders-main animate-fade-in">
+        <Breadcrumbs items={[{ label: 'My Orders' }]} />
         {isSuccessCheckout && (
           <div className="orders-success-banner flex-center card">
             <CheckCircle2 size={36} className="success-banner-icon" />

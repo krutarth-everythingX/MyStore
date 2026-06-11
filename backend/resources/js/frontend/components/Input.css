@@ -1,45 +1,74 @@
 .input-container {
   display: flex;
   flex-direction: column;
-  margin-bottom: var(--spacing-md);
   width: 100%;
+  gap: 8px;
+  margin-bottom: var(--space-6);
 }
 
 .input-label {
-  color: var(--color-on-surface-variant);
-  margin-bottom: var(--spacing-xs);
-  display: block;
+  color: var(--color-outline);
+  font-size: 11px;
+  letter-spacing: 0.1em;
 }
 
 .input-field {
   width: 100%;
-  font-family: var(--font-family);
-  font-size: 14px;
-  padding: 10px 14px;
-  background-color: var(--color-surface-container-lowest);
-  border: 1px solid var(--color-outline);
-  border-radius: 0px !important; /* Force 90-degree corners */
+  border: none;
+  border-bottom: 1px solid rgba(26, 28, 26, 0.18);
+  background: transparent;
+  padding: 10px 0 12px;
   color: var(--color-on-surface);
-  transition: all 0.3s ease;
-  outline: none;
+  font-size: 15px;
+  line-height: 1.6;
+  transition:
+    border-color var(--duration-base) var(--ease-luxury),
+    color var(--duration-base) var(--ease-luxury);
+}
+
+.input-field::placeholder {
+  color: rgba(68, 71, 72, 0.7);
 }
 
 .input-field:focus {
+  border-bottom-color: var(--color-primary);
+}
+
+.input-container:focus-within .input-label {
+  color: var(--color-primary);
+}
+
+.input-field-error,
+.input-field.error {
+  border-bottom-color: var(--color-error);
+}
+
+.input-field.box-style {
+  border: 1px solid rgba(26, 28, 26, 0.12);
+  border-radius: var(--radius-default);
+  background: rgba(255, 255, 255, 0.68);
+  padding: 14px 16px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.input-field.box-style:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-fixed);
 }
 
-.input-field-error {
-  border-color: var(--color-error);
+select.input-field {
+  cursor: pointer;
+  padding-right: 26px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23747878' stroke-width='1.8'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 2px center;
 }
 
-.input-field-error:focus {
-  border-color: var(--color-error);
-  box-shadow: 0 0 0 2px var(--color-error-container);
+.input-field[rows],
+textarea.input-field {
+  min-height: 96px;
 }
 
 .input-error-msg {
   color: var(--color-error);
-  font-size: 12px;
-  margin-top: 4px;
+  font-size: 13px;
 }

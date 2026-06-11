@@ -1,81 +1,98 @@
 <?php
 
+use App\Http\Controllers\AuthController\Login;
+use App\Http\Controllers\AuthController\Logout;
+use App\Http\Controllers\AuthController\Profile;
+use App\Http\Controllers\AuthController\Register;
+use App\Http\Controllers\AuthController\ResendVerification;
+use App\Http\Controllers\AuthController\UpdateProfile;
+use App\Http\Controllers\AuthController\VerifyEmail;
+use App\Http\Controllers\BrandController\Index as BrandIndex;
+use App\Http\Controllers\BrandController\Store as BrandStore;
+use App\Http\Controllers\CategoryController\Index as CategoryIndex;
+use App\Http\Controllers\CategoryController\Store as CategoryStore;
+use App\Http\Controllers\CouponController\ValidateCoupon;
+use App\Http\Controllers\MediaController\Upload as MediaUpload;
+use App\Http\Controllers\OrderController\Cancel;
+use App\Http\Controllers\OrderController\Checkout;
+use App\Http\Controllers\OrderController\Index as OrderIndex;
+use App\Http\Controllers\OrderController\Invoice;
+use App\Http\Controllers\OrderController\ReturnOrder;
+use App\Http\Controllers\OrderController\Ship;
+use App\Http\Controllers\OrderController\ShippingRates;
+use App\Http\Controllers\OrderController\StripeWebhook;
+use App\Http\Controllers\OrderController\SyncOrders;
+use App\Http\Controllers\ProductController\Destroy;
+use App\Http\Controllers\ProductController\Index;
+use App\Http\Controllers\ProductController\Show;
+use App\Http\Controllers\ProductController\Store;
+use App\Http\Controllers\ProductController\Update;
+use App\Http\Controllers\RecentlyViewedController\Index as RecentlyViewedIndex;
+use App\Http\Controllers\RecentlyViewedController\Track as RecentlyViewedTrack;
+use App\Http\Controllers\ReviewController\Index as ReviewIndex;
+use App\Http\Controllers\ReviewController\Store as ReviewStore;
+use App\Http\Controllers\SellerDashboardController\ExportInventory;
+use App\Http\Controllers\SellerDashboardController\ExportOrders;
+use App\Http\Controllers\SellerDashboardController\Orders;
+use App\Http\Controllers\SellerDashboardController\Stats;
+use App\Http\Controllers\SellerDashboardController\UpdateOrderStatus;
+use App\Http\Controllers\WarehouseController\Index as WarehouseIndex;
+use App\Http\Controllers\WarehouseController\Store as WarehouseStore;
+use App\Http\Controllers\WarehouseController\GetCarriers as WarehouseGetCarriers;
+use App\Http\Controllers\WishlistController\Index as WishlistIndex;
+use App\Http\Controllers\WishlistController\Toggle as WishlistToggle;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\BrandController;
-use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\WarehouseController;
-use App\Http\Controllers\OrderController;
-use App\Http\Controllers\SellerDashboardController;
-use App\Http\Controllers\WishlistController;
-use App\Http\Controllers\RecentlyViewedController;
-use App\Http\Controllers\ReviewController;
-use App\Http\Controllers\CouponController;
-use App\Http\Controllers\MediaController;
 
-// Public Auth Endpoints
-Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:auth');
-Route::post('/webhooks/stripe', [OrderController::class, 'stripeWebhook']);
+Route::post('/register', Register::class)->middleware('throttle:auth');
+Route::post('/login', Login::class)->middleware('throttle:auth');
+Route::post('/webhooks/stripe', StripeWebhook::class);
 
-// Public Storefront Catalog
-Route::get('/products', [ProductController::class, 'index'])->middleware('throttle:search');
-Route::get('/products/{id}', [ProductController::class, 'show']);
-Route::get('/products/{id}/reviews', [ReviewController::class, 'index']);
-Route::get('/categories', [CategoryController::class, 'index']);
-Route::get('/brands', [BrandController::class, 'index']);
+Route::get('/products', Index::class)->middleware('throttle:search');
+Route::get('/products/{id}', Show::class);
+Route::get('/products/{id}/reviews', ReviewIndex::class);
+Route::get('/categories', CategoryIndex::class);
+Route::get('/brands', BrandIndex::class);
 
-// Protected Endpoints (Sellers & Buyers)
 Route::middleware('auth:sanctum')->group(function () {
-    // User Profile Settings
-    Route::get('/profile', [AuthController::class, 'profile']);
-    Route::put('/profile', [AuthController::class, 'updateProfile']);
-    Route::post('/logout', [AuthController::class, 'logout']);
-    Route::post('/verify-email', [AuthController::class, 'verifyEmail']);
-    Route::post('/resend-verification', [AuthController::class, 'resendVerification']);
+    Route::get('/profile', Profile::class);
+    Route::put('/profile', UpdateProfile::class);
+    Route::post('/logout', Logout::class);
+    Route::post('/verify-email', VerifyEmail::class);
+    Route::post('/resend-verification', ResendVerification::class);
 
-    // Seller Product Management
-    Route::post('/products', [ProductController::class, 'store']);
-    Route::put('/products/{id}', [ProductController::class, 'update']);
-    Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+    Route::post('/products', Store::class);
+    Route::put('/products/{id}', Update::class);
+    Route::delete('/products/{id}', Destroy::class);
 
-    // Seller Brand & Category creation
-    Route::post('/brands', [BrandController::class, 'store']);
-    Route::post('/categories', [CategoryController::class, 'store']);
+    Route::post('/brands', BrandStore::class);
+    Route::post('/categories', CategoryStore::class);
 
-    // Seller Warehouses & Stock Allocation
-    Route::get('/warehouses', [WarehouseController::class, 'index']);
-    Route::post('/warehouses', [WarehouseController::class, 'store']);
-    Route::get('/shipping-carriers', [WarehouseController::class, 'getCarriers']);
+    Route::get('/warehouses', WarehouseIndex::class);
+    Route::post('/warehouses', WarehouseStore::class);
+    Route::get('/shipping-carriers', WarehouseGetCarriers::class);
 
-    // Buyer Checkout and Order History
-    Route::post('/checkout', [OrderController::class, 'checkout']);
-    Route::post('/shipping/rates', [OrderController::class, 'shippingRates']);
-    Route::get('/orders', [OrderController::class, 'index']);
-    Route::post('/orders/{id}/cancel', [OrderController::class, 'cancel']);
-    Route::post('/orders/{id}/return', [OrderController::class, 'returnOrder']);
-    Route::post('/orders/{id}/ship', [OrderController::class, 'ship']);
-    Route::get('/orders/{id}/invoice', [OrderController::class, 'invoice']);
-    Route::post('/orders/sync', [OrderController::class, 'syncOrders']);
+    Route::post('/checkout', Checkout::class);
+    Route::post('/shipping/rates', ShippingRates::class);
+    Route::get('/orders', OrderIndex::class);
+    Route::post('/orders/{id}/cancel', Cancel::class);
+    Route::post('/orders/{id}/return', ReturnOrder::class);
+    Route::post('/orders/{id}/ship', Ship::class);
+    Route::get('/orders/{id}/invoice', Invoice::class);
+    Route::post('/orders/sync', SyncOrders::class);
 
-    // Seller Dashboard & Sales Fulfillment
-    Route::get('/seller/stats', [SellerDashboardController::class, 'stats']);
-    Route::get('/seller/orders', [SellerDashboardController::class, 'orders']);
-    Route::put('/seller/orders/{id}', [SellerDashboardController::class, 'updateOrderStatus']);
-    Route::get('/seller/export/orders', [SellerDashboardController::class, 'exportOrders']);
-    Route::get('/seller/export/inventory', [SellerDashboardController::class, 'exportInventory']);
+    Route::get('/seller/stats', Stats::class);
+    Route::get('/seller/orders', Orders::class);
+    Route::put('/seller/orders/{id}', UpdateOrderStatus::class);
+    Route::get('/seller/export/orders', ExportOrders::class);
+    Route::get('/seller/export/inventory', ExportInventory::class);
 
-    // Wishlist (Buyer)
-    Route::get('/wishlist', [WishlistController::class, 'index']);
-    Route::post('/wishlist/{productId}', [WishlistController::class, 'toggle']);
+    Route::get('/wishlist', WishlistIndex::class);
+    Route::post('/wishlist/{productId}', WishlistToggle::class);
 
-    // Recently Viewed (Buyer)
-    Route::get('/recently-viewed', [RecentlyViewedController::class, 'index']);
-    Route::post('/recently-viewed/{productId}', [RecentlyViewedController::class, 'track']);
+    Route::get('/recently-viewed', RecentlyViewedIndex::class);
+    Route::post('/recently-viewed/{productId}', RecentlyViewedTrack::class);
 
-    // Reviews & Coupons (Buyer)
-    Route::post('/products/{id}/reviews', [ReviewController::class, 'store']);
-    Route::post('/coupons/validate', [CouponController::class, 'validateCoupon']);
-    Route::post('/media/upload', [MediaController::class, 'upload']);
+    Route::post('/products/{id}/reviews', ReviewStore::class);
+    Route::post('/coupons/validate', ValidateCoupon::class);
+    Route::post('/media/upload', MediaUpload::class);
 });

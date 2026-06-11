@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, ShoppingBag, Warehouse, ShoppingCart, LogOut, ArrowLeft, Settings } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Warehouse, ShoppingCart, LogOut, Settings } from 'lucide-react';
 import './Sidebar.css';
 
 const normalizePath = (path) => {
@@ -82,10 +82,7 @@ export const Sidebar = () => {
 
         <div className="sidebar-divider"></div>
 
-        <Link href="/" className="sidebar-item label-md">
-          <ArrowLeft size={18} className="sidebar-icon" />
-          Back to Store
-        </Link>
+
 
         <button onClick={handleLogout} className="sidebar-item sidebar-btn label-md">
           <LogOut size={18} className="sidebar-icon" />

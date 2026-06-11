@@ -23,11 +23,15 @@ class OrderShippedNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
+        $trackingNumber = $this->order->tracking_number ?: 'Awaiting tracking ID';
         return (new MailMessage())
             ->subject("Your MyStore Order #{$this->order->id} Has Shipped!")
-            ->greeting("Hi {$notifiable->name},")
-            ->line("Great news! Your order #{$this->order->id} has been shipped via {$this->order->shipping_carrier}.")
-            ->line('Tracking Number: ' . ($this->order->tracking_number ?: 'Awaiting tracking ID'))
-            ->line('You can track the package status directly inside your MyStore orders history portal.');
+            ->markdown('emails.order_shipped', [
+                'name' => $notifiable->name,
+                'orderId' => $this->order->id,
+                'carrier' => $this->order->shipping_carrier,
+                'trackingNumber' => $trackingNumber,
+                'url' => url('/orders'),
+            ]);
     }
 }

@@ -25,11 +25,13 @@ class OrderPlacedNotification extends Notification
     {
         return (new MailMessage())
             ->subject("Your MyStore Order Confirmation - Order #{$this->order->id}")
-            ->greeting("Hi {$notifiable->name},")
-            ->line("Thank you for shopping at MyStore! Your order #{$this->order->id} has been received.")
-            ->line("Total Amount: \${$this->order->total_amount}")
-            ->line("Payment Method: {$this->order->payment_method}")
-            ->line("Shipping Address: {$this->order->shipping_address}")
-            ->line('We will notify you once your package is shipped.');
+            ->markdown('emails.order_placed', [
+                'name' => $notifiable->name,
+                'orderId' => $this->order->id,
+                'total' => $this->order->total_amount,
+                'paymentMethod' => ucfirst($this->order->payment_method),
+                'address' => $this->order->shipping_address,
+                'url' => url('/orders'),
+            ]);
     }
 }

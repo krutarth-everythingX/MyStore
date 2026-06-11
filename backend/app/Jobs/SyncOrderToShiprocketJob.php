@@ -5,7 +5,9 @@ namespace App\Jobs;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\User;
-use App\Services\ShiprocketService;
+use App\Services\ShiprocketService\Authenticate as ShiprocketAuthenticate;
+use App\Services\ShiprocketService\CreateAdhocOrder as ShiprocketCreateAdhocOrder;
+use App\Services\ShiprocketService\GenerateLabel as ShiprocketGenerateLabel;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -20,8 +22,11 @@ class SyncOrderToShiprocketJob implements ShouldQueue
     ) {
     }
 
-    public function handle(ShiprocketService $shiprocket): void
-    {
+    public function handle(
+        ShiprocketAuthenticate $shiprocketAuthenticate,
+        ShiprocketCreateAdhocOrder $shiprocketCreateAdhocOrder,
+        ShiprocketGenerateLabel $shiprocketGenerateLabel,
+    ): void {
         $order = Order::with(['buyer', 'items.product'])->find($this->orderId);
 
         if (!$order || $order->status !== OrderStatus::Processing || $order->tracking_number) {
@@ -72,16 +77,16 @@ class SyncOrderToShiprocketJob implements ShouldQueue
         ];
 
         $token = ($seller->shiprocket_email && $seller->shiprocket_password)
-            ? $shiprocket->authenticate($seller->shiprocket_email, $seller->shiprocket_password)
+            ? $shiprocketAuthenticate->handle($seller->shiprocket_email, $seller->shiprocket_password)
             : null;
 
-        $syncRes = $shiprocket->createAdhocOrder($payload, $token);
+        $syncRes = $shiprocketCreateAdhocOrder->handle($payload, $token);
 
         if (!$syncRes['success']) {
             return;
         }
 
-        $labelUrl = $shiprocket->generateLabel((string) $syncRes['shipment_id'], $token);
+        $labelUrl = $shiprocketGenerateLabel->handle((string) $syncRes['shipment_id'], $token);
 
         $order->update([
             'status' => OrderStatus::Shipped,

@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { useToast } from './ToastContext';
 import { router, usePage } from '@inertiajs/react';
 
 const WishlistContext = createContext();
@@ -7,6 +8,7 @@ const WishlistContext = createContext();
 export const WishlistProvider = ({ children }) => {
   const { user } = useAuth();
   const { props } = usePage();
+  const { showToast } = useToast();
   const [wishlist, setWishlist] = useState(props.wishlist || []);
   const [loadingIds, setLoadingIds] = useState([]); // product ids currently toggling
 
@@ -21,8 +23,12 @@ export const WishlistProvider = ({ children }) => {
 
   const toggleWishlist = useCallback(
     async (product) => {
-      if (!user) return;
+      if (!user) {
+        showToast('Please login to add items to wishlist.', 'warning');
+        return;
+      }
       const productId = product.id;
+      const wishlisted = isWishlisted(productId);
 
       setLoadingIds((prev) => [...prev, productId]);
       await new Promise((resolve) => {
@@ -33,6 +39,11 @@ export const WishlistProvider = ({ children }) => {
           onSuccess: (page) => {
             const nextWishlist = page.props.wishlist || [];
             setWishlist(nextWishlist);
+            if (wishlisted) {
+              showToast(`Removed ${product.name} from wishlist.`, 'info');
+            } else {
+              showToast(`Added ${product.name} to wishlist.`, 'success');
+            }
           },
           onFinish: () => {
             setLoadingIds((prev) => prev.filter((id) => id !== productId));
@@ -41,7 +52,7 @@ export const WishlistProvider = ({ children }) => {
         });
       });
     },
-    [user]
+    [user, isWishlisted, showToast]
   );
 
   return (

@@ -1,8 +1,10 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import { useToast } from './ToastContext';
 
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
+  const { showToast } = useToast();
   const [cart, setCart] = useState(() => {
     const localData = localStorage.getItem('mystore_cart');
     return localData ? JSON.parse(localData) : [];
@@ -24,6 +26,7 @@ export const CartProvider = ({ children }) => {
       }
       return [...prevCart, { product, quantity }];
     });
+    showToast(`Added ${product.name} to cart.`, 'success');
   };
 
   const updateQuantity = (productId, quantity) => {
@@ -39,7 +42,13 @@ export const CartProvider = ({ children }) => {
   };
 
   const removeFromCart = (productId) => {
-    setCart(prevCart => prevCart.filter(item => item.product.id !== productId));
+    setCart(prevCart => {
+      const item = prevCart.find(i => i.product.id === productId);
+      if (item) {
+        showToast(`Removed ${item.product.name} from cart.`, 'info');
+      }
+      return prevCart.filter(i => i.product.id !== productId);
+    });
   };
 
   const [coupon, setCoupon] = useState(null);

@@ -3,6 +3,7 @@ import { router, usePage } from '@inertiajs/react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
+import { ToastProvider } from './context/ToastContext';
 
 // Pages
 import Home from './pages/Home';
@@ -14,6 +15,7 @@ import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AllCategories from './pages/AllCategories';
+import Notifications from './pages/Notifications';
 
 // Seller Dashboard Pages
 import SellerOverview from './pages/SellerOverview';
@@ -118,6 +120,14 @@ const RouteView = () => {
     );
   }
 
+  if (pathname === '/notifications') {
+    return (
+      <ProtectedRoute>
+        <Notifications />
+      </ProtectedRoute>
+    );
+  }
+
   if (pathname === '/seller') {
     return (
       <ProtectedRoute allowedRole="seller">
@@ -167,13 +177,15 @@ const RouteView = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <WishlistProvider>
-          <RouteView />
-        </WishlistProvider>
-      </CartProvider>
-    </AuthProvider>
+    <ToastProvider>
+      <AuthProvider>
+        <CartProvider>
+          <WishlistProvider>
+            <RouteView />
+          </WishlistProvider>
+        </CartProvider>
+      </AuthProvider>
+    </ToastProvider>
   );
 }
 
