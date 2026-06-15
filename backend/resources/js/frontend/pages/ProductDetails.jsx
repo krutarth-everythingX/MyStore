@@ -4,66 +4,44 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
 import { Navbar } from '../components/Navbar';
-import { Card } from '../components/Card';
-import { Button } from '../components/Button';
 import { Footer } from '../components/Footer';
 import { ShoppingCart, ArrowLeft, Archive, CheckCircle, AlertTriangle, Truck, Heart, Star } from 'lucide-react';
-import { Breadcrumbs } from '../components/Breadcrumbs';
-import './ProductDetails.css';
 
-const StarSelector = ({ rating, onChange, readonly = false }) => {
-  return (
-    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Star
-          key={star}
-          size={readonly ? 16 : 24}
-          style={{ cursor: readonly ? 'default' : 'pointer' }}
-          fill={star <= rating ? 'var(--color-primary)' : 'none'}
-          color={star <= rating ? 'var(--color-primary)' : 'var(--color-outline)'}
-          onClick={() => !readonly && onChange && onChange(star)}
-        />
-      ))}
-    </div>
-  );
-};
+const StarSelector = ({ rating, onChange, readonly = false }) => (
+  <div className="flex items-center gap-1">
+    {[1, 2, 3, 4, 5].map((star) => (
+      <Star
+        key={star}
+        size={readonly ? 14 : 22}
+        className={`${readonly ? '' : 'cursor-pointer'} transition-colors`}
+        fill={star <= rating ? '#111' : 'none'}
+        color={star <= rating ? '#111' : '#d4d4d4'}
+        onClick={() => !readonly && onChange && onChange(star)}
+      />
+    ))}
+  </div>
+);
 
 const ProductRecommendations = ({ productId, categoryId, initialRelated = [] }) => {
   const [related, setRelated] = useState(initialRelated);
-
-  useEffect(() => {
-    setRelated(initialRelated);
-  }, [categoryId, initialRelated, productId]);
-
+  useEffect(() => { setRelated(initialRelated); }, [categoryId, initialRelated, productId]);
   if (related.length === 0) return null;
 
   return (
-    <div style={{ marginTop: 40 }}>
-      <h3 className="headline-sm" style={{ marginBottom: 16 }}>Related Products</h3>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-        gap: 20
-      }}>
+    <div className="mt-14">
+      <h3 className="font-serif text-xl font-semibold text-neutral-900 mb-6">Related Products</h3>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
         {related.map((p) => {
           const price = p.sale_price ?? p.regular_price;
           return (
-            <Link href={`/products/${p.id}`} key={p.id} className="card" style={{ textDecoration: 'none', padding: 16, display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <div style={{
-                height: 140,
-                backgroundColor: 'var(--color-surface-container-high)',
-                borderRadius: 8,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: 12
-              }}>
-                <span className="display-text" style={{ fontSize: 36 }}>{p.name.charAt(0)}</span>
+            <Link href={`/products/${p.id}`} key={p.id} className="group bg-white rounded-2xl border border-neutral-100 p-4 flex flex-col gap-3 hover:shadow-md transition-shadow">
+              <div className="aspect-square rounded-xl bg-neutral-100 flex items-center justify-center font-serif italic text-3xl text-neutral-400">
+                {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-cover rounded-xl" /> : p.name.charAt(0)}
               </div>
-              <strong className="body-md" style={{ color: 'var(--color-on-surface)' }}>{p.name}</strong>
-              <span className="label-lg" style={{ color: 'var(--color-primary)', fontWeight: 600, marginTop: 8 }}>
-                ${parseFloat(price).toFixed(2)}
-              </span>
+              <div>
+                <p className="font-medium text-sm text-neutral-900 group-hover:text-neutral-600 transition-colors line-clamp-2">{p.name}</p>
+                <span className="text-xs font-semibold text-neutral-900 mt-1 block">${parseFloat(price).toFixed(2)}</span>
+              </div>
             </Link>
           );
         })}
@@ -108,29 +86,17 @@ export const ProductDetails = () => {
 
   useEffect(() => {
     if (props.productDetails && token && user?.role === 'buyer') {
-      // Use native fetch (not Inertia router) — this endpoint returns plain JSON,
-      // not an Inertia response, so router.post() would throw a mismatch error.
       fetch(`/recently-viewed/${props.productDetails.id}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-        },
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '' },
         credentials: 'same-origin',
-      }).catch(() => {
-        // Silently ignore tracking errors — non-critical
-      });
+      }).catch(() => {});
     }
   }, [props.productDetails?.id, token, user?.id]);
 
   useEffect(() => {
     if (product && product.type === 'variable' && product.variations) {
-      const matched = product.variations.find((v) => {
-        return Object.entries(selectedOptions).every(([name, val]) => {
-          return v.attributes && v.attributes[name] === val;
-        });
-      });
+      const matched = product.variations.find((v) => Object.entries(selectedOptions).every(([name, val]) => v.attributes && v.attributes[name] === val));
       setSelectedVariation(matched || null);
     } else {
       setSelectedVariation(null);
@@ -138,29 +104,18 @@ export const ProductDetails = () => {
   }, [selectedOptions, product]);
 
   const handleAddToCart = () => {
-    if (product.type === 'variable' && !selectedVariation) {
-      alert('Please select product options first.');
-      return;
-    }
-
+    if (product.type === 'variable' && !selectedVariation) { alert('Please select product options first.'); return; }
     const targetProduct = selectedVariation || product;
-    if (targetProduct) {
-      addToCart(targetProduct, qty);
-      router.visit('/cart');
-    }
+    if (targetProduct) { addToCart(targetProduct, qty); router.visit('/cart'); }
   };
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     setReviewError('');
     setSubmittingReview(true);
-
     try {
       await new Promise((resolve, reject) => {
-        router.post(`/products/${id}/reviews`, {
-          rating: userRating,
-          comment: userComment
-        }, {
+        router.post(`/products/${id}/reviews`, { rating: userRating, comment: userComment }, {
           preserveScroll: true,
           preserveState: false,
           only: ['productDetails', 'productReviews', 'averageRating', 'totalReviews', 'relatedProducts', 'flash'],
@@ -169,7 +124,6 @@ export const ProductDetails = () => {
           onFinish: () => setSubmittingReview(false),
         });
       });
-
       setReviewSuccess(true);
       setUserComment('');
       setUserRating(5);
@@ -180,10 +134,10 @@ export const ProductDetails = () => {
 
   if (loading) {
     return (
-      <div className="buyer-layout">
+      <div className="min-h-screen flex flex-col bg-neutral-50">
         <Navbar />
-        <div className="container details-loading flex-center">
-          <span className="body-lg">Loading product details...</span>
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-neutral-500 text-sm">Loading product details...</p>
         </div>
       </div>
     );
@@ -191,112 +145,119 @@ export const ProductDetails = () => {
 
   if (error || !product) {
     return (
-      <div className="buyer-layout">
+      <div className="min-h-screen flex flex-col bg-neutral-50">
         <Navbar />
-        <div className="container details-error flex-center">
-          <Card title="Error" className="details-error-card">
-            <p className="body-lg">{error || 'Failed to load product.'}</p>
-            <Link href="/">
-              <Button variant="primary" style={{ marginTop: 16 }}>
-                <ArrowLeft size={16} style={{ marginRight: 6 }} />
-                Back to Shop
-              </Button>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="bg-white rounded-3xl border border-neutral-100 p-10 max-w-md text-center flex flex-col gap-4">
+            <p className="text-neutral-600">{error || 'Failed to load product.'}</p>
+            <Link href="/" className="px-6 py-2.5 bg-neutral-950 text-white text-xs font-bold uppercase tracking-widest rounded-full hover:bg-neutral-900 transition-colors inline-flex items-center gap-2 self-center">
+              <ArrowLeft size={14} /> Back to Categories
             </Link>
-          </Card>
+          </div>
         </div>
       </div>
     );
   }
 
   const currentProduct = selectedVariation || product;
-  const hasOptionsSelected = product.type === 'variable'
-    ? Object.keys(selectedOptions).length === (product.attributes?.length || 0) && Object.values(selectedOptions).every(Boolean)
-    : true;
+  const hasOptionsSelected = product.type === 'variable' ? Object.keys(selectedOptions).length === (product.attributes?.length || 0) && Object.values(selectedOptions).every(Boolean) : true;
   const isCombinationValid = product.type === 'variable' ? !!selectedVariation : true;
-
   const isSale = currentProduct.sale_price !== null && currentProduct.sale_price !== undefined;
   const outOfStock = currentProduct.manage_stock && currentProduct.stock_quantity <= 0;
 
-  // Build breadcrumb items
   const buildBreadcrumbs = () => {
     const crumbs = [];
-    if (product.categories && product.categories.length > 0) {
-      const cat = product.categories[0];
-      crumbs.push({ label: cat.name, url: `/?category=${cat.id}` });
-    }
+    if (product.categories?.length > 0) crumbs.push({ label: product.categories[0].name, url: `/categories/${product.categories[0].id}` });
     crumbs.push({ label: product.name });
     return crumbs;
   };
 
   return (
-    <div className="buyer-layout">
+    <div className="min-h-screen flex flex-col bg-neutral-50">
       <Navbar />
 
-      <main className="container details-main animate-fade-in">
-        <Breadcrumbs items={buildBreadcrumbs()} />
-        <Link href="/" className="details-back-link label-md">
-          <ArrowLeft size={16} style={{ marginRight: 6 }} />
-          Back to Catalog
+      <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10 flex-1 min-h-[100dvh]">
+        {/* Breadcrumb */}
+        <nav className="hidden flex-wrap items-center gap-1.5 mb-6 text-[11px] font-bold uppercase tracking-wider text-neutral-400 sm:flex">
+          <Link href="/" className="hover:text-neutral-800 transition-colors">Home</Link>
+          {buildBreadcrumbs().map((crumb, i) => (
+            <React.Fragment key={i}>
+              <span>/</span>
+              {crumb.url ? (
+                <Link href={crumb.url} className="hover:text-neutral-800 transition-colors truncate max-w-[120px]">{crumb.label}</Link>
+              ) : (
+                <span className="text-neutral-700 truncate max-w-[160px]">{crumb.label}</span>
+              )}
+            </React.Fragment>
+          ))}
+        </nav>
+
+        <Link href="/" className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-neutral-400 hover:text-neutral-900 mb-8 transition-colors px-3 py-1.5 rounded-full hover:bg-neutral-100">
+          <ArrowLeft size={13} /> Back to Catalog
         </Link>
 
-        <div className="details-grid">
-          <div className="details-image-container">
-            <div className="details-image-placeholder flex-center">
-              <span className="details-image-letter display-text">{product.name.charAt(0)}</span>
+        {/* Main product grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-start">
+          {/* Image */}
+          <div className="lg:sticky lg:top-28">
+            <div className="relative aspect-[4/5] rounded-3xl overflow-hidden bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center shadow-lg border border-neutral-100">
+              {product.image_url ? (
+                <img src={product.image_url} alt={product.name} className="h-full w-full object-cover" />
+              ) : (
+                <span className="font-serif italic text-neutral-300 text-9xl select-none">{product.name.charAt(0)}</span>
+              )}
+              {isSale && (
+                <span className="absolute top-4 left-4 bg-red-50/90 backdrop-blur-sm text-red-700 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full border border-red-100">Sale</span>
+              )}
             </div>
-            {isSale && <span className="details-sale-tag label-md">Sale</span>}
           </div>
 
-          <div className="details-info-container">
-            <span className="details-brand label-md">{product.brand?.name || 'Store Item'}</span>
-            <h1 className="details-title headline-lg" style={{ marginBottom: 4 }}>{product.name}</h1>
+          {/* Info */}
+          <div className="flex flex-col gap-5">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-amber-700 mb-2 block">{product.brand?.name || 'Store Item'}</span>
+              <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-neutral-900 leading-tight mb-3">{product.name}</h1>
 
-            <div className="flex-center" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0 16px 0' }}>
-              <StarSelector rating={Math.round(averageRating)} readonly={true} />
-              <span className="body-md" style={{ color: 'var(--color-outline)', fontWeight: 600 }}>
-                {averageRating > 0 ? `${averageRating.toFixed(1)} / 5.0` : 'No reviews'} ({totalReviews} reviews)
-              </span>
+              {/* Stars */}
+              <div className="flex items-center gap-3 mb-4">
+                <StarSelector rating={Math.round(averageRating)} readonly />
+                <span className="text-xs text-neutral-500">
+                  {averageRating > 0 ? `${averageRating.toFixed(1)} / 5.0` : 'No reviews'} ({totalReviews} reviews)
+                </span>
+              </div>
+
+              <p className="text-xs text-neutral-500">Seller: <span className="font-semibold text-neutral-800">{product.user?.brand_name || product.user?.name}</span></p>
             </div>
 
-            <div className="details-seller-row">
-              <span className="body-md" style={{ color: 'var(--color-outline)' }}>
-                Seller: <strong style={{ color: 'var(--color-on-surface)' }}>{product.user?.brand_name || product.user?.name}</strong>
-              </span>
-            </div>
-
-            <div className="details-pricing">
+            {/* Price */}
+            <div className="flex items-baseline gap-3 flex-wrap">
               {isSale ? (
                 <>
-                  <span className="details-price-old">${parseFloat(currentProduct.regular_price).toFixed(2)}</span>
-                  <span className="details-price-sale">${parseFloat(currentProduct.sale_price).toFixed(2)}</span>
+                  <span className="text-neutral-400 text-base line-through">${parseFloat(currentProduct.regular_price).toFixed(2)}</span>
+                  <span className="font-serif text-4xl font-semibold text-red-600">${parseFloat(currentProduct.sale_price).toFixed(2)}</span>
                 </>
               ) : (
-                <span className="details-price">${parseFloat(currentProduct.regular_price).toFixed(2)}</span>
+                <span className="font-serif text-4xl font-semibold text-neutral-900">${parseFloat(currentProduct.regular_price).toFixed(2)}</span>
               )}
             </div>
 
-            <p className="details-short-desc body-md">{product.short_description || 'No short description provided.'}</p>
+            <p className="text-sm text-neutral-600 leading-relaxed">{product.short_description || 'No short description provided.'}</p>
 
+            {/* Variation selectors */}
             {product.type === 'variable' && product.attributes && (
-              <div className="variation-selectors" style={{ margin: '16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <span className="label-md" style={{ fontWeight: 600 }}>Select Product Options:</span>
-                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              <div className="flex flex-col gap-4 py-4 border-t border-neutral-100">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-700">Select Product Options:</span>
+                <div className="flex gap-4 flex-wrap">
                   {product.attributes.map((attr) => (
-                    <div key={attr.name} className="input-container" style={{ flex: '1 1 150px' }}>
-                      <label className="input-label label-sm" style={{ marginBottom: 4 }}>{attr.name}</label>
+                    <div key={attr.name} className="flex flex-col gap-1.5 flex-1 min-w-[140px]">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">{attr.name}</label>
                       <select
-                        className="input-field"
+                        className="border border-neutral-200 rounded-xl py-2.5 px-3 text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-white"
                         value={selectedOptions[attr.name] || ''}
-                        onChange={(e) => setSelectedOptions((prev) => ({
-                          ...prev,
-                          [attr.name]: e.target.value
-                        }))}
-                        style={{ padding: '8px 12px' }}
+                        onChange={(e) => setSelectedOptions((prev) => ({ ...prev, [attr.name]: e.target.value }))}
                       >
                         <option value="">-- Choose {attr.name} --</option>
-                        {attr.options?.map((opt) => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
+                        {attr.options?.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
                       </select>
                     </div>
                   ))}
@@ -305,229 +266,181 @@ export const ProductDetails = () => {
             )}
 
             {product.type === 'variable' && hasOptionsSelected && !selectedVariation && (
-              <div className="stock-alert alert-out body-md" style={{ margin: '12px 0' }}>
-                <AlertTriangle size={18} style={{ marginRight: 8 }} />
-                This combination is currently unavailable.
+              <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-100 px-4 py-3 rounded-xl">
+                <AlertTriangle size={16} /> This combination is currently unavailable.
               </div>
             )}
 
-            <div className="details-divider"></div>
+            <div className="h-px bg-neutral-100" />
 
-            <div className="details-stock-status">
+            {/* Stock status */}
+            <div>
               {outOfStock || (product.type === 'variable' && hasOptionsSelected && !isCombinationValid) ? (
-                <div className="stock-alert alert-out body-md">
-                  <AlertTriangle size={18} style={{ marginRight: 8 }} />
-                  {product.type === 'variable' && hasOptionsSelected && !isCombinationValid ? 'Combination Unavailable' : 'Currently Out of Stock'}
+                <div className="inline-flex items-center gap-2 text-xs font-semibold text-red-700 bg-red-50 border border-red-100 px-4 py-2.5 rounded-full">
+                  <AlertTriangle size={14} /> {product.type === 'variable' && hasOptionsSelected && !isCombinationValid ? 'Combination Unavailable' : 'Currently Out of Stock'}
                 </div>
               ) : (
-                <div className="stock-alert alert-in body-md">
-                  <CheckCircle size={18} style={{ marginRight: 8 }} />
-                  In Stock {currentProduct.manage_stock && `(${currentProduct.stock_quantity} units available)`}
+                <div className="inline-flex items-center gap-2 text-xs font-semibold text-green-700 bg-green-50 border border-green-100 px-4 py-2.5 rounded-full">
+                  <CheckCircle size={14} /> In Stock {currentProduct.manage_stock && `(${currentProduct.stock_quantity} units available)`}
                 </div>
               )}
             </div>
 
+            {/* Add to cart actions */}
             {!outOfStock && (product.type !== 'variable' || isCombinationValid) && (
-              <div className="details-actions-row">
-                <div className="qty-selector">
-                  <button
-                    className="qty-btn"
-                    onClick={() => setQty((q) => Math.max(1, q - 1))}
-                    disabled={qty <= 1}
-                  >
-                    -
-                  </button>
+              <div className="flex w-full items-center gap-2 sm:gap-3">
+                {/* Qty selector */}
+                <div className="inline-flex shrink-0 items-center overflow-hidden rounded-full border border-neutral-200 bg-white">
+                  <button className="px-3 py-3 text-base text-neutral-600 transition-colors hover:bg-neutral-100 disabled:opacity-30 sm:px-4" onClick={() => setQty((q) => Math.max(1, q - 1))} disabled={qty <= 1}>−</button>
                   <input
                     type="number"
-                    className="qty-input"
+                    className="w-10 border-x border-neutral-200 bg-transparent py-3 text-center text-sm font-semibold text-neutral-900 focus:outline-none sm:w-14"
                     value={qty}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value);
-                      if (val > 0) {
-                        setQty(currentProduct.manage_stock ? Math.min(currentProduct.stock_quantity, val) : val);
-                      }
-                    }}
+                    onChange={(e) => { const v = parseInt(e.target.value); if (v > 0) setQty(currentProduct.manage_stock ? Math.min(currentProduct.stock_quantity, v) : v); }}
                     min="1"
                     max={currentProduct.manage_stock ? currentProduct.stock_quantity : undefined}
                   />
-                  <button
-                    className="qty-btn"
-                    onClick={() => setQty((q) => currentProduct.manage_stock ? Math.min(currentProduct.stock_quantity, q + 1) : q + 1)}
-                    disabled={currentProduct.manage_stock && qty >= currentProduct.stock_quantity}
-                  >
-                    +
-                  </button>
+                  <button className="px-3 py-3 text-base text-neutral-600 transition-colors hover:bg-neutral-100 disabled:opacity-30 sm:px-4" onClick={() => setQty((q) => currentProduct.manage_stock ? Math.min(currentProduct.stock_quantity, q + 1) : q + 1)} disabled={currentProduct.manage_stock && qty >= currentProduct.stock_quantity}>+</button>
                 </div>
 
-                <Button
-                  variant="primary"
-                  className="details-cart-btn"
+                <button
+                  className="flex min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-neutral-950 px-3 py-3.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-[180px] sm:px-5 sm:text-xs sm:tracking-widest"
                   onClick={handleAddToCart}
                   disabled={product.type === 'variable' && (!hasOptionsSelected || !isCombinationValid)}
                 >
-                  <ShoppingCart size={18} style={{ marginRight: 8 }} />
-                  Add to Shopping Cart
-                </Button>
+                  <ShoppingCart size={16} />
+                  Add to Cart
+                </button>
 
                 {token && user?.role === 'buyer' && (
                   <button
-                    className={`details-wishlist-btn ${isWishlisted(product.id) ? 'wishlisted' : ''}`}
+                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border transition-all hover:-translate-y-0.5 ${isWishlisted(product.id) ? 'border-red-200 bg-red-50 text-red-500' : 'border-neutral-200 bg-white text-neutral-500 hover:text-red-500 hover:border-red-200 hover:bg-red-50'}`}
                     onClick={() => toggleWishlist(product)}
                     disabled={loadingIds.includes(product.id)}
                     title={isWishlisted(product.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
                   >
-                    <Heart size={20} fill={isWishlisted(product.id) ? 'currentColor' : 'none'} />
+                    <Heart size={18} fill={isWishlisted(product.id) ? 'currentColor' : 'none'} />
                   </button>
                 )}
               </div>
             )}
 
-            <div className="details-divider"></div>
+            <div className="h-px bg-neutral-100" />
 
-            <div className="details-specs">
-              <h5 className="specs-title label-md">Specifications</h5>
-              <div className="specs-grid">
-                <span className="spec-label body-md">SKU:</span>
-                <span className="spec-value body-md">{currentProduct.sku || 'N/A'}</span>
-
-                <span className="spec-label body-md">Weight:</span>
-                <span className="spec-value body-md">{currentProduct.weight ? `${currentProduct.weight} kg` : 'N/A'}</span>
-
-                <span className="spec-label body-md">Dimensions:</span>
-                <span className="spec-value body-md">
-                  {currentProduct.length && currentProduct.width && currentProduct.height
-                    ? `${currentProduct.length} x ${currentProduct.width} x ${currentProduct.height} cm`
-                    : 'N/A'}
-                </span>
-
-                <span className="spec-label body-md">Tax Status:</span>
-                <span className="spec-value body-md" style={{ textTransform: 'capitalize' }}>{product.tax_status}</span>
+            {/* Specifications */}
+            <div>
+              <h5 className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-4">Specifications</h5>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[
+                  ['SKU', currentProduct.sku || 'N/A'],
+                  ['Weight', currentProduct.weight ? `${currentProduct.weight} kg` : 'N/A'],
+                  ['Dimensions', currentProduct.length && currentProduct.width && currentProduct.height ? `${currentProduct.length} × ${currentProduct.width} × ${currentProduct.height} cm` : 'N/A'],
+                  ['Tax Status', product.tax_status],
+                ].map(([label, val]) => (
+                  <div key={label} className="bg-neutral-100/60 rounded-xl px-4 py-3 border border-neutral-100">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 block mb-0.5">{label}</span>
+                    <span className="text-sm font-medium text-neutral-800 capitalize">{val}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
 
-        <div className="details-extended-section grid-12" style={{ marginTop: 40, gap: 24 }}>
-          <div className="col-span-8" style={{ gridColumn: 'span 8' }}>
-            <Card title="Product Description">
-              <p className="body-md" style={{ whiteSpace: 'pre-line', lineHeight: '24px' }}>
-                {product.description || 'No detailed description available.'}
-              </p>
-            </Card>
+        {/* Extended: Description + Warehouse */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 mt-12">
+          <div className="bg-white rounded-3xl border border-neutral-100 shadow-xs p-6 sm:p-8">
+            <h3 className="font-semibold text-base text-neutral-900 mb-5 pb-4 border-b border-neutral-100">Product Description</h3>
+            <p className="text-sm text-neutral-600 leading-relaxed whitespace-pre-line">{product.description || 'No detailed description available.'}</p>
           </div>
 
-          <div className="col-span-4" style={{ gridColumn: 'span 4' }}>
-            <Card title="Warehouse Inventory Location">
-              {product.warehouses && product.warehouses.length > 0 ? (
-                <div className="warehouse-list">
-                  {product.warehouses.map((wh) => (
-                    <div key={wh.id} className="wh-item" style={{ borderBottom: '1px solid var(--color-outline-variant)', paddingBottom: 12, marginBottom: 12 }}>
-                      <div className="wh-meta">
-                        <span className="wh-name title-lg">{wh.name}</span>
-                        <span className="wh-code label-md" style={{ marginLeft: 8, color: 'var(--color-primary)' }}>{wh.code}</span>
-                      </div>
-                      <div className="wh-details body-md" style={{ marginTop: 6, display: 'flex', alignItems: 'center' }}>
-                        <Archive size={14} style={{ marginRight: 6, color: 'var(--color-outline)' }} />
-                        <span>Shelf Location: <strong>{wh.pivot?.bin_location || 'Unassigned'}</strong></span>
-                      </div>
-                      <div className="wh-details body-md" style={{ display: 'flex', alignItems: 'center' }}>
-                        <Truck size={14} style={{ marginRight: 6, color: 'var(--color-outline)' }} />
-                        <span>Shipping Courier: <strong>{wh.default_carrier || 'Blue Dart'}</strong></span>
-                      </div>
-                      <div className="wh-qty label-md" style={{ marginTop: 6, fontWeight: 700 }}>
-                        Stock Qty: {wh.pivot?.quantity || 0}
-                      </div>
+          <div className="bg-white rounded-3xl border border-neutral-100 shadow-xs p-6 sm:p-8">
+            <h3 className="font-semibold text-base text-neutral-900 mb-5 pb-4 border-b border-neutral-100">Warehouse Inventory</h3>
+            {product.warehouses?.length > 0 ? (
+              <div className="flex flex-col gap-4">
+                {product.warehouses.map((wh) => (
+                  <div key={wh.id} className="bg-neutral-50 rounded-2xl p-4 border border-neutral-100">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="font-semibold text-sm text-neutral-900">{wh.name}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider bg-neutral-950 text-white px-2 py-0.5 rounded-full">{wh.code}</span>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="body-md" style={{ color: 'var(--color-outline)' }}>
-                  This product is currently not allocated to any warehouse inventory.
-                </p>
-              )}
-            </Card>
+                    <div className="flex items-center gap-2 text-xs text-neutral-500 mb-1"><Archive size={12} /> Shelf: <strong>{wh.pivot?.bin_location || 'Unassigned'}</strong></div>
+                    <div className="flex items-center gap-2 text-xs text-neutral-500 mb-1"><Truck size={12} /> Carrier: <strong>{wh.default_carrier || 'Blue Dart'}</strong></div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-700 mt-2">Stock Qty: {wh.pivot?.quantity || 0}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-neutral-400">This product is not allocated to any warehouse inventory.</p>
+            )}
           </div>
         </div>
 
-        <div className="details-extended-section grid-12" style={{ marginTop: 30, gap: 24 }}>
-          <div className="col-span-8" style={{ gridColumn: 'span 8' }}>
-            <Card title={`Verified Customer Reviews (${totalReviews})`}>
-              {reviews.length === 0 ? (
-                <p className="body-md" style={{ color: 'var(--color-outline)' }}>
-                  No customer reviews have been submitted for this product yet.
-                </p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                  {reviews.map((rev) => (
-                    <div key={rev.id} style={{ borderBottom: '1px dashed var(--color-outline-variant)', paddingBottom: 16 }}>
-                      <div className="flex-between" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <strong className="body-md" style={{ color: 'var(--color-on-surface)' }}>{rev.user?.name}</strong>
-                        <span className="body-sm" style={{ color: 'var(--color-outline)' }}>
-                          {new Date(rev.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div style={{ marginBottom: 8 }}>
-                        <StarSelector rating={rev.rating} readonly={true} />
-                      </div>
-                      <p className="body-md" style={{ color: 'var(--color-on-surface-variant)', fontStyle: 'italic' }}>
-                        "{rev.comment}"
-                      </p>
+        {/* Reviews section */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 mt-6">
+          <div className="bg-white rounded-3xl border border-neutral-100 shadow-xs p-6 sm:p-8">
+            <h3 className="font-semibold text-base text-neutral-900 mb-5 pb-4 border-b border-neutral-100">Verified Customer Reviews ({totalReviews})</h3>
+            {reviews.length === 0 ? (
+              <p className="text-sm text-neutral-400">No customer reviews have been submitted for this product yet.</p>
+            ) : (
+              <div className="flex flex-col divide-y divide-neutral-100">
+                {reviews.map((rev) => (
+                  <div key={rev.id} className="py-5">
+                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                      <strong className="text-sm text-neutral-900">{rev.user?.name}</strong>
+                      <span className="text-xs text-neutral-400">{new Date(rev.created_at).toLocaleDateString()}</span>
                     </div>
-                  ))}
-                </div>
-              )}
-            </Card>
+                    <div className="mb-2"><StarSelector rating={rev.rating} readonly /></div>
+                    <p className="text-sm text-neutral-600 italic">"{rev.comment}"</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="col-span-4" style={{ gridColumn: 'span 4' }}>
+          <div className="bg-white rounded-3xl border border-neutral-100 shadow-xs p-6 sm:p-8">
+            <h3 className="font-semibold text-base text-neutral-900 mb-5 pb-4 border-b border-neutral-100">
+              {token && user?.role === 'buyer' ? 'Submit a Review' : 'Feedback & Review'}
+            </h3>
             {token && user?.role === 'buyer' ? (
-              <Card title="Submit a Review">
-                {reviewSuccess ? (
-                  <div className="stock-alert alert-in body-md animate-fade-in" style={{ backgroundColor: 'rgba(46, 125, 50, 0.1)', border: '1px solid #2e7d32', padding: 12, borderRadius: 8 }}>
-                    <CheckCircle size={18} style={{ marginRight: 8, color: '#2e7d32', verticalAlign: 'middle' }} />
-                    Review submitted successfully!
+              reviewSuccess ? (
+                <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-100 px-4 py-3 rounded-xl">
+                  <CheckCircle size={16} /> Review submitted successfully!
+                </div>
+              ) : (
+                <form onSubmit={handleReviewSubmit} className="flex flex-col gap-5">
+                  {reviewError && (
+                    <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 border border-red-100 px-4 py-3 rounded-xl">
+                      <AlertTriangle size={14} /> {reviewError}
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Your Rating</label>
+                    <StarSelector rating={userRating} onChange={setUserRating} />
                   </div>
-                ) : (
-                  <form onSubmit={handleReviewSubmit}>
-                    {reviewError && (
-                      <div className="checkout-alert checkout-alert-error body-sm" style={{ padding: '8px 12px', marginBottom: 12, borderRadius: 6 }}>
-                        <AlertTriangle size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-                        {reviewError}
-                      </div>
-                    )}
-                    <div className="input-container" style={{ marginBottom: 16 }}>
-                      <label className="input-label label-md" style={{ marginBottom: 8 }}>Your Rating</label>
-                      <StarSelector rating={userRating} onChange={setUserRating} />
-                    </div>
-                    <div className="input-container" style={{ marginBottom: 16 }}>
-                      <label className="input-label label-md">Review Comments</label>
-                      <textarea
-                        className="input-field"
-                        rows="3"
-                        placeholder="Write your review comments here..."
-                        value={userComment}
-                        onChange={(e) => setUserComment(e.target.value)}
-                        required
-                        style={{ resize: 'vertical' }}
-                      />
-                    </div>
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      style={{ width: '100%', padding: '10px !important' }}
-                      disabled={submittingReview}
-                    >
-                      {submittingReview ? 'Submitting...' : 'Submit Review'}
-                    </Button>
-                  </form>
-                )}
-              </Card>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Review Comments</label>
+                    <textarea
+                      className="border border-neutral-200 rounded-2xl py-3 px-4 text-sm text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900 transition-all resize-y min-h-[100px]"
+                      placeholder="Write your review comments here..."
+                      value={userComment}
+                      onChange={(e) => setUserComment(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={submittingReview}
+                    className="w-full py-3 bg-neutral-950 text-white text-xs font-bold uppercase tracking-widest rounded-full hover:bg-neutral-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {submittingReview ? 'Submitting...' : 'Submit Review'}
+                  </button>
+                </form>
+              )
             ) : (
-              <Card title="Feedback & Review">
-                <p className="body-md" style={{ color: 'var(--color-outline)', lineHeight: '20px' }}>
-                  Please <Link href="/login" style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>log in</Link> as a buyer to leave verified customer feedback on items you purchase.
-                </p>
-              </Card>
+              <p className="text-sm text-neutral-500 leading-relaxed">
+                Please <Link href="/login" className="text-neutral-900 underline underline-offset-2">log in</Link> as a buyer to leave verified customer feedback on items you purchase.
+              </p>
             )}
           </div>
         </div>
@@ -536,6 +449,7 @@ export const ProductDetails = () => {
           <ProductRecommendations productId={product.id} categoryId={product.categories?.[0]?.id} initialRelated={props.relatedProducts || []} />
         )}
       </main>
+
       <Footer />
     </div>
   );

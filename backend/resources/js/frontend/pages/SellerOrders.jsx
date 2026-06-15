@@ -94,7 +94,7 @@ export const SellerOrders = () => {
         <div className="seller-dashboard-container container">
           {/* Header */}
           <div className="seller-page-header">
-            <div>
+            <div className="seller-page-title-block">
               <h2 className="headline-lg">Customer Sales Orders</h2>
               <p className="body-md" style={{ color: 'var(--color-outline)' }}>
                 Fulfill purchase orders containing your items, assign logistics couriers, and track deliveries.
@@ -107,10 +107,10 @@ export const SellerOrders = () => {
               <span className="body-lg">Loading sales orders...</span>
             </div>
           ) : orders.length === 0 ? (
-            <div className="orders-empty card flex-center" style={{ height: 350 }}>
-              <ShoppingBag size={48} style={{ color: 'var(--color-outline)', marginBottom: 16 }} />
+            <div className="orders-empty card flex-center">
+              <ShoppingBag size={48} className="orders-empty-icon" />
               <h3 className="title-lg">No orders found</h3>
-              <p className="body-md" style={{ color: 'var(--color-outline)', marginTop: 8 }}>
+              <p className="body-md">
                 No customer has purchased your products yet. Keep your store inventory stocked!
               </p>
             </div>
@@ -202,7 +202,7 @@ export const SellerOrders = () => {
                       {fState.successMsg && <div className="fulfill-alert fulfill-alert-success body-md">{fState.successMsg}</div>}
                       {fState.errorMsg && <div className="fulfill-alert fulfill-alert-error body-md">{fState.errorMsg}</div>}
 
-                      <div className="shiprocket-actions-row" style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+                      <div className="shiprocket-actions-row">
                         {order.status.toLowerCase() === 'processing' && !order.tracking_number && (
                           <Button
                             variant="primary"
@@ -218,20 +218,7 @@ export const SellerOrders = () => {
                             href={order.shipping_label_url} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="btn btn-outline"
-                            style={{ 
-                              display: 'inline-flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'center', 
-                              padding: '8px 16px', 
-                              border: '1px solid var(--color-outline)', 
-                              borderRadius: '8px', 
-                              textDecoration: 'none', 
-                              color: 'var(--color-on-surface)',
-                              fontSize: '14px',
-                              fontWeight: 500,
-                              backgroundColor: 'transparent'
-                            }}
+                            className="btn btn-outline seller-order-link-btn"
                           >
                             Download Shipping Label
                           </a>
@@ -249,12 +236,12 @@ export const SellerOrders = () => {
 
                       {/* If order is already shipped/has tracking, lock the logistics fields and only allow status update */}
                       {order.tracking_number ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '16px', border: '1px solid var(--color-outline-variant)', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.02)', marginTop: 16 }}>
+                        <div className="tracking-status-panel">
                           <div className="body-md">
                             <strong>Fulfillment Carrier:</strong> {order.shipping_carrier || 'N/A'}<br/>
                             <strong>Tracking Number:</strong> {order.tracking_number}
                           </div>
-                          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                          <div className="tracking-status-controls">
                             <div className="input-container" style={{ marginBottom: 0, flex: 1, minWidth: 200 }}>
                               <label className="input-label label-md">Update Status</label>
                               <select
@@ -272,7 +259,7 @@ export const SellerOrders = () => {
                             <Button
                               variant="primary"
                               onClick={() => handleUpdateFulfillment(order.id)}
-                              style={{ height: '42px' }}
+                              className="tracking-status-btn"
                             >
                               Update Status
                             </Button>

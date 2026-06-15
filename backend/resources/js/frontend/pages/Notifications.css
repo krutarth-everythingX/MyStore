@@ -1,4 +1,6 @@
-/* Notifications — Modern Chic Editorial */
+/* ============================================================
+   NOTIFICATIONS PAGE
+   ============================================================ */
 
 .notifications-main {
   padding-top: var(--spacing-lg);
@@ -6,100 +8,172 @@
   min-height: calc(100vh - 72px);
 }
 
+/* ─── Page header ────────────────────────────────────────── */
 .notifications-header-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
-  padding-bottom: var(--spacing-md);
-  border-bottom: 1px solid var(--color-outline-variant);
+  gap: var(--space-4);
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: var(--border-subtle);
 }
 
 .notifications-title-group {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: 12px;
 }
 
 .notifications-header-icon { color: var(--color-secondary); }
 
 .notifications-title {
   font-family: var(--font-serif);
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 500;
   color: var(--color-primary);
+  margin: 0;
 }
 
-/* ── Notification cards ── */
-.notifications-list { display: flex; flex-direction: column; gap: 0; }
+/* ─── Mark-read button ───────────────────────────────────── */
+.notifications-mark-read-btn {
+  background: transparent;
+  border: var(--border-soft);
+  border-radius: var(--radius-full);
+  font-family: var(--font-family);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-outline);
+  cursor: pointer;
+  padding: 8px 18px;
+  min-height: 38px;
+  transition:
+    color        var(--duration-base) var(--ease-luxury),
+    border-color var(--duration-base) var(--ease-luxury),
+    background   var(--duration-base) var(--ease-luxury),
+    transform    var(--duration-fast) var(--ease-spring);
+}
+.notifications-mark-read-btn:hover {
+  color: var(--color-primary);
+  border-color: rgba(26, 28, 26, 0.22);
+  background: rgba(26, 28, 26, 0.04);
+  transform: scale(1.02);
+}
 
+/* ─── Verify banner ──────────────────────────────────────── */
+.notifications-verify-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: 16px 22px;
+  margin-bottom: 20px;
+  background: var(--color-secondary-container);
+  border: 1px solid rgba(103, 93, 78, 0.18);
+  border-radius: var(--radius-2xl);
+  animation: slideUp var(--duration-base) var(--ease-luxury) both;
+}
+
+.notifications-verify-banner p {
+  font-family: var(--font-family);
+  font-size: 13px;
+  color: var(--color-on-secondary-container);
+  flex: 1;
+  margin: 0;
+}
+
+/* ─── Notification list ──────────────────────────────────── */
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ─── Notification card ──────────────────────────────────── */
 .notification-card {
   display: flex;
   align-items: flex-start;
-  gap: var(--spacing-md);
-  padding: var(--spacing-lg) 0;
-  border-bottom: 1px solid var(--color-outline-variant);
-  transition: background-color var(--duration-fast);
+  gap: var(--space-4);
+  padding: 16px 18px;
+  border-radius: var(--radius-2xl);
+  background: rgba(255, 255, 255, 0.60);
+  border: 1px solid transparent;
   cursor: pointer;
   position: relative;
+  transition:
+    background    var(--duration-base) var(--ease-luxury),
+    border-color  var(--duration-base) var(--ease-luxury),
+    transform     var(--duration-base) var(--ease-luxury),
+    box-shadow    var(--duration-base) var(--ease-luxury);
 }
 
-.notification-card:last-child { border-bottom: none; }
-
 .notification-card:hover {
-  background-color: var(--color-surface-container-low);
-  margin: 0 calc(-1 * var(--spacing-md));
-  padding-left: var(--spacing-md);
-  padding-right: var(--spacing-md);
-  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.90);
+  border-color: rgba(26, 28, 26, 0.08);
+  transform: translateX(4px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Unread left indicator */
+.notification-card.unread {
+  background: rgba(255, 255, 255, 0.80);
+  border-color: rgba(26, 28, 26, 0.06);
 }
 
 .notification-card.unread::before {
   content: '';
   position: absolute;
-  left: -12px;
+  left: -4px;
   top: 50%;
   transform: translateY(-50%);
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 40%;
+  min-height: 24px;
   border-radius: var(--radius-full);
-  background-color: var(--color-primary);
+  background: var(--color-primary);
 }
 
-/* Icon */
+/* ─── Icon ───────────────────────────────────────────────── */
 .notification-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: var(--radius-lg);
-  background-color: var(--color-surface-container);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-xl);
+  background: var(--color-surface-container);
   color: var(--color-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: all var(--duration-fast);
+  transition:
+    background var(--duration-base) var(--ease-luxury),
+    color      var(--duration-base) var(--ease-luxury),
+    transform  var(--duration-fast) var(--ease-spring);
 }
 
 .notification-card:hover .notification-icon {
-  background-color: var(--color-primary);
+  background: var(--color-primary);
   color: var(--color-on-primary);
+  transform: scale(1.06);
 }
 
-.notification-icon.warning { background-color: #fff3e0; color: #e65100; }
-.notification-icon.success { background-color: #e8f5e9; color: #2e7d32; }
-.notification-icon.info { background-color: #e3f2fd; color: #1565c0; }
+/* Typed icons */
+.notification-icon.warning { background: var(--color-warning-container); color: var(--color-warning); }
+.notification-icon.success { background: var(--color-success-container); color: var(--color-success); }
+.notification-icon.info    { background: rgba(227,242,253,0.9);          color: #1565c0; }
 
-/* Content */
-.notification-content { flex: 1; }
+/* ─── Content ────────────────────────────────────────────── */
+.notification-content { flex: 1; min-width: 0; }
 
 .notification-title {
   font-family: var(--font-family);
   font-size: 14px;
   font-weight: 600;
   color: var(--color-on-surface);
-  margin-bottom: 4px;
+  margin: 0 0 4px;
+  line-height: 1.4;
 }
 
 .notification-card.unread .notification-title {
@@ -107,83 +181,56 @@
   color: var(--color-primary);
 }
 
-.notification-body { font-family: var(--font-family); font-size: 13px; color: var(--color-on-surface-variant); line-height: 1.6; }
+.notification-body {
+  font-family: var(--font-family);
+  font-size: 13px;
+  color: var(--color-on-surface-variant);
+  line-height: 1.6;
+  margin: 0;
+}
 
 .notification-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   margin-top: 8px;
   font-family: var(--font-family);
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+  font-weight: 700;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--color-primary);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  transition: gap var(--duration-fast);
+  transition: gap var(--duration-base) var(--ease-luxury);
 }
+.notification-action:hover { gap: 9px; }
 
-.notification-action:hover { gap: 8px; }
-
-/* Timestamp */
+/* ─── Timestamp ──────────────────────────────────────────── */
 .notification-time {
   font-family: var(--font-family);
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--color-outline);
   white-space: nowrap;
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
-/* Mark all read button */
-.notifications-mark-read-btn {
-  background: none;
-  border: none;
-  font-family: var(--font-family);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--color-outline);
-  cursor: pointer;
-  transition: color var(--duration-fast);
-  padding: 6px 12px;
-  border: 1.5px solid var(--color-outline-variant);
-  border-radius: var(--radius-md);
-}
-
-.notifications-mark-read-btn:hover { color: var(--color-primary); border-color: var(--color-primary); }
-
-/* Empty state */
+/* ─── Empty state ────────────────────────────────────────── */
 .notifications-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 360px;
-  gap: var(--spacing-md);
+  min-height: 380px;
+  gap: var(--space-5);
   text-align: center;
   color: var(--color-outline);
+  animation: scaleIn var(--duration-slow) var(--ease-luxury) both;
 }
 
 .notifications-empty-title {
   font-family: var(--font-serif);
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 500;
   color: var(--color-primary);
+  margin: 0;
 }
-
-/* Verify banner */
-.notifications-verify-banner {
-  background-color: var(--color-secondary-container);
-  border-left: 3px solid var(--color-secondary);
-  padding: var(--spacing-md) var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  flex-wrap: wrap;
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
-}
-
-.notifications-verify-banner p { font-family: var(--font-family); font-size: 13px; color: var(--color-on-secondary-container); flex: 1; }

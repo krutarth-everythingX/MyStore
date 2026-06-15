@@ -285,6 +285,40 @@ export const SellerProducts = () => {
     router.post('/products', payload, options);
   };
 
+  const sellerLocked = user && !user.email_verified_at;
+
+  const formatMoney = (value) => {
+    const amount = Number.parseFloat(value);
+    return Number.isFinite(amount) ? `$${amount.toFixed(2)}` : '$0.00';
+  };
+
+  const renderPrice = (row) => {
+    if (row.sale_price) {
+      return (
+        <>
+          <span className="table-price-sale">{formatMoney(row.sale_price)}</span>
+          <span className="table-price-old">{formatMoney(row.regular_price)}</span>
+        </>
+      );
+    }
+
+    return <span>{formatMoney(row.regular_price)}</span>;
+  };
+
+  const getStockLabel = (row) => (
+    row.stock_quantity > 0 ? `${row.stock_quantity} available` : 'Out of Stock'
+  );
+
+  const emptyCatalogMessage = (
+    <div className="empty-catalog-message flex-center">
+      <PackageOpen size={44} className="empty-catalog-icon" />
+      <h4 className="title-lg">Your Catalog is Empty</h4>
+      <p className="body-md">
+        Start listing items by clicking the Add New Product button above.
+      </p>
+    </div>
+  );
+
   const columns = [
     {
       header: 'Product Info',
@@ -297,24 +331,13 @@ export const SellerProducts = () => {
     },
     {
       header: 'Price',
-      render: (row) => (
-        <div>
-          {row.sale_price ? (
-            <>
-              <span className="table-price-sale">${row.sale_price}</span>
-              <span className="table-price-old">${row.regular_price}</span>
-            </>
-          ) : (
-            <span>${row.regular_price}</span>
-          )}
-        </div>
-      )
+      render: (row) => <div>{renderPrice(row)}</div>
     },
     {
       header: 'Stock Status',
       render: (row) => (
         <span className={`table-stock-badge label-md ${row.stock_quantity > 0 ? 'in-stock' : 'out-of-stock'}`}>
-          {row.stock_quantity > 0 ? `${row.stock_quantity} available` : 'Out of Stock'}
+          {getStockLabel(row)}
         </span>
       )
     },
@@ -327,10 +350,10 @@ export const SellerProducts = () => {
       align: 'right',
       render: (row) => (
         <div className="table-actions flex-center" style={{ justifyContent: 'flex-end', gap: 8 }}>
-          <Button variant="secondary" className="action-icon-btn" onClick={() => handleOpenEdit(row)} disabled={user && !user.email_verified_at}>
+          <Button variant="secondary" className="action-icon-btn" onClick={() => handleOpenEdit(row)} disabled={sellerLocked}>
             <Edit size={14} />
           </Button>
-          <Button variant="ghost" className="action-icon-btn delete-btn" onClick={() => handleDelete(row.id)} disabled={user && !user.email_verified_at}>
+          <Button variant="ghost" className="action-icon-btn delete-btn" onClick={() => handleDelete(row.id)} disabled={sellerLocked}>
             <Trash size={14} />
           </Button>
         </div>
@@ -346,14 +369,14 @@ export const SellerProducts = () => {
         <div className="seller-dashboard-container container">
           {/* Header */}
           <div className="seller-page-header">
-            <div>
+            <div className="seller-page-title-block seller-products-title-block">
               <h2 className="headline-lg">Product Catalog</h2>
               <p className="body-md" style={{ color: 'var(--color-outline)' }}>
                 Create, update, and manage your inventory products.
               </p>
             </div>
             {!showForm && (
-              <Button variant="primary" onClick={handleOpenCreate} disabled={user && !user.email_verified_at}>
+              <Button variant="primary" className="seller-add-product-btn" onClick={handleOpenCreate} disabled={sellerLocked}>
                 <Plus size={16} style={{ marginRight: 6 }} />
                 Add New Product
               </Button>
@@ -438,7 +461,7 @@ export const SellerProducts = () => {
                       onChange={(e) => setSku(e.target.value)}
                     />
 
-                    <div className="form-subfields" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 12 }}>
+                    <div className="form-subfields product-dimensions-grid">
                       <Input
                         label="Weight (kg) *"
                         type="number"
@@ -775,19 +798,52 @@ export const SellerProducts = () => {
             </Card>
           ) : (
             /* Products Table */
-            <DataTable
-              columns={columns}
-              data={products}
-              emptyMessage={
-                <div className="empty-catalog-message flex-center" style={{ flexDirection: 'column' }}>
-                  <PackageOpen size={48} style={{ color: 'var(--color-outline)', marginBottom: 16 }} />
-                  <h4 className="title-lg">Your Catalog is Empty</h4>
-                  <p className="body-md" style={{ color: 'var(--color-outline)', marginTop: 8 }}>
-                    Start listing items by clicking the "Add New Product" button above.
-                  </p>
-                </div>
-              }
-            />
+            <div className="seller-products-catalog">
+              <DataTable
+                className="seller-products-table-wrap"
+                columns={columns}
+                data={products}
+                emptyMessage={emptyCatalogMessage}
+              />
+
+              <div className="seller-products-mobile-list">
+                {products.length === 0 ? (
+                  emptyCatalogMessage
+                ) : (
+                  products.map((product) => (
+                    <article key={product.id} className="seller-product-card">
+                      <div className="seller-product-card-top">
+                        <div className="seller-product-card-title">
+                          <h3>{product.name}</h3>
+                          <span>SKU: {product.sku || 'N/A'}</span>
+                        </div>
+                        <span className={`table-stock-badge label-md ${product.stock_quantity > 0 ? 'in-stock' : 'out-of-stock'}`}>
+                          {getStockLabel(product)}
+                        </span>
+                      </div>
+
+                      <div className="seller-product-card-meta">
+                        <div>
+                          <span className="seller-product-meta-label">Price</span>
+                          <strong>{renderPrice(product)}</strong>
+                        </div>
+                      </div>
+
+                      <div className="seller-product-card-actions">
+                        <Button variant="secondary" size="sm" onClick={() => handleOpenEdit(product)} disabled={sellerLocked}>
+                          <Edit size={14} />
+                          Edit
+                        </Button>
+                        <Button variant="outline" size="sm" className="seller-product-delete-action" onClick={() => handleDelete(product.id)} disabled={sellerLocked}>
+                          <Trash size={14} />
+                          Delete
+                        </Button>
+                      </div>
+                    </article>
+                  ))
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>

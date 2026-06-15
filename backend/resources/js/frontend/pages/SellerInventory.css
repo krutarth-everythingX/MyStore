@@ -1,70 +1,293 @@
+/* ============================================================
+   SELLER INVENTORY PAGE
+   ============================================================ */
+
+/* ─── Warehouse grid ─────────────────────────────────────── */
 .warehouses-grid-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 310px), 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+  min-width: 0;
 }
 
 .warehouse-card {
   margin-bottom: 0 !important;
+  transition:
+    transform  var(--duration-base) var(--ease-spring),
+    box-shadow var(--duration-base) var(--ease-luxury);
 }
 
+.warehouse-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ─── Warehouse info blocks ──────────────────────────────── */
 .wh-info-blocks {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--space-4);
 }
 
 .wh-info-block {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
+  align-items: flex-start;
+  gap: var(--space-3);
   color: var(--color-on-surface-variant);
+  font-size: 14px;
+  min-width: 0;
+}
+
+.wh-info-block span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .wh-info-icon {
-  color: var(--color-outline);
+  color: var(--color-secondary);
   flex-shrink: 0;
 }
 
+/* ─── Stock level indicator ──────────────────────────────── */
+.stock-level-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--color-surface-container);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.stock-level-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  transition: width 0.6s var(--ease-luxury);
+}
+
+.stock-level-fill.low  { background: var(--color-error); }
+.stock-level-fill.mid  { background: var(--color-warning); }
+.stock-level-fill.full { background: var(--color-success); }
+
+/* ─── Inventory form ─────────────────────────────────────── */
 .inventory-form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-xl);
+  gap: var(--space-8);
+  min-width: 0;
 }
 
 .inventory-form-section {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .inventory-subfields {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: var(--spacing-md);
+  gap: var(--space-4);
+  min-width: 0;
 }
 
+.inventory-add-btn {
+  min-height: 42px;
+}
+
+.inventory-allocations-card {
+  margin-top: 24px;
+}
+
+.inventory-mobile-allocations {
+  display: none;
+}
+
+.inventory-empty-state {
+  min-height: 260px;
+  flex-direction: column;
+  padding: 32px 18px;
+  text-align: center;
+  color: var(--color-outline);
+}
+
+.inventory-empty-icon {
+  color: var(--color-outline);
+  margin-bottom: 14px;
+}
+
+.inventory-empty-state h4 {
+  margin: 0;
+  color: var(--color-on-surface);
+}
+
+.inventory-empty-state p {
+  max-width: 430px;
+  margin: 8px auto 0;
+  color: var(--color-outline);
+}
+
+.inventory-allocation-card {
+  padding: 15px;
+  border: var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: var(--shadow-xs);
+}
+
+.inventory-allocation-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.inventory-allocation-top h3 {
+  margin: 0;
+  color: var(--color-on-surface);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.inventory-allocation-top span {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-outline);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.inventory-allocation-top > strong {
+  min-width: 44px;
+  padding: 7px 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-success-container);
+  color: var(--color-success);
+  font-size: 13px;
+  text-align: center;
+}
+
+.inventory-allocation-top > strong.qty-low {
+  background: var(--color-error-container);
+  color: var(--color-on-error-container);
+}
+
+.inventory-allocation-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.inventory-allocation-grid > div {
+  min-width: 0;
+  padding: 11px 12px;
+  border-radius: var(--radius-default);
+  background: var(--color-surface-container-low);
+}
+
+.inventory-allocation-grid span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--color-outline);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.inventory-allocation-grid strong {
+  display: block;
+  color: var(--color-on-surface);
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.inventory-allocation-grid small {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-outline);
+  font-size: 11px;
+}
+
+/* ─── Alerts ─────────────────────────────────────────────── */
 .inventory-alert {
-  padding: 12px 16px;
-  border-left: 4px solid transparent;
-  margin-bottom: var(--spacing-md);
+  padding: 14px 18px;
+  border-radius: var(--radius-xl);
+  margin-bottom: var(--space-5);
+  animation: slideUp var(--duration-base) var(--ease-luxury) both;
 }
 
 .inventory-alert-success {
-  background-color: #e8f5e9;
-  border-left-color: #2e7d32;
-  color: #1b5e20;
+  background: var(--color-success-container);
+  border: 1px solid rgba(45, 106, 79, 0.18);
+  color: var(--color-success);
 }
 
 .inventory-alert-error {
-  background-color: var(--color-error-container);
-  border-left-color: var(--color-error);
+  background: var(--color-error-container);
+  border: 1px solid rgba(186, 26, 26, 0.18);
   color: var(--color-on-error-container);
 }
 
 @media (max-width: 800px) {
-  .inventory-form-grid {
+  .inventory-form-grid { grid-template-columns: 1fr; gap: var(--space-6); }
+  .inventory-subfields { grid-template-columns: 1fr; }
+
+  .inventory-add-btn {
+    width: 100%;
+  }
+
+  .warehouses-grid-list {
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .warehouse-card:hover {
+    transform: none;
+  }
+
+  .inventory-allocations-card {
+    margin-top: 18px;
+  }
+
+  .inventory-allocations-table {
+    display: none;
+  }
+
+  .inventory-mobile-allocations {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .inventory-mobile-allocations .inventory-empty-state {
+    border: var(--border-subtle);
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.82);
+  }
+
+  .inventory-form-grid + .form-buttons-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .inventory-form-grid + .form-buttons-row .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .inventory-form-grid + .form-buttons-row {
     grid-template-columns: 1fr;
-    gap: var(--spacing-lg);
+  }
+
+  .inventory-allocation-top {
+    flex-direction: column;
   }
 }

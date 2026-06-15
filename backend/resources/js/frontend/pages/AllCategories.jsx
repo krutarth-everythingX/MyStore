@@ -2,14 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
-import { Breadcrumbs } from '../components/Breadcrumbs';
 import {
   Car, Baby, Laptop, BookOpen, Gamepad2, Shirt, ShoppingBag,
   Home as HomeIcon, Wrench, Watch, Smile, Briefcase, Music,
-  Gift, PenTool, Heart, Hammer, Dumbbell, Code, Compass,
-  Plug, Gamepad, Sparkles, FileText, Leaf, Layers, ChevronRight
+  Gift, PenTool, Heart, Dumbbell, Code, Compass,
+  Plug, Gamepad, Sparkles, Leaf, Layers, ChevronRight
 } from 'lucide-react';
-import './AllCategories.css';
 
 const ALLOWED_MAIN_CATEGORIES = [
   { name: 'Electronics', match: 'Computers & Electronics' },
@@ -26,9 +24,7 @@ const ALLOWED_MAIN_CATEGORIES = [
 
 const getCategoryDisplayName = (name) => {
   if (!name) return '';
-  const found = ALLOWED_MAIN_CATEGORIES.find(
-    (a) => a.match.toLowerCase() === name.toLowerCase()
-  );
+  const found = ALLOWED_MAIN_CATEGORIES.find((a) => a.match.toLowerCase() === name.toLowerCase());
   return found ? found.name : name;
 };
 
@@ -61,126 +57,131 @@ const getCategoryIcon = (name, size = 28) => {
   return <Layers size={size} />;
 };
 
-// Color palette cycling for category tiles
-const TILE_COLORS = [
-  { bg: 'var(--color-primary-fixed)', icon: 'var(--color-primary)', border: 'var(--color-primary)' },
-  { bg: 'var(--color-secondary-fixed)', icon: 'var(--color-secondary)', border: 'var(--color-secondary)' },
-  { bg: 'var(--color-tertiary-fixed)', icon: 'var(--color-tertiary)', border: 'var(--color-tertiary)' },
-  { bg: 'var(--color-surface-container)', icon: 'var(--color-primary)', border: 'var(--color-outline-variant)' },
+const TILE_ACCENT = [
+  'border-t-amber-400 group-hover:bg-amber-50',
+  'border-t-rose-400 group-hover:bg-rose-50',
+  'border-t-sky-400 group-hover:bg-sky-50',
+  'border-t-violet-400 group-hover:bg-violet-50',
+  'border-t-emerald-400 group-hover:bg-emerald-50',
+  'border-t-orange-400 group-hover:bg-orange-50',
+  'border-t-teal-400 group-hover:bg-teal-50',
+  'border-t-pink-400 group-hover:bg-pink-50',
+  'border-t-indigo-400 group-hover:bg-indigo-50',
+  'border-t-lime-400 group-hover:bg-lime-50',
+];
+
+const ICON_COLORS = [
+  'text-amber-600 bg-amber-50',
+  'text-rose-600 bg-rose-50',
+  'text-sky-600 bg-sky-50',
+  'text-violet-600 bg-violet-50',
+  'text-emerald-600 bg-emerald-50',
+  'text-orange-600 bg-orange-50',
+  'text-teal-600 bg-teal-50',
+  'text-pink-600 bg-pink-50',
+  'text-indigo-600 bg-indigo-50',
+  'text-lime-600 bg-lime-50',
 ];
 
 export const AllCategories = () => {
-  const { props } = usePage();
+  const { props, url } = usePage();
   const [categories, setCategories] = useState(props.categories || []);
   const [loading, setLoading] = useState(false);
+  const search = new URL(url || window.location.href, window.location.origin).searchParams.get('search') || '';
 
   useEffect(() => {
     setCategories(Array.isArray(props.categories) ? props.categories : []);
     setLoading(false);
   }, [props.categories]);
 
-  // Only root (parent) categories, filtered to allowed list
   const rootCategories = categories
     .filter((c) => c.parent_id === null)
-    .filter((c) =>
-      ALLOWED_MAIN_CATEGORIES.some(
-        (a) => a.match.toLowerCase() === c.name.toLowerCase()
-      )
-    )
-    .map((c) => ({
-      ...c,
-      displayName: getCategoryDisplayName(c.name),
-      children: categories.filter((sub) => sub.parent_id === c.id),
-    }));
+    .filter((c) => ALLOWED_MAIN_CATEGORIES.some((a) => a.match.toLowerCase() === c.name.toLowerCase()))
+    .map((c) => ({ ...c, displayName: getCategoryDisplayName(c.name), children: categories.filter((sub) => sub.parent_id === c.id) }))
+    .filter((c) => {
+      if (!search) return true;
+      const query = search.toLowerCase();
+      return c.name.toLowerCase().includes(query)
+        || c.displayName.toLowerCase().includes(query)
+        || c.children.some((sub) => sub.name.toLowerCase().includes(query));
+    });
 
   const handleCategoryClick = (catId) => {
-    router.visit(`/?category=${catId}`, {
-      preserveScroll: true,
-    });
+    router.visit(`/categories/${catId}`, { preserveScroll: true });
   };
 
   return (
-    <div className="buyer-layout">
+    <div className="min-h-screen flex flex-col bg-neutral-50">
       <Navbar />
 
-      <main className="all-categories-main">
-        {/* Page Header */}
-        <div className="ac-page-header">
-          <div className="ac-header-inner container">
-            <Breadcrumbs items={[{ label: 'All Categories' }]} />
-            <h1 className="ac-page-title">All Categories</h1>
-            <p className="ac-page-subtitle body-md">
-              Browse all product categories available on MyStore.
-            </p>
-          </div>
+      {/* Page Header */}
+      <div className="relative bg-gradient-to-br from-amber-50 via-neutral-50 to-rose-50 border-b border-neutral-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+          <nav className="hidden items-center gap-2 mb-4 text-[11px] font-bold uppercase tracking-wider text-neutral-400 sm:flex">
+            <button className="hover:text-neutral-800 transition-colors" onClick={() => router.visit('/')}>Home</button>
+            <span>/</span>
+            <span className="text-neutral-800">All Categories</span>
+          </nav>
+          <span className="inline-block mb-2 text-[10px] font-bold uppercase tracking-widest text-amber-700">Store directory</span>
+          <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-neutral-900 mb-2">
+            {search ? `Categories for "${search}"` : 'All Categories'}
+          </h1>
+          <p className="text-sm text-neutral-500 max-w-xl">Choose a category first, then browse its products with subcategory and brand filters.</p>
         </div>
+      </div>
 
-        <div className="container ac-content">
-          {loading ? (
-            <div className="ac-loading body-lg">Loading categories...</div>
-          ) : rootCategories.length === 0 ? (
-            <div className="ac-empty body-lg">No categories found.</div>
-          ) : (
-            <div className="ac-categories-grid">
-              {rootCategories.map((cat, idx) => {
-                const color = TILE_COLORS[idx % TILE_COLORS.length];
-                return (
-                  <div
-                    key={cat.id}
-                    className="ac-category-tile"
-                    onClick={() => handleCategoryClick(cat.id)}
-                    style={{ borderTopColor: color.border }}
-                  >
-                    {/* Icon */}
-                    <div
-                      className="ac-tile-icon"
-                      style={{ background: color.bg, color: color.icon }}
-                    >
-                      {getCategoryIcon(cat.name, 32)}
-                    </div>
-
-                    {/* Info */}
-                    <div className="ac-tile-info">
-                      <h3 className="ac-tile-name">{cat.displayName}</h3>
-
-                      {/* Sub-categories preview */}
-                      {cat.children && cat.children.length > 0 && (
-                        <ul className="ac-tile-subs">
-                          {cat.children.slice(0, 3).map((sub) => (
-                            <li
-                              key={sub.id}
-                              className="ac-tile-sub-item body-sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCategoryClick(sub.id);
-                              }}
-                            >
-                              <ChevronRight size={12} />
-                              {sub.name}
-                            </li>
-                          ))}
-                          {cat.children.length > 3 && (
-                            <li className="ac-tile-sub-more body-sm">
-                              +{cat.children.length - 3} more
-                            </li>
-                          )}
-                        </ul>
-                      )}
-                    </div>
-
-                    {/* Footer CTA */}
-                    <div className="ac-tile-footer">
-                      <span className="ac-tile-cta" style={{ color: color.icon }}>
-                        Shop Now →
-                      </span>
-                    </div>
+      <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 flex-1 min-h-[100dvh]">
+        {loading ? (
+          <div className="text-sm text-neutral-400 py-10 text-center">Loading categories...</div>
+        ) : rootCategories.length === 0 ? (
+          <div className="text-sm text-neutral-400 py-10 text-center">No categories found.</div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
+            {rootCategories.map((cat, idx) => {
+              const tileAccent = TILE_ACCENT[idx % TILE_ACCENT.length];
+              const iconColor = ICON_COLORS[idx % ICON_COLORS.length];
+              return (
+                <div
+                  key={cat.id}
+                  className={`group bg-white rounded-2xl border border-neutral-100 border-t-4 ${tileAccent} p-5 flex flex-col gap-3 cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all duration-200 select-none`}
+                  onClick={() => handleCategoryClick(cat.id)}
+                >
+                  <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${iconColor}`}>
+                    {getCategoryIcon(cat.name, 24)}
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+
+                  <div className="flex flex-col gap-2 flex-1">
+                    <h3 className="font-semibold text-sm text-neutral-900">{cat.displayName}</h3>
+
+                    {cat.children?.length > 0 && (
+                      <ul className="flex flex-col gap-1 mt-auto">
+                        {cat.children.slice(0, 3).map((sub) => (
+                          <li
+                            key={sub.id}
+                            className="flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-800 transition-colors"
+                            onClick={(e) => { e.stopPropagation(); handleCategoryClick(sub.id); }}
+                          >
+                            <ChevronRight size={10} className="shrink-0" />
+                            <span className="truncate">{sub.name}</span>
+                          </li>
+                        ))}
+                        {cat.children.length > 3 && (
+                          <li className="text-[11px] text-neutral-400 mt-0.5">+{cat.children.length - 3} more</li>
+                        )}
+                      </ul>
+                    )}
+                  </div>
+
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 group-hover:text-neutral-900 transition-colors flex items-center gap-1">
+                    View Category <ChevronRight size={10} />
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </main>
+
       <Footer />
     </div>
   );

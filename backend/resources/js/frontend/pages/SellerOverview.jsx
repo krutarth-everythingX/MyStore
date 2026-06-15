@@ -4,7 +4,18 @@ import { Link, usePage } from '@inertiajs/react';
 import { Sidebar } from '../components/Sidebar';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
-import { DollarSign, ShoppingCart, BarChart3, AlertTriangle, ArrowRight, Download } from 'lucide-react';
+import {
+  DollarSign,
+  ShoppingCart,
+  BarChart3,
+  AlertTriangle,
+  ArrowRight,
+  Download,
+  PlusCircle,
+  Warehouse,
+  PackageCheck,
+  Settings,
+} from 'lucide-react';
 import './SellerOverview.css';
 
 export const SellerOverview = () => {
@@ -70,13 +81,13 @@ export const SellerOverview = () => {
         <div className="seller-dashboard-container container">
           {/* Header */}
           <div className="seller-page-header">
-            <div>
+            <div className="seller-page-title-block">
               <h2 className="headline-lg">Dashboard Overview</h2>
               <p className="body-md" style={{ color: 'var(--color-outline)' }}>
                 Welcome back, {user?.name}! Managing <strong>{user?.brand_name}</strong>.
               </p>
             </div>
-            <div className="flex-center" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="seller-header-actions">
               <div className="export-buttons-group">
                 <Button variant="outline" size="sm" onClick={() => handleExport('inventory')} className="export-btn">
                   <Download size={14} /> Export Inventory
@@ -85,8 +96,8 @@ export const SellerOverview = () => {
                   <Download size={14} /> Export Orders
                 </Button>
               </div>
-              <Link href="/seller/products">
-                <Button variant="primary">Manage Products</Button>
+              <Link href="/seller/products" className="seller-manage-products-link">
+                <Button variant="primary" className="seller-manage-products-btn">Manage Products</Button>
               </Link>
             </div>
           </div>
@@ -313,19 +324,31 @@ export const SellerOverview = () => {
                   <Card title="Quick Management Links" className="quick-links-card">
                     <div className="quick-links-list">
                       <Link href="/seller/products" className="quick-link body-md">
-                        <span>🏷️ Add New Product</span>
+                        <span className="quick-link-label">
+                          <PlusCircle size={16} />
+                          Add New Product
+                        </span>
                         <ArrowRight size={16} />
                       </Link>
                       <Link href="/seller/inventory" className="quick-link body-md">
-                        <span>🏭 Manage Warehouses</span>
+                        <span className="quick-link-label">
+                          <Warehouse size={16} />
+                          Manage Warehouses
+                        </span>
                         <ArrowRight size={16} />
                       </Link>
                       <Link href="/seller/orders" className="quick-link body-md">
-                        <span>📦 Process Pending Shipments</span>
+                        <span className="quick-link-label">
+                          <PackageCheck size={16} />
+                          Process Pending Shipments
+                        </span>
                         <ArrowRight size={16} />
                       </Link>
                       <Link href="/seller/profile" className="quick-link body-md">
-                        <span>⚙️ Edit Store Profile</span>
+                        <span className="quick-link-label">
+                          <Settings size={16} />
+                          Edit Store Profile
+                        </span>
                         <ArrowRight size={16} />
                       </Link>
                     </div>

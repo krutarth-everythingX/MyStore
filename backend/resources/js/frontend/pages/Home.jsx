@@ -1,8 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, router, usePage } from '@inertiajs/react';
 import { Navbar } from '../components/Navbar';
-import { ProductCard } from '../components/ProductCard';
-import { Button } from '../components/Button';
 import { Footer } from '../components/Footer';
 import {
   ArrowRight,
@@ -10,13 +8,12 @@ import {
   BookOpen,
   Briefcase,
   Car,
-  ChevronDown,
+  Code,
   Dumbbell,
   FileText,
   Gamepad,
   Gamepad2,
   Gift,
-  Hammer,
   Heart,
   Home as HomeIcon,
   Laptop,
@@ -25,17 +22,13 @@ import {
   Music,
   PenTool,
   Plug,
-  RefreshCw,
   Shirt,
   ShoppingBag,
-  SlidersHorizontal,
   Smile,
   Sparkles,
-  Wrench,
   Watch,
-  Code,
+  Wrench,
 } from 'lucide-react';
-import './Home.css';
 
 const ALLOWED_MAIN_CATEGORIES = [
   { name: 'Electronics', match: 'Computers & Electronics' },
@@ -51,20 +44,15 @@ const ALLOWED_MAIN_CATEGORIES = [
 ];
 
 const getCategoryDisplayName = (name) => {
-  if (!name) {
-    return '';
-  }
-
+  if (!name) return '';
   const allowed = ALLOWED_MAIN_CATEGORIES.find(
     (item) => item.match.toLowerCase() === name.toLowerCase(),
   );
-
   return allowed ? allowed.name : name;
 };
 
 const getCategoryIcon = (name, size = 22) => {
   const norm = (name || '').toLowerCase();
-
   if (norm.includes('automotive') || norm.includes('car')) return <Car size={size} />;
   if (norm.includes('baby')) return <Baby size={size} />;
   if (norm.includes('computer') || norm.includes('electronic') || norm.includes('laptop') || norm.includes('phone')) return <Laptop size={size} />;
@@ -81,815 +69,282 @@ const getCategoryIcon = (name, size = 22) => {
   if (norm.includes('novelty') || norm.includes('gift')) return <Gift size={size} />;
   if (norm.includes('office') || norm.includes('stationery') || norm.includes('planner')) return <PenTool size={size} />;
   if (norm.includes('pet') || norm.includes('dog') || norm.includes('cat')) return <Heart size={size} />;
-  if (norm.includes('tool') || norm.includes('knife') || norm.includes('tape')) return <Hammer size={size} />;
   if (norm.includes('recreation') || norm.includes('sport') || norm.includes('fitness') || norm.includes('camp')) return <Dumbbell size={size} />;
   if (norm.includes('software') || norm.includes('app')) return <Code size={size} />;
-  if (norm.includes('travel') || norm.includes('outdoor') || norm.includes('tent')) return <Compass size={size} />;
   if (norm.includes('utility') || norm.includes('hardware') || norm.includes('plug') || norm.includes('bulb')) return <Plug size={size} />;
   if (norm.includes('video game') || norm.includes('console')) return <Gamepad size={size} />;
   if (norm.includes('wellness') || norm.includes('cosmetic') || norm.includes('makeup')) return <Sparkles size={size} />;
   if (norm.includes('paper') || norm.includes('notebook')) return <FileText size={size} />;
   if (norm.includes('yard') || norm.includes('garden') || norm.includes('seed') || norm.includes('eco')) return <Leaf size={size} />;
-
   return <Layers size={size} />;
 };
+
+const productPrice = (product) => Number(product.sale_price ?? product.regular_price ?? 0);
+
+const productBelongsToCategory = (product, category) => {
+  const categoryIds = [category.id, ...(category.children || []).map((child) => child.id)];
+  return product.categories?.some((productCategory) =>
+    categoryIds.includes(productCategory.id) || categoryIds.includes(productCategory.parent_id),
+  );
+};
+
+const ProductSpotlightGrid = ({ products }) => (
+  <div className="grid h-auto grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:h-[70vh]">
+    {products.slice(0, 3).map((product, index) => (
+      <Link
+        key={product.id}
+        href={`/products/${product.id}`}
+        className={`group relative min-h-56 overflow-hidden bg-neutral-200 ${
+          index === 0 ? 'sm:col-span-2 md:col-span-2 md:row-span-2 md:h-full' : 'h-56 sm:h-64 md:h-auto'
+        }`}
+      >
+        {product.image_url ? (
+          <img
+            src={product.image_url}
+            alt={product.name}
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-100 to-neutral-300 font-serif text-6xl italic text-neutral-400">
+            {product.name?.charAt(0)}
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
+          <span className="mb-1 block text-[10px] uppercase tracking-widest opacity-75">
+            {product.brand?.name || product.user?.name || 'Featured'}
+          </span>
+          <h4 className={`mb-3 font-semibold leading-tight ${index === 0 ? 'text-xl sm:text-2xl' : 'text-base'}`}>
+            {product.name}
+          </h4>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-lg font-semibold">${productPrice(product).toFixed(2)}</span>
+            <span className="rounded-full bg-white px-5 py-2 text-[10px] font-bold uppercase tracking-wider text-neutral-900 transition-transform group-hover:-translate-y-0.5">
+              Discover
+            </span>
+          </div>
+        </div>
+      </Link>
+    ))}
+  </div>
+);
+
+const CategorySpotlightGrid = ({ categories, products }) => (
+  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+    {categories.slice(0, 4).map((category) => {
+      const heroProduct = products.find((product) => productBelongsToCategory(product, category));
+
+      return (
+        <Link
+          key={category.id}
+          href={`/categories/${category.id}`}
+          className="group relative min-h-36 overflow-hidden bg-neutral-200 sm:min-h-52"
+        >
+          {heroProduct?.image_url ? (
+            <img
+              src={heroProduct.image_url}
+              alt={getCategoryDisplayName(category.name)}
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-100 to-neutral-300 text-neutral-500">
+              {getCategoryIcon(category.name, 38)}
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+            <span className="mb-1 block text-[9px] uppercase tracking-widest opacity-75">
+              {category.children?.length || 0} edits
+            </span>
+            <h4 className="mb-3 font-serif text-lg font-semibold leading-tight sm:text-xl">
+              {getCategoryDisplayName(category.name)}
+            </h4>
+            <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[9px] font-bold uppercase tracking-wider text-neutral-900 transition-transform group-hover:-translate-y-0.5">
+              View <ArrowRight size={11} />
+            </span>
+          </div>
+        </Link>
+      );
+    })}
+  </div>
+);
 
 export const Home = () => {
   const { props, url } = usePage();
   const [products, setProducts] = useState(props.products || []);
   const [categories, setCategories] = useState(props.categories || []);
-  const [brands, setBrands] = useState(props.brands || []);
-  const [loading, setLoading] = useState(false);
 
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
-  const [selectedBrand, setSelectedBrand] = useState('');
-  const [onlyInStock, setOnlyInStock] = useState(false);
-  const [sortBy, setSortBy] = useState('latest');
-  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
-  const [brandSearch, setBrandSearch] = useState('');
-  const [showFilters, setShowFilters] = useState(true);
-  const [categoryCollapsed, setCategoryCollapsed] = useState(false);
-  const [priceCollapsed, setPriceCollapsed] = useState(false);
-  const [brandCollapsed, setBrandCollapsed] = useState(false);
-  const [availabilityCollapsed, setAvailabilityCollapsed] = useState(false);
-
-  const currentSearchParams = new URL(
-    url || window.location.href,
-    window.location.origin,
-  ).searchParams;
-
-  const search = currentSearchParams.get('search') || '';
-  const selectedCategory = currentSearchParams.get('category') || '';
-  const exploreMode = currentSearchParams.get('explore') === 'true';
-  const showCatalog = selectedCategory !== '' || search !== '' || exploreMode;
-
-  const rootCategories = categories
-    .filter((category) => category.parent_id === null)
-    .filter((category) =>
-      ALLOWED_MAIN_CATEGORIES.some(
-        (allowed) => allowed.match.toLowerCase() === category.name.toLowerCase(),
-      ),
-    )
-    .map((category) => ({
-      ...category,
-      displayName: getCategoryDisplayName(category.name),
-    }));
+  const currentUrl = new URL(url || window.location.href, window.location.origin);
+  const legacyCategory = currentUrl.searchParams.get('category') || currentUrl.searchParams.get('category_id');
+  const legacySearch = currentUrl.searchParams.get('search') || '';
+  const legacyExplore = currentUrl.searchParams.get('explore') === 'true';
 
   useEffect(() => {
-    setMinPrice('');
-    setMaxPrice('');
-    setSelectedBrand('');
-    setOnlyInStock(false);
-    setBrandSearch('');
-  }, [selectedCategory, exploreMode]);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (!event.target.closest('.sort-dropdown-container')) {
-        setSortDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    setProducts(props.products || []);
-    setCategories(props.categories || []);
-    setBrands(props.brands || []);
-    setLoading(false);
-  }, [props.products, props.categories, props.brands]);
-
-  const visitWithParams = (params, options = {}) => {
-    const query = params.toString();
-    const target = query ? `/?${query}` : '/';
-
-    router.get(target, {}, {
-      preserveScroll: true,
-      preserveState: true,
-      only: ['products', 'categories', 'brands'],
-      ...options,
-    });
-  };
-
-  const handleCategorySelect = (id) => {
-    const params = new URLSearchParams(currentSearchParams.toString());
-    params.delete('explore');
-
-    if (id) {
-      params.set('category', id);
-    } else {
-      params.delete('category');
-    }
-
-    setLoading(true);
-    visitWithParams(params);
-  };
-
-  const handleExploreCatalog = () => {
-    const params = new URLSearchParams(currentSearchParams.toString());
-    params.delete('category');
-    params.set('explore', 'true');
-    setLoading(true);
-    visitWithParams(params);
-  };
-
-  const handleResetFilters = () => {
-    setMinPrice('');
-    setMaxPrice('');
-    setSelectedBrand('');
-    setOnlyInStock(false);
-    setSortBy('latest');
-    setBrandSearch('');
-    setLoading(true);
-    visitWithParams(new URLSearchParams());
-  };
-
-  const getSearchCategory = () => {
-    if (!search || products.length === 0) {
-      return null;
-    }
-
-    const counts = {};
-
-    products.forEach((product) => {
-      product.categories?.forEach((category) => {
-        counts[category.id] = (counts[category.id] || 0) + 1;
+    if (legacyCategory) {
+      const params = new URLSearchParams();
+      if (legacySearch) params.set('search', legacySearch);
+      router.visit(`/categories/${legacyCategory}${params.toString() ? `?${params.toString()}` : ''}`, {
+        replace: true,
+        preserveScroll: true,
       });
-    });
-
-    const topCategoryId = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
-    return topCategoryId
-      ? categories.find((category) => category.id.toString() === topCategoryId.toString())
-      : null;
-  };
-
-  const searchCategory = getSearchCategory();
-  const activeCategory = categories.find(
-    (category) => category.id.toString() === selectedCategory,
-  ) || searchCategory;
-
-  const activeBreadcrumbs = (() => {
-    const crumbs = [];
-    let current = activeCategory;
-
-    while (current) {
-      crumbs.unshift(current);
-      current = current.parent_id
-        ? categories.find((category) => category.id === current.parent_id)
-        : null;
+    } else if (legacyExplore) {
+      router.visit('/categories', {
+        replace: true,
+        preserveScroll: true,
+      });
+    } else if (legacySearch) {
+      router.visit(`/categories?search=${encodeURIComponent(legacySearch)}`, {
+        replace: true,
+        preserveScroll: true,
+      });
     }
+  }, [legacyCategory, legacyExplore, legacySearch]);
 
-    return crumbs;
-  })();
+  useEffect(() => {
+    setProducts(Array.isArray(props.products) ? props.products : []);
+    setCategories(Array.isArray(props.categories) ? props.categories : []);
+  }, [props.products, props.categories]);
 
-  const dynamicBrands = brands.filter((brand) =>
-    products.some((product) => product.brand_id === brand.id),
-  );
+  const rootCategories = useMemo(() => (
+    categories
+      .filter((category) => category.parent_id === null)
+      .filter((category) => ALLOWED_MAIN_CATEGORIES.some((allowed) => (
+        allowed.match.toLowerCase() === category.name.toLowerCase()
+      )))
+      .map((category) => ({
+        ...category,
+        displayName: getCategoryDisplayName(category.name),
+        children: categories.filter((child) => child.parent_id === category.id),
+      }))
+  ), [categories]);
 
-  const filteredDynamicBrands = dynamicBrands.filter((brand) =>
-    brand.name.toLowerCase().includes(brandSearch.toLowerCase()),
-  );
+  const categorySections = rootCategories
+    .map((category) => ({
+      category,
+      products: products.filter((product) => productBelongsToCategory(product, category)).slice(0, 3),
+    }))
+    .filter((section) => section.products.length > 0)
+    .slice(0, 3);
 
-  const filteredProducts = products
-    .filter((product) => {
-      const price = product.sale_price !== null ? product.sale_price : product.regular_price;
+  const weeklyProducts = products.slice(0, 3);
 
-      if (minPrice !== '' && price < parseFloat(minPrice)) {
-        return false;
-      }
-
-      if (maxPrice !== '' && price > parseFloat(maxPrice)) {
-        return false;
-      }
-
-      if (selectedBrand !== '' && product.brand_id?.toString() !== selectedBrand) {
-        return false;
-      }
-
-      if (onlyInStock && product.stock_status !== 'instock') {
-        return false;
-      }
-
-      return true;
-    })
-    .sort((a, b) => {
-      const priceA = a.sale_price !== null ? a.sale_price : a.regular_price;
-      const priceB = b.sale_price !== null ? b.sale_price : b.regular_price;
-
-      if (sortBy === 'price-asc') {
-        return priceA - priceB;
-      }
-
-      if (sortBy === 'price-desc') {
-        return priceB - priceA;
-      }
-
-      return b.id - a.id;
-    });
-
-  const categoryChildren = activeCategory
-    ? categories.filter((category) => category.parent_id === activeCategory.id)
-    : [];
-
-  const siblingCategories = activeCategory?.parent_id
-    ? categories.filter((category) => category.parent_id === activeCategory.parent_id)
-    : [];
-
-  const sidebarCategories = categoryChildren.length > 0 ? categoryChildren : siblingCategories;
-  const spotlightProducts = filteredProducts.slice(0, 3);
-  const arrivalProducts = filteredProducts.slice(0, 8);
-  const activeBrandName = brands.find(
-    (brand) => brand.id.toString() === selectedBrand,
-  )?.name;
+  const handleSearch = (query) => {
+    const params = new URLSearchParams();
+    if (query) params.set('search', query);
+    router.visit(`/categories${params.toString() ? `?${params.toString()}` : ''}`);
+  };
 
   return (
-    <div className="buyer-layout">
-      <Navbar
-        onSearch={(query) => {
-          const params = new URLSearchParams(currentSearchParams.toString());
-          params.delete('explore');
+    <div className="flex min-h-screen flex-col bg-neutral-50">
+      <Navbar onSearch={handleSearch} />
 
-          if (query) {
-            params.set('search', query);
-          } else {
-            params.delete('search');
-          }
+      <section className="relative flex min-h-[calc(100vh-72px)] items-center justify-center overflow-hidden px-4 py-20">
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-neutral-50 to-rose-50" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_80%_at_8%_20%,rgba(239,224,205,0.85),transparent_42%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_55%_60%_at_90%_10%,rgba(255,218,218,0.5),transparent_36%)]" />
 
-          setLoading(true);
-          visitWithParams(params);
-        }}
-      />
-
-      {!showCatalog && (
-        <section className="home-hero">
-          <div className="container home-hero-grid">
-            <div className="home-hero-copy stagger">
-              <span className="hero-badge label-md">Modern Chic Editorial</span>
-              <h1 className="hero-title display-text">
-                Premium essentials, presented with more calm and better rhythm.
-              </h1>
-              <p className="hero-subtitle body-lg">
-                MyStore brings verified sellers, elevated product discovery, and a more spacious
-                editorial storefront into one refined shopping experience.
-              </p>
-              <div className="hero-actions">
-                <button
-                  type="button"
-                  className="btn btn-primary btn-lg"
-                  onClick={handleExploreCatalog}
-                >
-                  Explore the collection
-                </button>
-                <Link href="/categories" className="btn btn-secondary btn-lg">
-                  View departments
-                </Link>
-              </div>
-            </div>
-
-            <div className="home-hero-panel animate-scale-in">
-              <div className="hero-panel-card hero-panel-primary">
-                <span className="hero-panel-kicker label-md">Featured direction</span>
-                <h2 className="hero-panel-title headline-sm">
-                  A slower, more intentional way to shop across every category.
-                </h2>
-                <p className="hero-panel-copy body-md">
-                  Spacious layouts, sharper curation, and cleaner paths into what matters most.
-                </p>
-                <div className="hero-panel-metrics">
-                  <div className="hero-metric">
-                    <span className="hero-metric-value">{products.length}+</span>
-                    <span className="hero-metric-label">Products</span>
-                  </div>
-                  <div className="hero-metric">
-                    <span className="hero-metric-value">{rootCategories.length}</span>
-                    <span className="hero-metric-label">Departments</span>
-                  </div>
-                  <div className="hero-metric">
-                    <span className="hero-metric-value">{brands.length}</span>
-                    <span className="hero-metric-label">Brands</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+        <div className="relative z-10 mx-auto flex max-w-3xl flex-col items-center text-center">
+          <div className="mb-6 flex items-center gap-4">
+            <span className="h-px w-10 bg-amber-600/60" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700">Modern Chic Editorial</span>
+            <span className="h-px w-10 bg-amber-600/60" />
           </div>
-        </section>
-      )}
 
-      <main className="container home-main">
-        {!showCatalog ? (
-          <div className="homepage-sections animate-fade-in">
-            <section className="home-section category-edit-section">
-              <div className="home-section-header home-section-header-inline">
-                <div>
-                  <span className="badge-sale badge-sale-secondary">Departments</span>
-                  <h2 className="headline-md section-title">Shop by editorial world</h2>
-                  <p className="body-md section-subtitle">
-                    One refined entry point into every department, without repeating the same story
-                    across the page.
-                  </p>
-                </div>
-                <Link href="/categories" className="section-link-btn">
-                  View all categories
-                  <ArrowRight size={16} />
-                </Link>
-              </div>
+          <h1 className="mb-6 font-serif text-4xl font-semibold leading-[1.08] tracking-tight text-neutral-900 sm:text-5xl md:text-6xl lg:text-7xl">
+            Premium essentials, presented with calm and rhythm.
+          </h1>
+          <p className="mb-10 max-w-2xl text-base leading-relaxed text-neutral-500 sm:text-lg">
+            MyStore brings verified sellers, elevated discovery, and category-first browsing into one refined shopping experience.
+          </p>
+          <Link
+            href="/categories"
+            className="flex items-center gap-2 rounded-full bg-neutral-950 px-8 py-3.5 text-xs font-bold uppercase tracking-widest text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-neutral-900"
+          >
+            Explore categories <ArrowRight size={14} />
+          </Link>
+        </div>
+      </section>
 
-              {rootCategories.length > 0 ? (
-                <div className="category-edit-grid">
-                  {rootCategories.slice(0, 8).map((category) => (
-                    <button
-                      key={category.id}
-                      type="button"
-                      className="category-edit-card"
-                      onClick={() => handleCategorySelect(category.id.toString())}
-                    >
-                      <span className="category-edit-icon">{getCategoryIcon(category.name, 24)}</span>
-                      <span className="category-edit-name">{category.displayName}</span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="section-empty body-md">Categories loading...</div>
-              )}
-            </section>
-
-            <section className="home-section featured-window-section">
-              <div className="home-section-header home-section-header-inline">
-                <div>
-                  <span className="badge-sale">Spotlight</span>
-                  <h2 className="headline-md section-title">The week&apos;s most wanted</h2>
-                  <p className="body-md section-subtitle">
-                    A tighter hero edit with fewer distractions and more focus on the products
-                    themselves.
-                  </p>
-                </div>
-                <Link href="/?explore=true" className="section-link-btn">
-                  Open catalog
-                  <ArrowRight size={16} />
-                </Link>
-              </div>
-
-              {spotlightProducts.length > 0 ? (
-                <div className="featured-tiles-grid">
-                  <div className="featured-story-card">
-                    <span className="featured-story-kicker label-md">Curated now</span>
-                    <h3 className="headline-md featured-story-title">
-                      Build a more thoughtful basket from the store&apos;s strongest pieces.
-                    </h3>
-                    <p className="body-md featured-story-copy">
-                      Explore hero products first, then move into the full catalog when you want a
-                      broader view.
-                    </p>
-                    <div className="featured-story-actions">
-                      <button
-                        type="button"
-                        className="btn btn-primary btn-md"
-                        onClick={handleExploreCatalog}
-                      >
-                        Explore all
-                      </button>
-                      <Link href="/categories" className="btn btn-secondary btn-md">
-                        Browse categories
-                      </Link>
-                    </div>
-                  </div>
-
-                  {spotlightProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </div>
-              ) : (
-                <div className="section-empty body-md">No items currently available.</div>
-              )}
-            </section>
-
-            <section className="home-section home-arrivals-section">
-              <div className="home-section-header home-section-header-inline">
-                <div>
-                  <span className="badge-sale">New in</span>
-                  <h2 className="headline-md section-title">Fresh arrivals</h2>
-                  <p className="body-md section-subtitle">
-                    The newest products from independent sellers, shown in an easier-to-scan,
-                    immersive layout.
-                  </p>
-                </div>
-                <button type="button" className="section-link-btn" onClick={handleExploreCatalog}>
-                  See everything
-                  <ArrowRight size={16} />
-                </button>
-              </div>
-
-              {arrivalProducts.length > 0 ? (
-                <div className="products-grid products-grid-home stagger">
-                  {arrivalProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </div>
-              ) : (
-                <div className="section-empty body-md">Products are on their way.</div>
-              )}
-            </section>
-          </div>
-        ) : (
-          <div className="category-catalog-container animate-fade-in">
-            <section className="catalog-intro">
-              <div className="catalog-intro-copy">
-                <div className="category-breadcrumb-nav">
-                  <button type="button" className="breadcrumb-link" onClick={handleResetFilters}>
-                    Home
-                  </button>
-                  {activeBreadcrumbs.map((crumb, index) => (
-                    <React.Fragment key={crumb.id}>
-                      <span className="breadcrumb-separator">/</span>
-                      <button
-                        type="button"
-                        className={`breadcrumb-link ${
-                          index === activeBreadcrumbs.length - 1 ? 'breadcrumb-active' : ''
-                        }`}
-                        onClick={() => handleCategorySelect(crumb.id.toString())}
-                        disabled={index === activeBreadcrumbs.length - 1}
-                      >
-                        {getCategoryDisplayName(crumb.name)}
-                      </button>
-                    </React.Fragment>
-                  ))}
-                  {search && (
-                    <>
-                      <span className="breadcrumb-separator">/</span>
-                      <span className="breadcrumb-link breadcrumb-active">{search}</span>
-                    </>
-                  )}
-                </div>
-
-                <span className="catalog-kicker label-md">
-                  {search ? 'Search results' : activeCategory ? 'Category selection' : 'Catalog view'}
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-16 px-4 py-12 sm:px-6 lg:px-8">
+        {rootCategories.length > 0 && (
+          <section>
+            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <span className="mb-2 inline-flex rounded-full bg-amber-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-700">
+                  Category edit
                 </span>
-                <h1 className="catalog-title headline-lg">
-                  {search
-                    ? `Results for "${search}"`
-                    : activeCategory
-                      ? getCategoryDisplayName(activeCategory.name)
-                      : 'Curated catalog'}
-                </h1>
-                <p className="catalog-subtitle body-md">
-                  {activeCategory
-                    ? `Refined pieces, layered subcategories, and elevated brand discovery inside ${getCategoryDisplayName(activeCategory.name)}.`
-                    : search
-                      ? 'We grouped the best matching products into one cleaner, more flexible view.'
-                      : 'Discover everything in one place and refine the collection with filters.'}
+                <h2 className="mb-1 font-serif text-2xl font-semibold text-neutral-900 sm:text-3xl">
+                  Shop by category
+                </h2>
+                <p className="max-w-2xl text-sm text-neutral-500">
+                  Choose a department first, then refine with subcategories and brands inside that category.
                 </p>
-
-                <div className="catalog-meta-row">
-                  <span className="catalog-meta-pill">
-                    {filteredProducts.length} item{filteredProducts.length === 1 ? '' : 's'}
-                  </span>
-                  {activeBrandName && <span className="catalog-meta-pill">{activeBrandName}</span>}
-                  {onlyInStock && <span className="catalog-meta-pill">In stock only</span>}
-                </div>
               </div>
-
-              <div className="catalog-header-controls">
-                <button
-                  type="button"
-                  className="hide-filters-toggle-btn"
-                  onClick={() => setShowFilters((value) => !value)}
-                >
-                  <SlidersHorizontal size={14} />
-                  {showFilters ? 'Hide filters' : 'Show filters'}
-                </button>
-
-                <div className="sort-by-container">
-                  <span className="sort-label">Sort by</span>
-                  <div className="sort-dropdown-container">
-                    <button
-                      type="button"
-                      className="sort-dropdown-btn"
-                      onClick={() => setSortDropdownOpen((value) => !value)}
-                    >
-                      <span>
-                        {sortBy === 'latest'
-                          ? 'Newest first'
-                          : sortBy === 'price-asc'
-                            ? 'Price: Low to High'
-                            : 'Price: High to Low'}
-                      </span>
-                      <ChevronDown size={16} />
-                    </button>
-                    {sortDropdownOpen && (
-                      <div className="sort-dropdown-options shadow-md">
-                        <button
-                          type="button"
-                          className={`sort-option ${sortBy === 'latest' ? 'active' : ''}`}
-                          onClick={() => {
-                            setSortBy('latest');
-                            setSortDropdownOpen(false);
-                          }}
-                        >
-                          Newest first
-                        </button>
-                        <button
-                          type="button"
-                          className={`sort-option ${sortBy === 'price-asc' ? 'active' : ''}`}
-                          onClick={() => {
-                            setSortBy('price-asc');
-                            setSortDropdownOpen(false);
-                          }}
-                        >
-                          Price: Low to High
-                        </button>
-                        <button
-                          type="button"
-                          className={`sort-option ${sortBy === 'price-desc' ? 'active' : ''}`}
-                          onClick={() => {
-                            setSortBy('price-desc');
-                            setSortDropdownOpen(false);
-                          }}
-                        >
-                          Price: High to Low
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <div className={`catalog-layout ${showFilters ? 'catalog-layout-with-sidebar' : ''}`}>
-              {showFilters && (
-                <aside className="home-sidebar animate-fade-in">
-                  <div className="filter-card">
-                    <div className="filter-card-header">
-                      <div className="sidebar-filter-header-row">
-                        <SlidersHorizontal size={18} className="sidebar-filter-icon" />
-                        <span className="sidebar-filter-main-title">Refine the edit</span>
-                      </div>
-                    </div>
-
-                    <div className="filter-card-body">
-                      <div className="filter-section subcategory-filter-section">
-                        <h5
-                          className="filter-title label-md accordion-header"
-                          onClick={() => setCategoryCollapsed((value) => !value)}
-                        >
-                          <span>Category</span>
-                          <ChevronDown
-                            size={14}
-                            className={`filter-chevron ${categoryCollapsed ? '' : 'rotated'}`}
-                          />
-                        </h5>
-
-                        {!categoryCollapsed && (
-                          <div className="filter-content animate-fade-in">
-                            <div className="sidebar-category-tree">
-                              {sidebarCategories.length > 0 ? (
-                                <ul className="sidebar-subcat-list">
-                                  {sidebarCategories.map((category) => {
-                                    const checked = selectedCategory === category.id.toString();
-                                    return (
-                                      <li key={category.id} className="subcat-li">
-                                        <label className="filter-checkbox-label body-md">
-                                          <input
-                                            type="checkbox"
-                                            checked={checked}
-                                            onChange={() =>
-                                              handleCategorySelect(
-                                                checked ? activeCategory?.parent_id?.toString() || '' : category.id.toString(),
-                                              )
-                                            }
-                                          />
-                                          <span>{getCategoryDisplayName(category.name)}</span>
-                                        </label>
-                                      </li>
-                                    );
-                                  })}
-                                </ul>
-                              ) : (
-                                <ul className="sidebar-subcat-list">
-                                  {rootCategories.map((category) => (
-                                    <li key={category.id} className="subcat-li">
-                                      <label className="filter-checkbox-label body-md">
-                                        <input
-                                          type="checkbox"
-                                          checked={selectedCategory === category.id.toString()}
-                                          onChange={() => handleCategorySelect(category.id.toString())}
-                                        />
-                                        <span>{category.displayName}</span>
-                                      </label>
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="filter-section">
-                        <h5
-                          className="filter-title label-md accordion-header"
-                          onClick={() => setPriceCollapsed((value) => !value)}
-                        >
-                          <span>Price range</span>
-                          <ChevronDown
-                            size={14}
-                            className={`filter-chevron ${priceCollapsed ? '' : 'rotated'}`}
-                          />
-                        </h5>
-
-                        {!priceCollapsed && (
-                          <div className="filter-content animate-fade-in">
-                            <div className="price-range-slider-wrapper">
-                              <div className="price-range-labels">
-                                <span className="price-range-value">${minPrice || 0}</span>
-                                <span className="price-range-value">${maxPrice || 5000}</span>
-                              </div>
-
-                              <div className="dual-range-track">
-                                <div
-                                  className="dual-range-fill"
-                                  style={{
-                                    left: `${((parseFloat(minPrice) || 0) / 5000) * 100}%`,
-                                    right: `${100 - ((parseFloat(maxPrice) || 5000) / 5000) * 100}%`,
-                                  }}
-                                />
-                                <input
-                                  type="range"
-                                  min="0"
-                                  max="5000"
-                                  step="50"
-                                  value={minPrice || 0}
-                                  onChange={(event) => {
-                                    const value = parseInt(event.target.value, 10);
-                                    if (value <= (parseInt(maxPrice || '5000', 10) || 5000)) {
-                                      setMinPrice(value === 0 ? '' : String(value));
-                                    }
-                                  }}
-                                  className="dual-range-input dual-range-min"
-                                />
-                                <input
-                                  type="range"
-                                  min="0"
-                                  max="5000"
-                                  step="50"
-                                  value={maxPrice || 5000}
-                                  onChange={(event) => {
-                                    const value = parseInt(event.target.value, 10);
-                                    if (value >= (parseInt(minPrice || '0', 10) || 0)) {
-                                      setMaxPrice(value === 5000 ? '' : String(value));
-                                    }
-                                  }}
-                                  className="dual-range-input dual-range-max"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {dynamicBrands.length > 0 && (
-                        <div className="filter-section">
-                          <h5
-                            className="filter-title label-md accordion-header"
-                            onClick={() => setBrandCollapsed((value) => !value)}
-                          >
-                            <span>Brand</span>
-                            <ChevronDown
-                              size={14}
-                              className={`filter-chevron ${brandCollapsed ? '' : 'rotated'}`}
-                            />
-                          </h5>
-
-                          {!brandCollapsed && (
-                            <div className="filter-content animate-fade-in">
-                              {dynamicBrands.length > 5 && (
-                                <div className="brand-search-wrapper">
-                                  <input
-                                    type="text"
-                                    placeholder="Search brand"
-                                    className="brand-search-input"
-                                    value={brandSearch}
-                                    onChange={(event) => setBrandSearch(event.target.value)}
-                                  />
-                                </div>
-                              )}
-
-                              <div className="brand-checklist">
-                                {filteredDynamicBrands.map((brand) => (
-                                  <label key={brand.id} className="filter-checkbox-label body-md">
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedBrand === brand.id.toString()}
-                                      onChange={() =>
-                                        setSelectedBrand(
-                                          selectedBrand === brand.id.toString() ? '' : brand.id.toString(),
-                                        )
-                                      }
-                                    />
-                                    <span>{brand.name}</span>
-                                  </label>
-                                ))}
-                                {filteredDynamicBrands.length === 0 && (
-                                  <div className="brand-empty body-sm">No matching brands</div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="filter-section">
-                        <h5
-                          className="filter-title label-md accordion-header"
-                          onClick={() => setAvailabilityCollapsed((value) => !value)}
-                        >
-                          <span>Availability</span>
-                          <ChevronDown
-                            size={14}
-                            className={`filter-chevron ${availabilityCollapsed ? '' : 'rotated'}`}
-                          />
-                        </h5>
-
-                        {!availabilityCollapsed && (
-                          <div className="filter-content animate-fade-in">
-                            <label className="filter-checkbox-label body-md">
-                              <input
-                                type="checkbox"
-                                checked={onlyInStock}
-                                onChange={(event) => setOnlyInStock(event.target.checked)}
-                              />
-                              <span>In stock only</span>
-                            </label>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="filter-card-footer">
-                      <button
-                        type="button"
-                        className="apply-filters-btn"
-                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                      >
-                        Apply
-                      </button>
-                      <button type="button" className="remove-filters-btn" onClick={handleResetFilters}>
-                        <RefreshCw size={14} />
-                        Reset
-                      </button>
-                    </div>
-                  </div>
-                </aside>
-              )}
-
-              <div className="home-content">
-                {sidebarCategories.length > 0 && (
-                  <div className="catalog-subcategory-row">
-                    {sidebarCategories.map((category) => (
-                      <button
-                        key={category.id}
-                        type="button"
-                        className={`catalog-subcategory-pill ${
-                          selectedCategory === category.id.toString() ? 'active' : ''
-                        }`}
-                        onClick={() => handleCategorySelect(category.id.toString())}
-                      >
-                        {getCategoryDisplayName(category.name)}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {loading ? (
-                  <div className="catalog-state flex-center">
-                    <span className="body-lg">Loading products...</span>
-                  </div>
-                ) : filteredProducts.length === 0 ? (
-                  <div className="catalog-empty card flex-center animate-fade-in">
-                    <div className="catalog-empty-inner">
-                      <h3 className="title-lg">Nothing matches this edit yet</h3>
-                      <p className="body-md">
-                        Try opening the price range, switching brands, or clearing the current
-                        selection to reveal more products.
-                      </p>
-                      <Button variant="primary" onClick={handleResetFilters}>
-                        Reset everything
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="products-grid stagger">
-                    {filteredProducts.map((product) => (
-                      <ProductCard key={product.id} product={product} />
-                    ))}
-                  </div>
-                )}
-              </div>
+              <Link
+                href="/categories"
+                className="flex items-center gap-2 whitespace-nowrap text-[11px] font-bold uppercase tracking-widest text-neutral-700 transition-all hover:gap-3"
+              >
+                View directory <ArrowRight size={14} />
+              </Link>
             </div>
-          </div>
+
+            <CategorySpotlightGrid categories={rootCategories} products={products} />
+          </section>
         )}
+
+        {categorySections.map(({ category, products: categoryProducts }) => (
+          <section key={category.id}>
+            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <span className="mb-2 inline-flex rounded-full bg-neutral-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-600">
+                  {getCategoryDisplayName(category.name)}
+                </span>
+                <h2 className="mb-1 font-serif text-2xl font-semibold text-neutral-900 sm:text-3xl">
+                  {getCategoryDisplayName(category.name)} picks
+                </h2>
+                <p className="max-w-2xl text-sm text-neutral-500">
+                  A focused edit from this category, with the full page one click away.
+                </p>
+              </div>
+              <Link
+                href={`/categories/${category.id}`}
+                className="flex items-center gap-2 whitespace-nowrap text-[11px] font-bold uppercase tracking-widest text-neutral-700 transition-all hover:gap-3"
+              >
+                See everything <ArrowRight size={14} />
+              </Link>
+            </div>
+
+            <ProductSpotlightGrid products={categoryProducts} />
+          </section>
+        ))}
+
+        <section>
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <span className="mb-2 inline-flex rounded-full bg-rose-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-rose-700">
+                Spotlight
+              </span>
+              <h2 className="mb-1 font-serif text-2xl font-semibold text-neutral-900 sm:text-3xl">
+                The week's most wanted
+              </h2>
+              <p className="max-w-2xl text-sm text-neutral-500">
+                A tighter hero edit with fewer distractions and more focus on the products themselves.
+              </p>
+            </div>
+            <Link
+              href="/week-most-wanted"
+              className="flex items-center gap-2 whitespace-nowrap text-[11px] font-bold uppercase tracking-widest text-neutral-700 transition-all hover:gap-3"
+            >
+              View all <ArrowRight size={14} />
+            </Link>
+          </div>
+
+          {weeklyProducts.length > 0 ? (
+            <ProductSpotlightGrid products={weeklyProducts} />
+          ) : (
+            <div className="py-5 text-sm text-neutral-400">No items currently available.</div>
+          )}
+        </section>
       </main>
 
       <Footer />

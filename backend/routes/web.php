@@ -15,6 +15,7 @@ use App\Http\Controllers\OrderController\Ship;
 use App\Http\Controllers\OrderController\ShippingRates;
 use App\Http\Controllers\PageController\BuyerOrders;
 use App\Http\Controllers\PageController\Cart;
+use App\Http\Controllers\PageController\CategoryCatalog;
 use App\Http\Controllers\PageController\Categories;
 use App\Http\Controllers\PageController\Checkout;
 use App\Http\Controllers\PageController\Home;
@@ -28,6 +29,7 @@ use App\Http\Controllers\PageController\SellerOrders;
 use App\Http\Controllers\PageController\SellerOverview;
 use App\Http\Controllers\PageController\SellerProducts;
 use App\Http\Controllers\PageController\SellerProfile;
+use App\Http\Controllers\PageController\WeekMostWanted;
 use App\Http\Controllers\ProductController\Destroy;
 use App\Http\Controllers\ProductController\Index;
 use App\Http\Controllers\ProductController\Show;
@@ -46,6 +48,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', Home::class);
 Route::get('/categories', Categories::class);
+Route::get('/categories/{category}', CategoryCatalog::class)->whereNumber('category');
+Route::get('/week-most-wanted', WeekMostWanted::class);
 Route::get('/cart', Cart::class);
 Route::get('/products/{id}', Product::class)->whereNumber('id');
 

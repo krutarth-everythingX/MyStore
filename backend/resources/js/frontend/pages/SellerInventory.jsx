@@ -101,6 +101,16 @@ export const SellerInventory = () => {
     }
   });
 
+  const allocationEmptyState = (
+    <div className="inventory-empty-state flex-center">
+      <LayoutList size={42} className="inventory-empty-icon" />
+      <h4 className="title-lg">No Shelf Allocations</h4>
+      <p className="body-md">
+        Assign products to warehouses during creation or edit to monitor bin locations.
+      </p>
+    </div>
+  );
+
   const columns = [
     {
       header: 'Product',
@@ -152,14 +162,14 @@ export const SellerInventory = () => {
         <div className="seller-dashboard-container container">
           {/* Header */}
           <div className="seller-page-header">
-            <div>
+            <div className="seller-page-title-block">
               <h2 className="headline-lg">Inventory & Warehouses</h2>
               <p className="body-md" style={{ color: 'var(--color-outline)' }}>
                 Configure warehouses, shipping carriers, and track exact product stock shelf locations.
               </p>
             </div>
             {!showAddWh && (
-              <Button variant="primary" onClick={() => setShowAddWh(true)}>
+              <Button variant="primary" className="inventory-add-btn" onClick={() => setShowAddWh(true)}>
                 <Plus size={16} style={{ marginRight: 6 }} />
                 Add Warehouse
               </Button>
@@ -280,20 +290,46 @@ export const SellerInventory = () => {
               </div>
 
               {/* Inventory Stock Allocations Table */}
-              <Card title="Product Shelf Allocations (Bin Locations)" style={{ marginTop: 24 }}>
+              <Card title="Product Shelf Allocations (Bin Locations)" className="inventory-allocations-card">
                 <DataTable
+                  className="inventory-allocations-table"
                   columns={columns}
                   data={inventoryRows}
-                  emptyMessage={
-                    <div className="empty-catalog-message flex-center" style={{ flexDirection: 'column', padding: '24px 0' }}>
-                      <LayoutList size={48} style={{ color: 'var(--color-outline)', marginBottom: 16 }} />
-                      <h4 className="title-lg">No Shelf Allocations</h4>
-                      <p className="body-md" style={{ color: 'var(--color-outline)', marginTop: 8 }}>
-                        Assign products to warehouses during creation or edit to monitor bin locations.
-                      </p>
-                    </div>
-                  }
+                  emptyMessage={allocationEmptyState}
                 />
+
+                <div className="inventory-mobile-allocations">
+                  {inventoryRows.length === 0 ? (
+                    allocationEmptyState
+                  ) : (
+                    inventoryRows.map((row) => (
+                      <article key={row.id} className="inventory-allocation-card">
+                        <div className="inventory-allocation-top">
+                          <div>
+                            <h3>{row.prodName}</h3>
+                            <span>SKU: {row.sku}</span>
+                          </div>
+                          <strong className={row.qty <= 2 ? 'qty-low' : ''}>{row.qty}</strong>
+                        </div>
+                        <div className="inventory-allocation-grid">
+                          <div>
+                            <span>Warehouse</span>
+                            <strong>{row.whName}</strong>
+                            <small>{row.whCode}</small>
+                          </div>
+                          <div>
+                            <span>Bin</span>
+                            <strong>{row.bin}</strong>
+                          </div>
+                          <div>
+                            <span>Carrier</span>
+                            <strong>{row.carrier}</strong>
+                          </div>
+                        </div>
+                      </article>
+                    ))
+                  )}
+                </div>
               </Card>
             </>
           )}

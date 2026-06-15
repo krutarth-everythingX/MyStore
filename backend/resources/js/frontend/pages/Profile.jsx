@@ -248,7 +248,7 @@ export const Profile = () => {
                 <div className="pv-empty-state">
                   <Package size={40} className="pv-empty-icon" />
                   <p>No orders placed yet.</p>
-                  <Link href="/" className="btn btn-primary" style={{ textDecoration: 'none' }}>Start Shopping</Link>
+                  <Link href="/categories" className="btn btn-primary" style={{ textDecoration: 'none' }}>Browse Categories</Link>
                 </div>
               ) : (
                 <div className="pv-orders-list">
@@ -372,7 +372,7 @@ export const Profile = () => {
                 <div className="pv-empty-state">
                   <Clock size={40} className="pv-empty-icon" />
                   <p>No recently viewed products.</p>
-                  <Link href="/" className="btn btn-primary" style={{ textDecoration: 'none' }}>Go Shopping</Link>
+                  <Link href="/categories" className="btn btn-primary" style={{ textDecoration: 'none' }}>Browse Categories</Link>
                 </div>
               ) : (
                 <div className="pv-product-grid">

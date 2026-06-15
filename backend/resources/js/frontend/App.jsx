@@ -15,6 +15,8 @@ import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AllCategories from './pages/AllCategories';
+import CategoryCatalog from './pages/CategoryCatalog';
+import WeekMostWanted from './pages/WeekMostWanted';
 import Notifications from './pages/Notifications';
 
 // Seller Dashboard Pages
@@ -86,6 +88,14 @@ const RouteView = () => {
 
   if (pathname === '/categories') {
     return <AllCategories />;
+  }
+
+  if (pathname.startsWith('/categories/')) {
+    return <CategoryCatalog />;
+  }
+
+  if (pathname === '/week-most-wanted') {
+    return <WeekMostWanted />;
   }
 
   if (pathname === '/login') {

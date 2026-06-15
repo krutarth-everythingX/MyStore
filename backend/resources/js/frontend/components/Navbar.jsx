@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, router, usePage } from '@inertiajs/react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { ShoppingCart, Layout, Search, Menu, X, Home as HomeIcon, Bell } from 'lucide-react';
-import './Navbar.css';
+import { ShoppingCart, Layout, Search, Menu, X, Home as HomeIcon, Bell, ChevronDown } from 'lucide-react';
 
 export const Navbar = ({ onSearch, opaque = false }) => {
   const { user, logout } = useAuth();
@@ -19,39 +18,44 @@ export const Navbar = ({ onSearch, opaque = false }) => {
     setSearchQuery(params.get('search') || '');
   }, [url]);
 
-  // Glassmorphic scroll detection
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 24);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Check on mount
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const hasUnreadNotification = user && !user.email_verified_at;
   const navItems = [
-    {
-      label: 'Home',
-      href: '/',
-      active: url === '/',
-    },
-    {
-      label: 'Shop',
-      href: '/?explore=true',
-      active: url.includes('explore=true') || url.includes('category=') || url.includes('search='),
-    },
-    {
-      label: 'Categories',
-      href: '/categories',
-      active: url.startsWith('/categories'),
-    },
+    { label: 'Home', href: '/', active: url === '/' },
   ];
+
+  const [categories, setCategories] = useState([]);
+  const [categoriesDropdownOpen, setCategoriesDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/categories');
+        const data = await response.json();
+        const cats = Array.isArray(data) ? data : (data.data || []);
+        setCategories(cats.filter(c => !c.parent_id).slice(0, 10));
+      } catch (error) {
+        console.error('Failed to load categories', error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (!event.target.closest('.avatar-dropdown-container')) {
         setDropdownOpen(false);
+      }
+      if (!event.target.closest('.nav-categories-dropdown-container')) {
+        setCategoriesDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -63,12 +67,12 @@ export const Navbar = ({ onSearch, opaque = false }) => {
     if (onSearch) {
       onSearch(searchQuery);
     } else {
-      router.get('/', { search: searchQuery || undefined }, {
+      router.get('/categories', { search: searchQuery || undefined }, {
         preserveScroll: true,
         preserveState: true,
-        only: ['products', 'categories', 'brands'],
       });
     }
+    setMobileMenuOpen(false);
   };
 
   const handleLogoutClick = async () => {
@@ -77,137 +81,305 @@ export const Navbar = ({ onSearch, opaque = false }) => {
     setDropdownOpen(false);
   };
 
-  const navClasses = [
-    'navbar-header',
-    scrolled ? 'scrolled' : '',
-    opaque ? 'opaque' : '',
-  ].filter(Boolean).join(' ');
+  const headerClass = `sticky top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-neutral-200 shadow-sm transition-all duration-300 ${
+    scrolled || opaque ? 'py-3' : 'py-4'
+  }`;
 
   return (
-    <header className={navClasses}>
-      <div className="navbar-container container">
-        <Link href="/" className="navbar-logo" onClick={() => setMobileMenuOpen(false)}>
-          <span className="navbar-logo-text">MyStore</span>
-          <span className="navbar-logo-tag">Editorial commerce</span>
+    <header className={headerClass}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+        {/* Logo */}
+        <Link href="/" className="flex flex-col items-start" onClick={() => setMobileMenuOpen(false)}>
+          <span className="font-serif text-2xl sm:text-3xl font-semibold tracking-tight text-neutral-900 leading-none">
+            MyStore
+          </span>
+          <span className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest mt-1">
+            Editorial commerce
+          </span>
         </Link>
 
-        <div className={`navbar-center ${mobileMenuOpen ? 'navbar-center-mobile-open' : ''}`}>
-          <nav className="navbar-nav">
-            {navItems.map((item) => (
+        {/* Center Nav Link Items (Desktop) */}
+        <nav className="hidden md:flex items-center gap-1">
+          {navItems.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${item.active
+                ? 'bg-neutral-950 text-white shadow-xs'
+                : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100/60'
+                }`}
+            >
+              {item.label}
+            </Link>
+          ))}
+
+          <div className="nav-categories-dropdown-container relative">
+            <button
+              type="button"
+              className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest flex items-center gap-1 transition-all ${url.startsWith('/categories')
+                ? 'bg-neutral-950 text-white shadow-xs'
+                : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100/60'
+                }`}
+              onClick={() => setCategoriesDropdownOpen(!categoriesDropdownOpen)}
+            >
+              Categories <ChevronDown size={12} />
+            </button>
+            {categoriesDropdownOpen && (
+              <div className="absolute left-0 mt-2 w-96 bg-white rounded-2xl shadow-xl border border-neutral-100 p-5 z-50 grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                {categories.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    href={`/categories/${cat.id}`}
+                    className="px-3 py-2 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 rounded-lg transition-colors truncate"
+                    onClick={() => setCategoriesDropdownOpen(false)}
+                  >
+                    {cat.name}
+                  </Link>
+                ))}
+                <div className="col-span-2 border-t border-neutral-100 pt-3 mt-1 flex justify-center">
+                  <Link
+                    href="/categories"
+                    className="w-full text-center py-2 bg-neutral-50 text-neutral-800 hover:bg-neutral-100 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
+                    onClick={() => setCategoriesDropdownOpen(false)}
+                  >
+                    See all categories
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+        </nav>
+
+        {/* Search & Actions */}
+        <div className="flex items-center gap-2 sm:gap-4 flex-1 justify-end">
+          {/* Desktop Search */}
+          <form className="hidden lg:flex items-center relative max-w-xs w-full" onSubmit={handleSearchSubmit}>
+            <input
+              type="text"
+              placeholder="Search the collection..."
+              className="w-full bg-neutral-50 border border-neutral-200 rounded-full py-2 pl-4 pr-10 text-xs text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <button type="submit" className="absolute right-3 text-neutral-400 hover:text-neutral-900">
+              <Search size={14} />
+            </button>
+          </form>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {user?.role === 'seller' ? (
               <Link
-                key={item.label}
-                href={item.href}
-                className={`nav-link ${item.active ? 'active' : ''}`}
-                onClick={() => setMobileMenuOpen(false)}
+                href="/seller"
+                className="p-2 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 rounded-full transition-colors"
+                title="Seller Panel"
               >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          <form className="navbar-search navbar-search-mobile" onSubmit={handleSearchSubmit}>
-            <input
-              type="text"
-              placeholder="Search the collection"
-              className="navbar-search-input"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <button type="submit" className="navbar-search-btn">
-              <Search size={16} />
-            </button>
-          </form>
-
-          {!user && (
-            <div className="mobile-auth-links">
-              <Link href="/login" className="nav-link" onClick={() => setMobileMenuOpen(false)}>
-                Login
-              </Link>
-              <Link href="/register" className="nav-link" onClick={() => setMobileMenuOpen(false)}>
-                Register
-              </Link>
-            </div>
-          )}
-        </div>
-
-        <div className="navbar-utility">
-          <form className="navbar-search navbar-search-desktop" onSubmit={handleSearchSubmit}>
-            <input
-              type="text"
-              placeholder="Search the collection"
-              className="navbar-search-input"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <button type="submit" className="navbar-search-btn">
-              <Search size={16} />
-            </button>
-          </form>
-
-          <div className="navbar-actions">
-            {user?.role === 'buyer' ? (
-              <Link href="/" className="nav-home-icon-link" title="Home">
-                <HomeIcon size={18} />
+                <Layout size={18} />
               </Link>
             ) : (
-              <Link href="/seller" className="nav-home-icon-link" title="Seller Panel">
-                <Layout size={18} />
+              <Link
+                href="/"
+                className="p-2 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 rounded-full transition-colors"
+                title="Home"
+              >
+                <HomeIcon size={18} />
               </Link>
             )}
 
             {(!user || user.role !== 'seller') && (
-              <Link href="/cart" className="nav-cart-link" onClick={() => setMobileMenuOpen(false)}>
+              <Link
+                href="/cart"
+                className="p-2 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 rounded-full relative transition-colors"
+                title="Shopping Cart"
+              >
                 <ShoppingCart size={18} />
-                {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-neutral-950 text-white text-[9px] font-bold h-4 w-4 rounded-full flex items-center justify-center animate-scale-in">
+                    {cartCount}
+                  </span>
+                )}
               </Link>
             )}
 
             {user && (
               <Link
                 href="/notifications"
-                className="nav-cart-link"
-                onClick={() => setMobileMenuOpen(false)}
+                className="p-2 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 rounded-full relative transition-colors"
                 title="Notifications"
               >
                 <Bell size={18} />
-                {hasUnreadNotification && <span className="notification-dot" />}
+                {hasUnreadNotification && (
+                  <span className="absolute top-2 right-2 h-2.5 w-2.5 bg-red-500 border-2 border-white rounded-full animate-ping" />
+                )}
               </Link>
             )}
 
             {user ? (
-              <div className="avatar-dropdown-container">
-                <button className="avatar-btn" onClick={() => setDropdownOpen(!dropdownOpen)}>
-                  <div className="avatar-circle">
-                    {user.name.charAt(0).toUpperCase()}
-                  </div>
+              <div className="avatar-dropdown-container relative">
+                <button
+                  className="h-8 w-8 rounded-full bg-neutral-950 text-white font-serif italic flex items-center justify-center hover:bg-neutral-900 transition-colors"
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                >
+                  {user.name.charAt(0).toUpperCase()}
                 </button>
                 {dropdownOpen && (
-                  <div className="avatar-dropdown shadow-lg">
-                    <Link href="/profile" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-neutral-100 p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                    <Link
+                      href="/profile"
+                      className="block w-full text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+                      onClick={() => setDropdownOpen(false)}
+                    >
                       Profile
                     </Link>
-                    <Link href="/notifications" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                    <Link
+                      href="/notifications"
+                      className="block w-full text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+                      onClick={() => setDropdownOpen(false)}
+                    >
                       Notifications
                     </Link>
-                    <button className="dropdown-item logout-btn" onClick={handleLogoutClick}>
+                    <button
+                      className="block w-full text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors border-t border-neutral-50 mt-1"
+                      onClick={handleLogoutClick}
+                    >
                       Logout
                     </button>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="desktop-auth-links">
-                <Link href="/login" className="nav-link">Login</Link>
-                <Link href="/register" className="nav-link">Register</Link>
+              <div className="hidden md:flex items-center gap-1">
+                <Link
+                  href="/login"
+                  className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-neutral-500 hover:text-neutral-900"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/register"
+                  className="px-4 py-2 text-xs font-bold uppercase tracking-widest bg-neutral-950 text-white hover:bg-neutral-900 rounded-full shadow-xs"
+                >
+                  Register
+                </Link>
               </div>
             )}
+
+            {/* Mobile Menu Button */}
+            <button
+              className="p-2 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 rounded-full md:hidden transition-colors"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
           </div>
         </div>
-
-        <button className="navbar-menu-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-          {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
       </div>
+
+      {/* Mobile Drawer Overlay & Panel */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-[100] bg-white">
+          <div className="flex h-dvh min-h-screen flex-col gap-6 overflow-y-auto bg-white p-6">
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
+              <span className="font-serif text-xl font-bold text-neutral-900">Menu</span>
+              <button
+                className="p-1 text-neutral-400 hover:text-neutral-900 rounded-full"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Mobile Search */}
+            <form className="relative" onSubmit={handleSearchSubmit}>
+              <input
+                type="text"
+                placeholder="Search catalog..."
+                className="w-full bg-neutral-50 border border-neutral-200 rounded-full py-2.5 pl-4 pr-10 text-xs text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <button type="submit" className="absolute right-3 top-2.5 text-neutral-400 hover:text-neutral-900">
+                <Search size={16} />
+              </button>
+            </form>
+
+            {/* Navigation links */}
+            <nav className="flex flex-col gap-1">
+              {navItems.map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={`px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${item.active
+                    ? 'bg-neutral-950 text-white'
+                    : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
+                    }`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+
+              <Link
+                href="/categories"
+                className={`px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${url.startsWith('/categories')
+                  ? 'bg-neutral-950 text-white'
+                  : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
+                  }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                All Categories
+              </Link>
+            </nav>
+
+            {/* Auth / Profile Links inside Drawer */}
+            <div className="mt-auto border-t border-neutral-100 pt-4 flex flex-col gap-2">
+              {user ? (
+                <>
+                  <div className="flex items-center gap-3 px-2 py-1">
+                    <div className="h-9 w-9 rounded-full bg-neutral-950 text-white font-serif italic flex items-center justify-center">
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex flex-col truncate">
+                      <span className="text-xs font-bold text-neutral-900 truncate">{user.name}</span>
+                      <span className="text-[10px] text-neutral-400 truncate">{user.email}</span>
+                    </div>
+                  </div>
+                  <Link
+                    href="/profile"
+                    className="w-full text-center py-2.5 border border-neutral-200 text-neutral-800 hover:bg-neutral-50 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors mt-2"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    My Profile
+                  </Link>
+                  <button
+                    className="w-full text-center py-2.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
+                    onClick={() => { logout(); setMobileMenuOpen(false); }}
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="w-full text-center py-2.5 border border-neutral-200 text-neutral-800 hover:bg-neutral-50 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="w-full text-center py-2.5 bg-neutral-950 text-white hover:bg-neutral-900 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Register
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
