@@ -16,6 +16,7 @@ class ResendVerification
         }
 
         $user->verification_code = $this->generateVerificationCode();
+        $user->verification_code_sent_at = now();
         $user->save();
 
         $this->sendVerificationCode($user, 'Failed to resend verification code');

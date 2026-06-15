@@ -12,6 +12,8 @@ export const Login = () => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const { showToast } = useToast();
+  const redirectParam = new URLSearchParams(window.location.search).get('redirect');
+  const googleHref = `/auth/google?role=buyer${redirectParam ? `&redirect=${encodeURIComponent(redirectParam)}` : ''}`;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,10 +35,10 @@ export const Login = () => {
       {/* Left panel – branding */}
       <div className="hidden lg:flex flex-col justify-between w-[45%] bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 px-14 py-14 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_70%_at_20%_80%,rgba(251,191,36,0.08),transparent)]" />
-        <Link href="/" className="font-serif text-2xl font-semibold text-white tracking-tight z-10">MyStore</Link>
+        <Link href="/" className="text-xl font-semibold text-white z-10">MyStore</Link>
         <div className="z-10">
           <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-4 block">Buyer Access</span>
-          <h1 className="font-serif text-4xl font-semibold text-white leading-tight mb-4">Welcome back to MyStore.</h1>
+          <h1 className="text-3xl font-semibold text-white leading-snug mb-4">Welcome back to MyStore.</h1>
           <p className="text-neutral-400 text-base leading-relaxed">Sign in to continue shopping, manage your account, and track your latest orders.</p>
         </div>
         <p className="text-neutral-600 text-xs z-10">© {new Date().getFullYear()} MyStore. All rights reserved.</p>
@@ -46,14 +48,14 @@ export const Login = () => {
       <div className="flex-1 flex flex-col justify-center items-center px-6 py-12 lg:px-16">
         <div className="w-full max-w-md">
           {/* Mobile logo */}
-          <Link href="/" className="lg:hidden font-serif text-2xl font-semibold text-neutral-900 tracking-tight mb-8 block">MyStore</Link>
+          <Link href="/" className="lg:hidden text-xl font-semibold text-neutral-900 mb-8 block">MyStore</Link>
 
           <div className="mb-8">
             <Link href="/" className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-neutral-400 hover:text-neutral-800 transition-colors mb-6">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m15 18-6-6 6-6" /></svg>
               Back to store
             </Link>
-            <h2 className="font-serif text-3xl font-semibold text-neutral-900 mb-2">Login to MyStore</h2>
+            <h2 className="text-2xl font-semibold text-neutral-900 mb-2">Login to MyStore</h2>
             <p className="text-sm text-neutral-500">Enter your credentials to access your account.</p>
           </div>
 
@@ -62,6 +64,20 @@ export const Login = () => {
               <AlertCircle size={15} className="shrink-0" /> {error}
             </div>
           )}
+
+          <a
+            href={googleHref}
+            className="w-full mb-5 inline-flex items-center justify-center gap-3 rounded-full border border-neutral-200 bg-white py-3 text-xs font-bold uppercase tracking-widest text-neutral-800 transition-all hover:-translate-y-0.5 hover:bg-neutral-50"
+          >
+            <span className="flex h-5 w-5 items-center justify-center rounded-full border border-neutral-200 text-sm font-semibold normal-case tracking-normal text-neutral-900">G</span>
+            Continue with Google
+          </a>
+
+          <div className="mb-5 flex items-center gap-3">
+            <span className="h-px flex-1 bg-neutral-200" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">or</span>
+            <span className="h-px flex-1 bg-neutral-200" />
+          </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">

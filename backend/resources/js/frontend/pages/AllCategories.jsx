@@ -57,31 +57,8 @@ const getCategoryIcon = (name, size = 28) => {
   return <Layers size={size} />;
 };
 
-const TILE_ACCENT = [
-  'border-t-amber-400 group-hover:bg-amber-50',
-  'border-t-rose-400 group-hover:bg-rose-50',
-  'border-t-sky-400 group-hover:bg-sky-50',
-  'border-t-violet-400 group-hover:bg-violet-50',
-  'border-t-emerald-400 group-hover:bg-emerald-50',
-  'border-t-orange-400 group-hover:bg-orange-50',
-  'border-t-teal-400 group-hover:bg-teal-50',
-  'border-t-pink-400 group-hover:bg-pink-50',
-  'border-t-indigo-400 group-hover:bg-indigo-50',
-  'border-t-lime-400 group-hover:bg-lime-50',
-];
-
-const ICON_COLORS = [
-  'text-amber-600 bg-amber-50',
-  'text-rose-600 bg-rose-50',
-  'text-sky-600 bg-sky-50',
-  'text-violet-600 bg-violet-50',
-  'text-emerald-600 bg-emerald-50',
-  'text-orange-600 bg-orange-50',
-  'text-teal-600 bg-teal-50',
-  'text-pink-600 bg-pink-50',
-  'text-indigo-600 bg-indigo-50',
-  'text-lime-600 bg-lime-50',
-];
+const TILE_ACCENT = Array(10).fill('group-hover:bg-neutral-50');
+const ICON_COLORS = Array(10).fill('text-neutral-700 bg-neutral-100');
 
 export const AllCategories = () => {
   const { props, url } = usePage();
@@ -123,7 +100,7 @@ export const AllCategories = () => {
             <span className="text-neutral-800">All Categories</span>
           </nav>
           <span className="inline-block mb-2 text-[10px] font-bold uppercase tracking-widest text-amber-700">Store directory</span>
-          <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-neutral-900 mb-2">
+          <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-neutral-900 mb-2">
             {search ? `Categories for "${search}"` : 'All Categories'}
           </h1>
           <p className="text-sm text-neutral-500 max-w-xl">Choose a category first, then browse its products with subcategory and brand filters.</p>
@@ -143,10 +120,10 @@ export const AllCategories = () => {
               return (
                 <div
                   key={cat.id}
-                  className={`group bg-white rounded-2xl border border-neutral-100 border-t-4 ${tileAccent} p-5 flex flex-col gap-3 cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all duration-200 select-none`}
+                  className={`group bg-white rounded-2xl border border-neutral-100 ${tileAccent} p-4 flex flex-col gap-3 cursor-pointer hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 select-none`}
                   onClick={() => handleCategoryClick(cat.id)}
                 >
-                  <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${iconColor}`}>
+                  <div className={`h-11 w-11 rounded-xl flex items-center justify-center ${iconColor}`}>
                     {getCategoryIcon(cat.name, 24)}
                   </div>
 
@@ -172,7 +149,7 @@ export const AllCategories = () => {
                     )}
                   </div>
 
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 group-hover:text-neutral-900 transition-colors flex items-center gap-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-500 group-hover:text-neutral-900 transition-colors flex items-center gap-1">
                     View Category <ChevronRight size={10} />
                   </span>
                 </div>

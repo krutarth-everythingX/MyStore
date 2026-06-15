@@ -192,7 +192,7 @@ const CheckoutForm = ({ stripe, elements }) => {
           <span className="text-neutral-800">Secure Checkout</span>
         </nav>
 
-        <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-neutral-900 mb-8">Secure Checkout</h1>
+        <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-neutral-900 mb-8">Secure Checkout</h1>
 
         {/* Alerts */}
         {error && (
@@ -376,7 +376,7 @@ const CheckoutForm = ({ stripe, elements }) => {
                     const price = product.sale_price ?? product.regular_price;
                     return (
                       <div key={product.id} className="flex items-center gap-3 py-3">
-                        <div className="h-10 w-10 rounded-xl bg-neutral-100 flex items-center justify-center text-xs font-serif italic text-neutral-400 shrink-0 overflow-hidden">
+                        <div className="h-10 w-10 rounded-xl bg-neutral-100 flex items-center justify-center text-xs font-semibold text-neutral-400 shrink-0 overflow-hidden">
                           {product.image_url ? <img src={product.image_url} alt={product.name} className="h-full w-full object-cover rounded-xl" /> : product.name.charAt(0)}
                         </div>
                         <span className="flex-1 text-sm text-neutral-700 line-clamp-1">{product.name} <span className="text-neutral-400">×{item.quantity}</span></span>
@@ -405,7 +405,7 @@ const CheckoutForm = ({ stripe, elements }) => {
 
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-neutral-900">Order Total</span>
-                  <span className="font-serif text-2xl font-semibold text-neutral-900">${finalTotal.toFixed(2)}</span>
+                  <span className="font-serif text-xl sm:text-2xl font-semibold text-neutral-900">${finalTotal.toFixed(2)}</span>
                 </div>
 
                 <button

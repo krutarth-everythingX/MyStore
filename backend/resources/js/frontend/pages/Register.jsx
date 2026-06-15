@@ -10,20 +10,21 @@ export const Register = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState('buyer');
-  const [brandName, setBrandName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const { register } = useAuth();
   const { showToast } = useToast();
+  const redirectParam = new URLSearchParams(window.location.search).get('redirect');
+  const googleHref = `/auth/google?role=${encodeURIComponent(role)}${redirectParam ? `&redirect=${encodeURIComponent(redirectParam)}` : ''}`;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await register(name, email, '', password, role, role === 'seller' ? brandName : '');
-      showToast('Registration successful! A verification code has been sent to your email.', 'success');
+      await register(name, email, '', password, role);
+      showToast('Registration successful! Send a verification code from your profile when you are ready.', 'success');
     } catch (err) {
       setError(err.message || 'Registration failed');
       showToast(err.message || 'Registration failed', 'error');
@@ -39,10 +40,10 @@ export const Register = () => {
       {/* Left Branding */}
       <div className="hidden lg:flex flex-col justify-between w-[45%] bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 px-14 py-14 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_70%_at_20%_80%,rgba(251,191,36,0.08),transparent)]" />
-        <Link href="/" className="font-serif text-2xl font-semibold text-white tracking-tight z-10">MyStore</Link>
+        <Link href="/" className="text-xl font-semibold text-white z-10">MyStore</Link>
         <div className="z-10">
           <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-4 block">Create Account</span>
-          <h1 className="font-serif text-4xl font-semibold text-white leading-tight mb-4">Join the storefront.</h1>
+          <h1 className="text-3xl font-semibold text-white leading-snug mb-4">Join the storefront.</h1>
           <p className="text-neutral-400 text-base leading-relaxed">Create a buyer or seller account and step into a cleaner, more premium MyStore experience.</p>
         </div>
         <p className="text-neutral-600 text-xs z-10">© {new Date().getFullYear()} MyStore. All rights reserved.</p>
@@ -51,14 +52,14 @@ export const Register = () => {
       {/* Right Form */}
       <div className="flex-1 flex flex-col justify-center items-center px-6 py-12 lg:px-16 overflow-y-auto">
         <div className="w-full max-w-md">
-          <Link href="/" className="lg:hidden font-serif text-2xl font-semibold text-neutral-900 tracking-tight mb-8 block">MyStore</Link>
+          <Link href="/" className="lg:hidden text-xl font-semibold text-neutral-900 mb-8 block">MyStore</Link>
 
           <div className="mb-8">
             <Link href="/" className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-neutral-400 hover:text-neutral-800 transition-colors mb-6">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m15 18-6-6 6-6" /></svg>
               Back to store
             </Link>
-            <h2 className="font-serif text-3xl font-semibold text-neutral-900 mb-2">Create your Account</h2>
+            <h2 className="text-2xl font-semibold text-neutral-900 mb-2">Create your Account</h2>
             <p className="text-sm text-neutral-500">Fill in the details below to get started.</p>
           </div>
 
@@ -67,6 +68,39 @@ export const Register = () => {
               <AlertCircle size={15} className="shrink-0" /> {error}
             </div>
           )}
+
+          <div className="mb-5 flex flex-col gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">I want to register as a:</span>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { value: 'buyer', label: 'Buyer', sub: 'to shop items' },
+                { value: 'seller', label: 'Seller', sub: 'to sell items' },
+              ].map(({ value, label, sub }) => (
+                <label
+                  key={value}
+                  className={`flex flex-col items-center justify-center gap-1 border-2 rounded-2xl py-4 cursor-pointer transition-all ${role === value ? 'border-neutral-900 bg-neutral-50' : 'border-neutral-200 hover:border-neutral-400'}`}
+                >
+                  <input type="radio" name="role" value={value} checked={role === value} onChange={() => setRole(value)} className="hidden" />
+                  <span className={`text-sm font-semibold ${role === value ? 'text-neutral-900' : 'text-neutral-600'}`}>{label}</span>
+                  <span className="text-[11px] text-neutral-400">{sub}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <a
+            href={googleHref}
+            className="w-full mb-5 inline-flex items-center justify-center gap-3 rounded-full border border-neutral-200 bg-white py-3 text-xs font-bold uppercase tracking-widest text-neutral-800 transition-all hover:-translate-y-0.5 hover:bg-neutral-50"
+          >
+            <span className="flex h-5 w-5 items-center justify-center rounded-full border border-neutral-200 text-sm font-semibold normal-case tracking-normal text-neutral-900">G</span>
+            Continue with Google
+          </a>
+
+          <div className="mb-5 flex items-center gap-3">
+            <span className="h-px flex-1 bg-neutral-200" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">or</span>
+            <span className="h-px flex-1 bg-neutral-200" />
+          </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
@@ -95,33 +129,6 @@ export const Register = () => {
                 </button>
               </div>
             </div>
-
-            {/* Role */}
-            <div className="flex flex-col gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">I want to register as a:</span>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { value: 'buyer', label: 'Buyer', sub: 'to shop items' },
-                  { value: 'seller', label: 'Seller', sub: 'to sell items' },
-                ].map(({ value, label, sub }) => (
-                  <label
-                    key={value}
-                    className={`flex flex-col items-center justify-center gap-1 border-2 rounded-2xl py-4 cursor-pointer transition-all ${role === value ? 'border-neutral-900 bg-neutral-50' : 'border-neutral-200 hover:border-neutral-400'}`}
-                  >
-                    <input type="radio" name="role" value={value} checked={role === value} onChange={() => setRole(value)} className="hidden" />
-                    <span className={`text-sm font-semibold ${role === value ? 'text-neutral-900' : 'text-neutral-600'}`}>{label}</span>
-                    <span className="text-[11px] text-neutral-400">{sub}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {role === 'seller' && (
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Store / Brand Name</label>
-                <input className={inputCls} type="text" placeholder="Enter your store name (e.g. ApexTech)" value={brandName} onChange={(e) => setBrandName(e.target.value)} required={role === 'seller'} />
-              </div>
-            )}
 
             <button
               type="submit"

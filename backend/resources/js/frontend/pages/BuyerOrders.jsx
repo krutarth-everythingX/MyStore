@@ -88,7 +88,7 @@ export const BuyerOrders = () => {
         )}
 
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-          <h1 className="font-serif text-3xl font-semibold text-neutral-900">My Purchase History</h1>
+          <h1 className="font-serif text-2xl font-semibold text-neutral-900">My Purchase History</h1>
           <span className="text-xs font-semibold bg-white border border-neutral-200 px-3 py-1.5 rounded-full text-neutral-600">Total Orders: {orders.length}</span>
         </div>
 
@@ -100,7 +100,7 @@ export const BuyerOrders = () => {
               <Package size={26} className="text-neutral-400" />
             </div>
             <div>
-              <h3 className="font-serif text-xl font-semibold text-neutral-900 mb-2">No orders found</h3>
+              <h3 className="font-serif text-lg font-semibold text-neutral-900 mb-2">No orders found</h3>
               <p className="text-sm text-neutral-500">You haven't placed any orders in MyStore yet.</p>
             </div>
             <Link href="/" className="px-6 py-2.5 bg-neutral-950 text-white text-xs font-bold uppercase tracking-widest rounded-full hover:bg-neutral-900 transition-colors">
@@ -260,7 +260,7 @@ export const BuyerOrders = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-neutral-500">Grand Total</span>
-                        <span className="font-serif text-2xl font-semibold text-neutral-900">${parseFloat(order.total_amount).toFixed(2)}</span>
+                        <span className="font-serif text-xl font-semibold text-neutral-900">${parseFloat(order.total_amount).toFixed(2)}</span>
                       </div>
                     </div>
                   </div>

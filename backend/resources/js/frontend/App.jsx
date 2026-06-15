@@ -22,12 +22,15 @@ import Notifications from './pages/Notifications';
 // Seller Dashboard Pages
 import SellerOverview from './pages/SellerOverview';
 import SellerProducts from './pages/SellerProducts';
+import SellerCategories from './pages/SellerCategories';
 import SellerInventory from './pages/SellerInventory';
 import SellerOrders from './pages/SellerOrders';
 import SellerProfile from './pages/SellerProfile';
+import SellerSetup from './pages/SellerSetup';
 
 // Global Styles
 import './styles/design-system.css';
+import './styles/seller-workspace.css';
 
 const normalizePath = (path) => {
   if (!path) {
@@ -56,6 +59,16 @@ const LoadingScreen = () => (
   </div>
 );
 
+const sellerSetupComplete = (user) => Boolean(
+  user?.brand_name
+    && user?.gst_number
+    && user?.address
+    && user?.country
+    && user?.default_fulfillment_channel,
+);
+
+const sellerHomePath = (user) => (sellerSetupComplete(user) ? '/seller' : '/seller/setup');
+
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { user, loading } = useAuth();
 
@@ -68,7 +81,25 @@ const ProtectedRoute = ({ children, allowedRole }) => {
   }
 
   if (allowedRole && user.role !== allowedRole) {
-    return <Redirect to={user.role === 'seller' ? '/seller' : '/'} replace />;
+    return <Redirect to={user.role === 'seller' ? sellerHomePath(user) : '/'} replace />;
+  }
+
+  if (user.role === 'seller' && !sellerSetupComplete(user) && window.location.pathname !== '/seller/setup') {
+    return <Redirect to="/seller/setup" replace />;
+  }
+
+  return children;
+};
+
+const StorefrontRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  if (user?.role === 'seller') {
+    return <Redirect to={sellerHomePath(user)} replace />;
   }
 
   return children;
@@ -79,23 +110,43 @@ const RouteView = () => {
   const pathname = getPathname(url || window.location.href);
 
   if (pathname === '/') {
-    return <Home />;
+    return (
+      <StorefrontRoute>
+        <Home />
+      </StorefrontRoute>
+    );
   }
 
   if (pathname === '/cart') {
-    return <Cart />;
+    return (
+      <StorefrontRoute>
+        <Cart />
+      </StorefrontRoute>
+    );
   }
 
   if (pathname === '/categories') {
-    return <AllCategories />;
+    return (
+      <StorefrontRoute>
+        <AllCategories />
+      </StorefrontRoute>
+    );
   }
 
   if (pathname.startsWith('/categories/')) {
-    return <CategoryCatalog />;
+    return (
+      <StorefrontRoute>
+        <CategoryCatalog />
+      </StorefrontRoute>
+    );
   }
 
   if (pathname === '/week-most-wanted') {
-    return <WeekMostWanted />;
+    return (
+      <StorefrontRoute>
+        <WeekMostWanted />
+      </StorefrontRoute>
+    );
   }
 
   if (pathname === '/login') {
@@ -124,7 +175,7 @@ const RouteView = () => {
 
   if (pathname === '/profile') {
     return (
-      <ProtectedRoute>
+      <ProtectedRoute allowedRole="buyer">
         <Profile />
       </ProtectedRoute>
     );
@@ -132,7 +183,7 @@ const RouteView = () => {
 
   if (pathname === '/notifications') {
     return (
-      <ProtectedRoute>
+      <ProtectedRoute allowedRole="buyer">
         <Notifications />
       </ProtectedRoute>
     );
@@ -146,10 +197,34 @@ const RouteView = () => {
     );
   }
 
+  if (pathname === '/seller/setup') {
+    return (
+      <ProtectedRoute allowedRole="seller">
+        <SellerSetup />
+      </ProtectedRoute>
+    );
+  }
+
   if (pathname === '/seller/products') {
     return (
       <ProtectedRoute allowedRole="seller">
         <SellerProducts />
+      </ProtectedRoute>
+    );
+  }
+
+  if (pathname === '/seller/categories') {
+    return (
+      <ProtectedRoute allowedRole="seller">
+        <SellerCategories />
+      </ProtectedRoute>
+    );
+  }
+
+  if (pathname === '/seller/products/preview-draft' || /^\/seller\/products\/\d+\/preview$/.test(pathname)) {
+    return (
+      <ProtectedRoute allowedRole="seller">
+        <ProductDetails />
       </ProtectedRoute>
     );
   }
@@ -179,7 +254,11 @@ const RouteView = () => {
   }
 
   if (pathname.startsWith('/products/')) {
-    return <ProductDetails />;
+    return (
+      <StorefrontRoute>
+        <ProductDetails />
+      </StorefrontRoute>
+    );
   }
 
   return <Redirect to="/" replace />;

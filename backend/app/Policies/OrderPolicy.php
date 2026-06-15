@@ -20,6 +20,7 @@ class OrderPolicy
     public function ship(User $user, Order $order): bool
     {
         return $user->role === 'seller'
+            && seller_setup_complete($user)
             && $order->items->isNotEmpty()
             && $order->items->first()?->product?->user_id === $user->id;
     }

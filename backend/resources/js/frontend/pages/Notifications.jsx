@@ -26,7 +26,7 @@ export const Notifications = () => {
             <div className="h-10 w-10 rounded-full bg-neutral-100 flex items-center justify-center">
               <Bell size={18} className="text-neutral-700" />
             </div>
-            <h1 className="font-serif text-3xl font-semibold text-neutral-900">Notifications</h1>
+            <h1 className="font-serif text-2xl font-semibold text-neutral-900">Notifications</h1>
           </div>
           <span className="text-xs text-neutral-500 font-semibold bg-white border border-neutral-200 px-3 py-1.5 rounded-full">
             Active Alerts: {isUnverified ? 1 : 0}

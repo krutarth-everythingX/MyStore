@@ -105,7 +105,7 @@ const ProductSpotlightGrid = ({ products }) => (
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-100 to-neutral-300 font-serif text-6xl italic text-neutral-400">
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-100 to-neutral-200 text-4xl font-semibold text-neutral-400">
             {product.name?.charAt(0)}
           </div>
         )}
@@ -114,12 +114,12 @@ const ProductSpotlightGrid = ({ products }) => (
           <span className="mb-1 block text-[10px] uppercase tracking-widest opacity-75">
             {product.brand?.name || product.user?.name || 'Featured'}
           </span>
-          <h4 className={`mb-3 font-semibold leading-tight ${index === 0 ? 'text-xl sm:text-2xl' : 'text-base'}`}>
+          <h4 className={`mb-3 font-semibold leading-tight ${index === 0 ? 'text-lg sm:text-xl' : 'text-sm sm:text-base'}`}>
             {product.name}
           </h4>
           <div className="flex items-center justify-between gap-3">
-            <span className="text-lg font-semibold">${productPrice(product).toFixed(2)}</span>
-            <span className="rounded-full bg-white px-5 py-2 text-[10px] font-bold uppercase tracking-wider text-neutral-900 transition-transform group-hover:-translate-y-0.5">
+            <span className="text-base font-semibold">${productPrice(product).toFixed(2)}</span>
+            <span className="rounded-full bg-white px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-900 transition-transform group-hover:-translate-y-0.5">
               Discover
             </span>
           </div>
@@ -156,10 +156,10 @@ const CategorySpotlightGrid = ({ categories, products }) => (
             <span className="mb-1 block text-[9px] uppercase tracking-widest opacity-75">
               {category.children?.length || 0} edits
             </span>
-            <h4 className="mb-3 font-serif text-lg font-semibold leading-tight sm:text-xl">
+            <h4 className="mb-3 text-base font-semibold leading-tight sm:text-lg">
               {getCategoryDisplayName(category.name)}
             </h4>
-            <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[9px] font-bold uppercase tracking-wider text-neutral-900 transition-transform group-hover:-translate-y-0.5">
+            <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[9px] font-semibold uppercase tracking-[0.14em] text-neutral-900 transition-transform group-hover:-translate-y-0.5">
               View <ArrowRight size={11} />
             </span>
           </div>
@@ -250,15 +250,15 @@ export const Home = () => {
             <span className="h-px w-10 bg-amber-600/60" />
           </div>
 
-          <h1 className="mb-6 font-serif text-4xl font-semibold leading-[1.08] tracking-tight text-neutral-900 sm:text-5xl md:text-6xl lg:text-7xl">
+          <h1 className="mb-6 text-3xl font-semibold leading-tight text-neutral-900 sm:text-4xl md:text-5xl">
             Premium essentials, presented with calm and rhythm.
           </h1>
-          <p className="mb-10 max-w-2xl text-base leading-relaxed text-neutral-500 sm:text-lg">
+          <p className="mb-10 max-w-2xl text-sm leading-relaxed text-neutral-500 sm:text-base">
             MyStore brings verified sellers, elevated discovery, and category-first browsing into one refined shopping experience.
           </p>
           <Link
             href="/categories"
-            className="flex items-center gap-2 rounded-full bg-neutral-950 px-8 py-3.5 text-xs font-bold uppercase tracking-widest text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-neutral-900"
+            className="flex items-center gap-2 rounded-full bg-neutral-950 px-7 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-neutral-900"
           >
             Explore categories <ArrowRight size={14} />
           </Link>
@@ -273,7 +273,7 @@ export const Home = () => {
                 <span className="mb-2 inline-flex rounded-full bg-amber-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-700">
                   Category edit
                 </span>
-                <h2 className="mb-1 font-serif text-2xl font-semibold text-neutral-900 sm:text-3xl">
+                <h2 className="mb-1 text-xl font-semibold text-neutral-900 sm:text-2xl">
                   Shop by category
                 </h2>
                 <p className="max-w-2xl text-sm text-neutral-500">
@@ -299,7 +299,7 @@ export const Home = () => {
                 <span className="mb-2 inline-flex rounded-full bg-neutral-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-600">
                   {getCategoryDisplayName(category.name)}
                 </span>
-                <h2 className="mb-1 font-serif text-2xl font-semibold text-neutral-900 sm:text-3xl">
+                <h2 className="mb-1 text-xl font-semibold text-neutral-900 sm:text-2xl">
                   {getCategoryDisplayName(category.name)} picks
                 </h2>
                 <p className="max-w-2xl text-sm text-neutral-500">
@@ -324,7 +324,7 @@ export const Home = () => {
               <span className="mb-2 inline-flex rounded-full bg-rose-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-rose-700">
                 Spotlight
               </span>
-              <h2 className="mb-1 font-serif text-2xl font-semibold text-neutral-900 sm:text-3xl">
+              <h2 className="mb-1 text-xl font-semibold text-neutral-900 sm:text-2xl">
                 The week's most wanted
               </h2>
               <p className="max-w-2xl text-sm text-neutral-500">

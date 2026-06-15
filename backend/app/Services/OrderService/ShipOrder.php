@@ -7,20 +7,12 @@ use App\Exceptions\ServiceException;
 use App\Jobs\SendOrderShippedNotificationJob;
 use App\Models\Order;
 use App\Models\User;
-use App\Services\OrderService\Concerns\ManagesOrderOperations;
-use App\Services\ShiprocketService\Authenticate as ShiprocketAuthenticate;
-use App\Services\ShiprocketService\CreateAdhocOrder as ShiprocketCreateAdhocOrder;
-use App\Services\ShiprocketService\GenerateLabel as ShiprocketGenerateLabel;
+use App\Services\InventoryService\ManageStockMovement;
 
 class ShipOrder
 {
-    use ManagesOrderOperations;
-
-    public function __construct(
-        private readonly ShiprocketAuthenticate $shiprocketAuthenticate,
-        private readonly ShiprocketCreateAdhocOrder $shiprocketCreateAdhocOrder,
-        private readonly ShiprocketGenerateLabel $shiprocketGenerateLabel,
-    ) {
+    public function __construct(private readonly ManageStockMovement $manageStockMovement)
+    {
     }
 
     public function handle(Order $order, User $seller): Order
@@ -31,29 +23,16 @@ class ShipOrder
             throw ServiceException::badRequest('Only processing orders can be shipped');
         }
 
-        $token = ($seller->shiprocket_email && $seller->shiprocket_password)
-            ? $this->shiprocketAuthenticate->handle($seller->shiprocket_email, $seller->shiprocket_password)
-            : null;
-
-        $syncResult = $this->shiprocketCreateAdhocOrder->handle(
-            $this->buildShipmentPayload($order, $seller),
-            $token,
-        );
-
-        if (! ($syncResult['success'] ?? false)) {
-            throw ServiceException::serverError('Failed to push order to Shiprocket.');
-        }
-
-        $awbCode = $syncResult['awb_code'] ?? null;
-        $labelUrl = $this->shiprocketGenerateLabel->handle((string) ($syncResult['shipment_id'] ?? ''), $token);
+        $channel = $seller->default_fulfillment_channel ?: 'Seller Fulfilled';
 
         $order->update([
             'status' => OrderStatus::Shipped,
-            'tracking_number' => $awbCode,
-            'shipping_label_url' => $labelUrl,
-            'tracking_url' => $awbCode ? 'https://www.shiprocket.in/tracking/' . $awbCode : null,
-            'shipping_carrier' => 'Shiprocket',
+            'shipping_carrier' => $channel,
+            'fulfillment_channel' => $channel,
+            'seller_shipping_acceptance_time' => $seller->shipping_acceptance_time,
         ]);
+
+        $this->manageStockMovement->shipOrderReservations($order);
 
         SendOrderShippedNotificationJob::dispatch($order->id);
 

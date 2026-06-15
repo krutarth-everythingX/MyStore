@@ -3,10 +3,13 @@
 namespace App\Services\AuthService;
 
 use App\Models\User;
+use App\Services\AuthService\Concerns\HasVerificationCodes;
 use Illuminate\Validation\ValidationException;
 
 class VerifyEmail
 {
+    use HasVerificationCodes;
+
     public function handle(User $user, string $code): array
     {
         if ($user->email_verified_at) {
@@ -14,6 +17,18 @@ class VerifyEmail
                 'user' => $user,
                 'already_verified' => true,
             ];
+        }
+
+        if (! $user->verification_code || ! $user->verification_code_sent_at) {
+            throw ValidationException::withMessages([
+                'code' => ['Please send a verification code first.'],
+            ]);
+        }
+
+        if ($this->codeExpiresAt($user)?->isPast()) {
+            throw ValidationException::withMessages([
+                'code' => ['Verification code expired. Please resend a new code.'],
+            ]);
         }
 
         if ($user->verification_code !== $code) {
@@ -25,6 +40,7 @@ class VerifyEmail
         $user->forceFill([
             'email_verified_at' => now(),
             'verification_code' => null,
+            'verification_code_sent_at' => null,
         ])->save();
 
         try {

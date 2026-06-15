@@ -830,7 +830,12 @@ class DatabaseSeeder extends Seeder
                 'role' => 'seller',
                 'brand_name' => $sellerInfo['brand'] . ' Brand',
                 'gst_number' => $loc['gstin'],
-                'address' => '500 Marketplace Blvd, ' . $loc['city'] . ', ' . $loc['state'] . ' - ' . $loc['zip']
+                'address' => '500 Marketplace Blvd, ' . $loc['city'] . ', ' . $loc['state'] . ' - ' . $loc['zip'],
+                'country' => 'India',
+                'fulfillment_channels' => ['Seller Fulfilled', 'Local Courier', 'Marketplace Managed'],
+                'default_fulfillment_channel' => 'Seller Fulfilled',
+                'shipping_acceptance_time' => '2 hours',
+                'handling_time_business_days' => 1,
             ]);
 
             // Create Brand for Seller
@@ -850,7 +855,7 @@ class DatabaseSeeder extends Seeder
                 'city' => $loc['city'],
                 'state' => $loc['state'],
                 'postal_code' => $loc['zip'],
-                'default_carrier' => 'Shiprocket'
+                'default_carrier' => 'Seller Fulfilled'
             ]);
 
             // Create Parent Category
@@ -879,6 +884,21 @@ class DatabaseSeeder extends Seeder
                         'description' => $pData['desc'],
                         'short_description' => $pData['short'],
                         'status' => 'published',
+                        'manufacturer' => $sellerInfo['brand'],
+                        'country_of_origin' => 'India',
+                        'product_type' => $subCatName,
+                        'product_type_keyword' => implode(', ', $pData['tags']),
+                        'target_gender' => 'Unisex',
+                        'recommended_age' => str_contains(strtolower($parentCatName), 'baby') ? '0 months and up' : '12 years and up',
+                        'condition' => 'new',
+                        'fulfillment_channel' => 'Seller Fulfilled',
+                        'bullet_points' => [
+                            ['title' => 'Description', 'value' => $pData['short']],
+                            ['title' => 'Material', 'value' => 'Quality-tested marketplace item from a verified seller.'],
+                            ['title' => 'Warranty', 'value' => 'Seller support available for eligible issues.'],
+                        ],
+                        'seo_search_terms' => $pData['tags'],
+                        'whats_inside_box' => ['1 x ' . $pData['name']],
                         'regular_price' => $pData['price'],
                         'sale_price' => $pData['sale'],
                         'sku' => $pData['sku'],
@@ -890,7 +910,11 @@ class DatabaseSeeder extends Seeder
                         'weight_kg' => mt_rand(5, 50) / 10,
                         'length_cm' => mt_rand(10, 50),
                         'width_cm' => mt_rand(10, 40),
-                        'height_cm' => mt_rand(5, 30)
+                        'height_cm' => mt_rand(5, 30),
+                        'package_weight_kg' => mt_rand(6, 60) / 10,
+                        'package_length_cm' => mt_rand(12, 55),
+                        'package_width_cm' => mt_rand(12, 45),
+                        'package_height_cm' => mt_rand(8, 35),
                     ]);
 
                     $product->categories()->attach([$childCategory->id, $parentCategory->id]);

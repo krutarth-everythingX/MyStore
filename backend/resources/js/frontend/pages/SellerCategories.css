@@ -1,0 +1,350 @@
+.seller-categories-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.seller-categories-kicker {
+  display: inline-flex;
+  color: var(--color-outline);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.seller-categories-page .seller-page-title-block p {
+  color: var(--color-outline);
+}
+
+.seller-category-alert {
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.seller-category-alert-success {
+  background: var(--color-success-container);
+  color: var(--color-success);
+}
+
+.seller-category-alert-error {
+  background: var(--color-error-container);
+  color: var(--color-on-error-container);
+}
+
+.seller-categories-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.seller-category-form,
+.seller-category-panel,
+.seller-category-stats > div {
+  border: 1px solid rgba(26, 28, 26, 0.08);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: var(--shadow-xs);
+}
+
+.seller-category-form {
+  position: sticky;
+  top: 104px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+}
+
+.seller-category-form .input-container {
+  margin-bottom: 0;
+}
+
+.seller-category-form .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+}
+
+.seller-category-form-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(26, 28, 26, 0.08);
+}
+
+.seller-category-form-head > span {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(26, 28, 26, 0.06);
+}
+
+.seller-category-form-head h3,
+.seller-category-panel-head h3,
+.seller-category-row h3,
+.seller-category-empty h3 {
+  margin: 0;
+  color: var(--color-on-surface);
+}
+
+.seller-category-form-head h3,
+.seller-category-panel-head h3 {
+  font-size: 18px;
+  font-weight: 750;
+}
+
+.seller-category-form-head p,
+.seller-category-row p,
+.seller-category-empty p {
+  margin: 5px 0 0;
+  color: var(--color-outline);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.seller-category-product-link {
+  color: var(--color-outline);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.seller-category-overview {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.seller-category-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.seller-category-stats > div {
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+}
+
+.seller-category-stats svg {
+  color: var(--color-outline);
+}
+
+.seller-category-stats strong {
+  color: var(--color-on-surface);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.seller-category-stats span {
+  color: var(--color-outline);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.seller-category-panel {
+  padding: 18px;
+}
+
+.seller-category-panel-head {
+  margin-bottom: 14px;
+}
+
+.seller-category-tree,
+.seller-category-children {
+  display: grid;
+  gap: 8px;
+}
+
+.seller-category-children {
+  grid-column: 1 / -1;
+  margin-top: 10px;
+  padding-left: 18px;
+}
+
+.seller-category-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 13px 14px;
+  border: 1px solid rgba(26, 28, 26, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.seller-category-row-main {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.seller-category-icon {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 12px;
+  background: rgba(26, 28, 26, 0.06);
+  color: var(--color-on-surface-variant);
+}
+
+.seller-category-row h3 {
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.seller-category-slug {
+  max-width: 210px;
+  overflow: hidden;
+  padding: 6px 9px;
+  border-radius: var(--radius-full);
+  background: rgba(26, 28, 26, 0.05);
+  color: var(--color-outline);
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seller-category-empty {
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 28px;
+  text-align: center;
+  color: var(--color-outline);
+}
+
+.seller-category-empty h3 {
+  margin-top: 12px;
+  font-size: 17px;
+}
+
+@media (max-width: 980px) {
+  .seller-categories-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .seller-category-form {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .seller-category-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .seller-category-row {
+    grid-template-columns: 1fr;
+  }
+
+  .seller-category-slug {
+    max-width: 100%;
+    width: fit-content;
+  }
+}
+
+/* Minimal category manager refresh */
+.seller-categories-page {
+  gap: 16px;
+}
+
+.seller-categories-page .seller-page-title-block h2 {
+  font-weight: 650;
+}
+
+.seller-category-alert-success,
+.seller-category-alert-error {
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--color-on-surface-variant);
+}
+
+.seller-category-form,
+.seller-category-panel,
+.seller-category-stats > div {
+  border: 0;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: none;
+}
+
+.seller-category-form {
+  padding: 18px;
+}
+
+.seller-category-form-head {
+  padding-bottom: 12px;
+  border-bottom-color: rgba(26, 28, 26, 0.055);
+}
+
+.seller-category-form-head > span,
+.seller-category-icon {
+  background: rgba(26, 28, 26, 0.045);
+  color: var(--color-on-surface-variant);
+}
+
+.seller-category-form-head h3,
+.seller-category-panel-head h3 {
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.seller-category-stats > div {
+  min-height: 88px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.seller-category-stats strong {
+  font-size: 22px;
+  font-weight: 650;
+}
+
+.seller-category-panel {
+  padding: 18px;
+}
+
+.seller-category-row {
+  border: 0;
+  border-radius: 14px;
+  background: rgba(250, 249, 246, 0.64);
+}
+
+.seller-category-row h3 {
+  font-weight: 650;
+}
+
+.seller-category-slug {
+  background: rgba(26, 28, 26, 0.045);
+  color: var(--color-outline);
+}
+
+.seller-categories-page .input-field {
+  border-color: rgba(26, 28, 26, 0.09);
+  background: rgba(255, 255, 255, 0.72);
+}

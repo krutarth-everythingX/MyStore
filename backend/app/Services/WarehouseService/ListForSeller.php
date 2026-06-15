@@ -9,6 +9,8 @@ class ListForSeller
 {
     public function handle(int $sellerId): Collection
     {
-        return Warehouse::where('user_id', $sellerId)->get();
+        return Warehouse::with('zones.aisles.racks.shelves.bins')
+            ->where('user_id', $sellerId)
+            ->get();
     }
 }

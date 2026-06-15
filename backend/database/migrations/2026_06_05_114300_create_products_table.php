@@ -18,11 +18,22 @@ return new class extends Migration
             $table->string('status')->default('published'); // draft, published, pending
             $table->string('featured_image')->nullable();
             $table->json('gallery_images')->nullable();
+            $table->string('mystore_product_id')->nullable()->unique();
+            $table->string('manufacturer')->nullable();
+            $table->string('model_number')->nullable();
+            $table->string('country_of_origin')->nullable();
+            $table->string('product_type')->nullable();
+            $table->string('product_type_keyword')->nullable();
+            $table->string('target_gender')->nullable();
+            $table->string('recommended_age')->nullable();
+            $table->string('condition')->default('new');
+            $table->string('fulfillment_channel')->nullable();
             $table->decimal('regular_price', 10, 2);
             $table->decimal('sale_price', 10, 2)->nullable();
             $table->string('tax_status')->default('taxable'); // taxable, shipping, none
             $table->string('tax_class')->default('standard');
             $table->string('sku')->nullable();
+            $table->string('parent_sku_id')->nullable();
             $table->boolean('manage_stock')->default(false);
             $table->integer('stock_quantity')->default(0);
             $table->string('stock_status')->default('instock'); // instock, outofstock, onbackorder
@@ -32,8 +43,21 @@ return new class extends Migration
             $table->decimal('length', 8, 2)->nullable();
             $table->decimal('width', 8, 2)->nullable();
             $table->decimal('height', 8, 2)->nullable();
+            $table->decimal('weight_kg', 8, 2)->default(0.5);
+            $table->decimal('length_cm', 8, 2)->nullable();
+            $table->decimal('width_cm', 8, 2)->nullable();
+            $table->decimal('height_cm', 8, 2)->nullable();
+            $table->decimal('package_weight_kg', 8, 2)->nullable();
+            $table->decimal('package_length_cm', 8, 2)->nullable();
+            $table->decimal('package_width_cm', 8, 2)->nullable();
+            $table->decimal('package_height_cm', 8, 2)->nullable();
             $table->string('shipping_class')->nullable();
             $table->json('attributes')->nullable(); // json attribute options
+            $table->json('bullet_points')->nullable();
+            $table->json('size_chart')->nullable();
+            $table->json('safety_compliance')->nullable();
+            $table->json('seo_search_terms')->nullable();
+            $table->json('whats_inside_box')->nullable();
             $table->text('purchase_note')->nullable();
             $table->integer('menu_order')->default(0);
             $table->boolean('enable_reviews')->default(true);

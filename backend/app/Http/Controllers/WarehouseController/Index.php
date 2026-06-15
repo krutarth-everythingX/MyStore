@@ -14,7 +14,7 @@ class Index extends Controller
 
     public function __invoke(Request $request)
     {
-        if ($request->user()->role !== 'seller') {
+        if ($request->user()->role !== 'seller' || ! seller_setup_complete($request->user())) {
             return response(['message' => 'Unauthorized. Sellers only.'], 403);
         }
 

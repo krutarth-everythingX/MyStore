@@ -61,14 +61,14 @@ export const Cart = () => {
           <span className="text-neutral-800">Shopping Cart</span>
         </nav>
 
-        <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-neutral-900 mb-8">Shopping Cart</h1>
+        <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-neutral-900 mb-8">Shopping Cart</h1>
 
         {cart.length === 0 ? (
           <div className="flex flex-col items-center justify-center min-h-96 bg-white rounded-3xl border border-neutral-100 shadow-xs gap-5 text-center px-6 py-16">
             <div className="h-16 w-16 rounded-full bg-neutral-100 flex items-center justify-center">
               <ShoppingBag size={28} className="text-neutral-400" />
             </div>
-            <h3 className="font-serif text-xl font-semibold text-neutral-900">Your cart is empty</h3>
+            <h3 className="font-serif text-lg font-semibold text-neutral-900">Your cart is empty</h3>
             <p className="text-sm text-neutral-500">Looks like you haven't added anything to your cart yet.</p>
             <Link href="/categories" className="px-6 py-2.5 bg-neutral-950 text-white text-xs font-bold uppercase tracking-widest rounded-full hover:bg-neutral-900 transition-colors mt-2">
               Browse Categories
@@ -88,7 +88,7 @@ export const Cart = () => {
                   return (
                     <div key={product.id} className="flex flex-col sm:flex-row sm:items-center gap-4 px-5 sm:px-6 py-5 hover:bg-neutral-50 transition-colors">
                       {/* Image */}
-                      <div className="h-24 w-24 sm:h-20 sm:w-20 flex-shrink-0 rounded-2xl bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center font-serif italic text-2xl text-neutral-400 self-center sm:self-auto">
+                      <div className="h-24 w-24 sm:h-20 sm:w-20 flex-shrink-0 rounded-2xl bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center text-xl font-semibold text-neutral-400 self-center sm:self-auto">
                         {product.image_url ? (
                           <img src={product.image_url} alt={product.name} className="h-full w-full object-cover rounded-2xl" />
                         ) : product.name.charAt(0)}
@@ -96,7 +96,7 @@ export const Cart = () => {
 
                       {/* Details */}
                       <div className="flex-1 min-w-0">
-                        <Link href={`/products/${product.id}`} className="font-serif text-base font-semibold text-neutral-900 hover:text-neutral-600 transition-colors line-clamp-1">
+                        <Link href={`/products/${product.id}`} className="text-sm font-semibold text-neutral-900 hover:text-neutral-600 transition-colors line-clamp-1 sm:text-base">
                           {product.name}
                         </Link>
                         <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-400 mt-0.5">
@@ -115,7 +115,7 @@ export const Cart = () => {
                           {/* Price on mobile */}
                           <div className="sm:hidden flex flex-col">
                             <span className="text-[11px] text-neutral-400">${parseFloat(price).toFixed(2)} each</span>
-                            <span className="font-serif text-lg font-semibold text-neutral-900">${parseFloat(price * item.quantity).toFixed(2)}</span>
+                            <span className="font-serif text-base font-semibold text-neutral-900">${parseFloat(price * item.quantity).toFixed(2)}</span>
                           </div>
 
                           <button className="ml-auto sm:hidden p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors" onClick={() => removeFromCart(product.id)}>
@@ -127,7 +127,7 @@ export const Cart = () => {
                       {/* Desktop: Price column */}
                       <div className="hidden sm:flex flex-col items-end gap-1 shrink-0">
                         <span className="text-[11px] text-neutral-400">${parseFloat(price).toFixed(2)} each</span>
-                        <span className="font-serif text-xl font-semibold text-neutral-900">${parseFloat(price * item.quantity).toFixed(2)}</span>
+                        <span className="font-serif text-lg font-semibold text-neutral-900">${parseFloat(price * item.quantity).toFixed(2)}</span>
                       </div>
 
                       {/* Desktop: Remove button */}
@@ -179,7 +179,7 @@ export const Cart = () => {
 
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-neutral-900">Total</span>
-                  <span className="font-serif text-2xl font-semibold text-neutral-900">${(cartTotal - discountAmount).toFixed(2)}</span>
+                  <span className="font-serif text-xl sm:text-2xl font-semibold text-neutral-900">${(cartTotal - discountAmount).toFixed(2)}</span>
                 </div>
 
                 <div className="h-px bg-neutral-100 my-1" />

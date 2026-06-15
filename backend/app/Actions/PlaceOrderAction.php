@@ -10,6 +10,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
 use App\Notifications\LowStockNotification;
+use App\Services\InventoryService\ManageStockMovement;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -18,6 +19,10 @@ use Stripe\Stripe;
 
 class PlaceOrderAction
 {
+    public function __construct(private readonly ManageStockMovement $manageStockMovement)
+    {
+    }
+
     public function handle(OrderCheckoutData $checkoutData, User $buyer): array
     {
         return DB::transaction(function () use ($checkoutData, $buyer) {
@@ -35,51 +40,18 @@ class PlaceOrderAction
                 }
 
                 if ($product->manage_stock) {
-                    if ($product->stock_quantity < $itemData->quantity) {
+                    $availableQuantity = $product->warehouses->isEmpty()
+                        ? (int) $product->stock_quantity
+                        : $product->warehouses->sum(function ($warehouse) {
+                            return (int) ($warehouse->pivot->available_quantity ?? max(0, ((int) $warehouse->pivot->quantity) - ((int) $warehouse->pivot->reserved_quantity)));
+                        });
+
+                    if ($availableQuantity < $itemData->quantity) {
                         throw new HttpResponseException(
                             response([
-                                'message' => "Insufficient stock for product: {$product->name}. Only {$product->stock_quantity} remaining."
+                                'message' => "Insufficient stock for product: {$product->name}. Only {$availableQuantity} remaining."
                             ], 400)
                         );
-                    }
-
-                    $buyerZip = $this->extractBuyerZipCode($checkoutData->shippingAddress);
-
-                    $sortedWarehouses = $product->warehouses->sortBy(function ($warehouse) use ($buyerZip) {
-                        $warehouseZip = preg_replace('/[^0-9]/', '', $warehouse->postal_code) ?: '10001';
-
-                        return $this->calculateZipDistance($buyerZip, $warehouseZip);
-                    });
-
-                    $quantityToDeduct = $itemData->quantity;
-                    foreach ($sortedWarehouses as $warehouse) {
-                        $currentWarehouseQty = $warehouse->pivot->quantity;
-                        if ($currentWarehouseQty >= $quantityToDeduct) {
-                            $product->warehouses()->updateExistingPivot($warehouse->id, [
-                                'quantity' => $currentWarehouseQty - $quantityToDeduct
-                            ]);
-                            $quantityToDeduct = 0;
-                            break;
-                        }
-
-                        $product->warehouses()->updateExistingPivot($warehouse->id, [
-                            'quantity' => 0
-                        ]);
-                        $quantityToDeduct -= $currentWarehouseQty;
-                    }
-
-                    $product->stock_quantity -= $itemData->quantity;
-                    $product->save();
-
-                    if ($product->stock_quantity <= $product->low_stock_amount) {
-                        try {
-                            $seller = $product->user;
-                            if ($seller) {
-                                $seller->notify(new LowStockNotification($product));
-                            }
-                        } catch (\Exception $e) {
-                            Log::error("Low stock notification alert failed: " . $e->getMessage());
-                        }
                     }
                 }
 
@@ -151,6 +123,30 @@ class PlaceOrderAction
                 OrderItem::create($itemData);
             }
 
+            foreach ($checkoutData->items as $itemData) {
+                $product = Product::with('warehouses', 'user')->find($itemData->productId);
+
+                if ($product && $product->manage_stock) {
+                    $this->manageStockMovement->reserveForOrder(
+                        $product,
+                        $itemData->quantity,
+                        $order,
+                        $this->extractBuyerZipCode($checkoutData->shippingAddress),
+                    );
+
+                    if ($product->fresh()->stock_quantity <= $product->low_stock_amount) {
+                        try {
+                            $seller = $product->user;
+                            if ($seller) {
+                                $seller->notify(new LowStockNotification($product));
+                            }
+                        } catch (\Exception $e) {
+                            Log::error("Low stock notification alert failed: " . $e->getMessage());
+                        }
+                    }
+                }
+            }
+
             $clientSecret = null;
             if ($checkoutData->paymentMethod === 'Credit Card') {
                 $stripeSecret = config('services.stripe.secret') ?: env('STRIPE_SECRET_KEY');
@@ -206,50 +202,4 @@ class PlaceOrderAction
         return $matches[0] ?? '10001';
     }
 
-    private function calculateZipDistance(string $zip1, string $zip2): float
-    {
-        $zipCoordinates = [
-            '100' => [40.7128, -74.0060],
-            '900' => [34.0522, -118.2437],
-            '606' => [41.8781, -87.6298],
-            '770' => [29.7604, -95.3698],
-            '331' => [25.7617, -80.1918],
-            '981' => [47.6062, -122.3321],
-            '021' => [42.3601, -71.0589],
-            '200' => [38.9072, -77.0369],
-            '303' => [33.7490, -84.3880],
-            '941' => [37.7749, -122.4194],
-        ];
-
-        $getCoords = function (string $zip) use ($zipCoordinates): array {
-            $digits = preg_replace('/[^0-9]/', '', $zip);
-            if (strlen($digits) < 3) {
-                return [40.0, -95.0];
-            }
-
-            $prefix = substr($digits, 0, 3);
-            if (isset($zipCoordinates[$prefix])) {
-                return $zipCoordinates[$prefix];
-            }
-
-            $val = (int) $prefix;
-            $lat = 25.0 + ($val % 25);
-            $lng = -125.0 + (($val * 7) % 55);
-
-            return [$lat, $lng];
-        };
-
-        [$lat1, $lng1] = $getCoords($zip1);
-        [$lat2, $lng2] = $getCoords($zip2);
-
-        $earthRadius = 6371;
-        $dLat = deg2rad($lat2 - $lat1);
-        $dLng = deg2rad($lng2 - $lng1);
-        $a = sin($dLat / 2) * sin($dLat / 2) +
-            cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-            sin($dLng / 2) * sin($dLng / 2);
-        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-
-        return $earthRadius * $c;
-    }
 }

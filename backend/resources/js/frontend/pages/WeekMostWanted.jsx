@@ -375,7 +375,7 @@ export const WeekMostWanted = () => {
                 <span className="mb-2 inline-flex rounded-full bg-rose-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-rose-700">
                   Spotlight
                 </span>
-                <h1 className="font-serif text-3xl font-semibold leading-tight text-neutral-950 sm:text-5xl">
+                <h1 className="font-serif text-2xl font-semibold leading-tight text-neutral-950 sm:text-4xl">
                   {search ? `Most wanted: "${search}"` : "The week's most wanted"}
                 </h1>
                 <p className="mt-3 text-sm leading-relaxed text-neutral-500">
@@ -465,7 +465,7 @@ export const WeekMostWanted = () => {
             {filteredProducts.length === 0 ? (
               <div className="flex min-h-72 items-center justify-center rounded-2xl border border-neutral-100 bg-white">
                 <div className="flex max-w-sm flex-col items-center gap-4 p-8 text-center">
-                  <h3 className="font-serif text-xl font-semibold text-neutral-950">Nothing matches this edit yet</h3>
+                  <h3 className="font-serif text-lg font-semibold text-neutral-950">Nothing matches this edit yet</h3>
                   <p className="text-sm text-neutral-500">Try another category, brand, or price range.</p>
                   <button
                     type="button"

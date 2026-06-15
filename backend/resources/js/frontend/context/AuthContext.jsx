@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
-  const register = async (name, email, phone, password, role, brandName) => {
+  const register = async (name, email, phone, password, role) => {
     setLoading(true);
 
     return new Promise((resolve, reject) => {
@@ -36,7 +36,6 @@ export const AuthProvider = ({ children }) => {
         phone,
         password,
         role,
-        brand_name: brandName,
       }, {
         preserveScroll: true,
         onSuccess: (page) => {
@@ -107,13 +106,58 @@ export const AuthProvider = ({ children }) => {
     return new Promise((resolve, reject) => {
       router.post('/resend-verification', {}, {
         preserveScroll: true,
-        onSuccess: () => {
+        onSuccess: (page) => {
           setLoading(false);
-          resolve({ message: 'Verification code resent successfully.' });
+          resolve({
+            message: page.props.flash?.success || 'Verification code sent successfully.',
+            user: page.props.auth?.user ?? null,
+          });
         },
         onError: (errors) => {
           setLoading(false);
           reject(new Error(Object.values(errors)[0] || 'Resending failed'));
+        },
+      });
+    });
+  };
+
+  const sendPhoneVerification = async (countryCode, phone) => {
+    setLoading(true);
+
+    return new Promise((resolve, reject) => {
+      router.post('/send-phone-verification', {
+        country_code: countryCode,
+        phone,
+      }, {
+        preserveScroll: true,
+        onSuccess: (page) => {
+          setLoading(false);
+          resolve({
+            message: page.props.flash?.success || 'Phone verification code sent successfully.',
+            user: page.props.auth?.user ?? null,
+          });
+        },
+        onError: (errors) => {
+          setLoading(false);
+          reject(new Error(Object.values(errors)[0] || 'Failed to send phone verification code'));
+        },
+      });
+    });
+  };
+
+  const verifyPhoneCode = async (code) => {
+    setLoading(true);
+
+    return new Promise((resolve, reject) => {
+      router.post('/verify-phone', { code }, {
+        preserveScroll: true,
+        onSuccess: (page) => {
+          setLoading(false);
+          resolve(page.props.auth?.user ?? null);
+        },
+        onError: (errors) => {
+          setLoading(false);
+          reject(new Error(errors.code || 'Phone verification failed'));
         },
       });
     });
@@ -129,6 +173,8 @@ export const AuthProvider = ({ children }) => {
     updateProfile,
     verifyEmailCode,
     resendVerificationCode,
+    sendPhoneVerification,
+    verifyPhoneCode,
   }), [loading, user]);
 
   return (

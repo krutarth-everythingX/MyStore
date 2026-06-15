@@ -27,6 +27,23 @@ export const Navbar = ({ onSearch, opaque = false }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    if (!mobileMenuOpen) {
+      return undefined;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [mobileMenuOpen]);
+
   const hasUnreadNotification = user && !user.email_verified_at;
   const navItems = [
     { label: 'Home', href: '/', active: url === '/' },
@@ -81,22 +98,23 @@ export const Navbar = ({ onSearch, opaque = false }) => {
     setDropdownOpen(false);
   };
 
-  const headerClass = `sticky top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-neutral-200 shadow-sm transition-all duration-300 ${
-    scrolled || opaque ? 'py-3' : 'py-4'
+  const headerClass = `sticky top-0 z-50 w-full bg-white/96 backdrop-blur-md border-b border-neutral-200 shadow-sm transition-all duration-300 ${
+    scrolled || opaque ? 'py-2.5' : 'py-3'
   }`;
 
   return (
-    <header className={headerClass}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
-        {/* Logo */}
-        <Link href="/" className="flex flex-col items-start" onClick={() => setMobileMenuOpen(false)}>
-          <span className="font-serif text-2xl sm:text-3xl font-semibold tracking-tight text-neutral-900 leading-none">
-            MyStore
-          </span>
-          <span className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest mt-1">
-            Editorial commerce
-          </span>
-        </Link>
+    <>
+      <header className={headerClass}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+          {/* Logo */}
+          <Link href="/" className="flex flex-col items-start" onClick={() => setMobileMenuOpen(false)}>
+            <span className="text-xl sm:text-2xl font-semibold tracking-normal text-neutral-900 leading-none">
+              MyStore
+            </span>
+            <span className="mt-1 text-[9px] font-medium uppercase tracking-[0.16em] text-neutral-400">
+              Refined commerce
+            </span>
+          </Link>
 
         {/* Center Nav Link Items (Desktop) */}
         <nav className="hidden md:flex items-center gap-1">
@@ -104,7 +122,7 @@ export const Navbar = ({ onSearch, opaque = false }) => {
             <Link
               key={item.label}
               href={item.href}
-              className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${item.active
+              className={`px-3.5 py-2 rounded-full text-[10px] font-semibold uppercase tracking-[0.16em] transition-all ${item.active
                 ? 'bg-neutral-950 text-white shadow-xs'
                 : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100/60'
                 }`}
@@ -116,7 +134,7 @@ export const Navbar = ({ onSearch, opaque = false }) => {
           <div className="nav-categories-dropdown-container relative">
             <button
               type="button"
-              className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest flex items-center gap-1 transition-all ${url.startsWith('/categories')
+              className={`px-3.5 py-2 rounded-full text-[10px] font-semibold uppercase tracking-[0.16em] flex items-center gap-1 transition-all ${url.startsWith('/categories')
                 ? 'bg-neutral-950 text-white shadow-xs'
                 : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100/60'
                 }`}
@@ -217,11 +235,11 @@ export const Navbar = ({ onSearch, opaque = false }) => {
             {user ? (
               <div className="avatar-dropdown-container relative">
                 <button
-                  className="h-8 w-8 rounded-full bg-neutral-950 text-white font-serif italic flex items-center justify-center hover:bg-neutral-900 transition-colors"
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                >
-                  {user.name.charAt(0).toUpperCase()}
-                </button>
+                className="h-8 w-8 rounded-full bg-neutral-950 text-white font-semibold flex items-center justify-center hover:bg-neutral-900 transition-colors"
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+              >
+                {user.name.charAt(0).toUpperCase()}
+              </button>
                 {dropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-neutral-100 p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                     <Link
@@ -251,13 +269,13 @@ export const Navbar = ({ onSearch, opaque = false }) => {
               <div className="hidden md:flex items-center gap-1">
                 <Link
                   href="/login"
-                  className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-neutral-500 hover:text-neutral-900"
+                  className="px-3.5 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-500 hover:text-neutral-900"
                 >
                   Login
                 </Link>
                 <Link
                   href="/register"
-                  className="px-4 py-2 text-xs font-bold uppercase tracking-widest bg-neutral-950 text-white hover:bg-neutral-900 rounded-full shadow-xs"
+                  className="px-3.5 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] bg-neutral-950 text-white hover:bg-neutral-900 rounded-full shadow-xs"
                 >
                   Register
                 </Link>
@@ -275,12 +293,14 @@ export const Navbar = ({ onSearch, opaque = false }) => {
         </div>
       </div>
 
+      </header>
+
       {/* Mobile Drawer Overlay & Panel */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-[100] bg-white">
-          <div className="flex h-dvh min-h-screen flex-col gap-6 overflow-y-auto bg-white p-6">
+        <div className="md:hidden fixed inset-0 z-[1000] overflow-hidden bg-white">
+          <div className="flex h-[100svh] min-h-[100svh] flex-col gap-6 overflow-y-auto overscroll-contain bg-white p-6">
             <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
-              <span className="font-serif text-xl font-bold text-neutral-900">Menu</span>
+              <span className="text-lg font-semibold text-neutral-900">Menu</span>
               <button
                 className="p-1 text-neutral-400 hover:text-neutral-900 rounded-full"
                 onClick={() => setMobileMenuOpen(false)}
@@ -336,7 +356,7 @@ export const Navbar = ({ onSearch, opaque = false }) => {
               {user ? (
                 <>
                   <div className="flex items-center gap-3 px-2 py-1">
-                    <div className="h-9 w-9 rounded-full bg-neutral-950 text-white font-serif italic flex items-center justify-center">
+                    <div className="h-9 w-9 rounded-full bg-neutral-950 text-white font-semibold flex items-center justify-center">
                       {user.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex flex-col truncate">
@@ -380,7 +400,7 @@ export const Navbar = ({ onSearch, opaque = false }) => {
           </div>
         </div>
       )}
-    </header>
+    </>
   );
 };
 

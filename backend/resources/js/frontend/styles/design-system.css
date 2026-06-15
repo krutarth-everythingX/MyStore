@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Montserrat:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 /* ============================================================
    DESIGN TOKENS
@@ -68,18 +68,18 @@
   --color-on-background: #1a1c1a;
 
   /* ─── Typography ─────────────────────────────────────────── */
-  --font-family: 'Montserrat', sans-serif;
-  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-family: 'Inter', sans-serif;
+  --font-serif: 'Inter', sans-serif;
 
-  --display-lg-size: clamp(40px, 5.8vw, 64px);
-  --headline-lg-size: clamp(32px, 4vw, 48px);
-  --headline-md-size: clamp(24px, 2.8vw, 32px);
-  --headline-sm-size: 24px;
-  --body-lg-size: 18px;
-  --body-md-size: 16px;
-  --body-sm-size: 14px;
-  --label-lg-size: 14px;
-  --label-md-size: 12px;
+  --display-lg-size: clamp(34px, 4.2vw, 52px);
+  --headline-lg-size: clamp(26px, 2.8vw, 36px);
+  --headline-md-size: clamp(20px, 2.1vw, 28px);
+  --headline-sm-size: 18px;
+  --body-lg-size: 16px;
+  --body-md-size: 15px;
+  --body-sm-size: 13px;
+  --label-lg-size: 12px;
+  --label-md-size: 11px;
 
   /* ─── Border Radius ─────────────────────────────────────── */
   --radius-xs: 0.125rem;       /*  2px */
@@ -196,7 +196,7 @@ body {
   overflow-x: hidden;
   font-family: var(--font-family);
   font-size: var(--body-md-size);
-  line-height: 1.6;
+  line-height: 1.55;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.5), transparent 18%),
     var(--color-background);
@@ -229,7 +229,13 @@ button:disabled, input:disabled, textarea:disabled, select:disabled { cursor: no
 textarea { resize: vertical; }
 
 ::selection { background: var(--color-secondary-fixed); color: var(--color-primary); }
-:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; border-radius: var(--radius-sm); }
+:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+}
 
 /* Button contrast safeguards for utility-built storefront controls. */
 .text-white { color: #ffffff; }
@@ -257,30 +263,30 @@ button[class*="bg-neutral-9"][class*="text-white"] svg {
    TYPOGRAPHY SCALE
    ============================================================ */
 .display-text {
-  font-family: var(--font-serif);
+  font-family: var(--font-family);
   font-size: var(--display-lg-size);
   font-weight: 600;
   line-height: 1.08;
-  letter-spacing: -0.025em;
+  letter-spacing: 0;
 }
 .headline-lg {
-  font-family: var(--font-serif);
+  font-family: var(--font-family);
   font-size: var(--headline-lg-size);
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.15;
-  letter-spacing: -0.015em;
+  letter-spacing: 0;
 }
 .headline-md {
-  font-family: var(--font-serif);
+  font-family: var(--font-family);
   font-size: var(--headline-md-size);
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.25;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 .headline-sm {
-  font-family: var(--font-serif);
+  font-family: var(--font-family);
   font-size: var(--headline-sm-size);
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.35;
 }
 .title-lg {
@@ -294,13 +300,13 @@ button[class*="bg-neutral-9"][class*="text-white"] svg {
   font-size: var(--body-lg-size);
   font-weight: 400;
   line-height: 1.65;
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
 }
 .body-md {
   font-family: var(--font-family);
   font-size: var(--body-md-size);
   font-weight: 400;
-  line-height: 1.6;
+  line-height: 1.55;
 }
 .body-sm {
   font-family: var(--font-family);
@@ -313,7 +319,7 @@ button[class*="bg-neutral-9"][class*="text-white"] svg {
   font-size: var(--label-lg-size);
   font-weight: 600;
   line-height: 1;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 .label-md {
@@ -321,15 +327,15 @@ button[class*="bg-neutral-9"][class*="text-white"] svg {
   font-size: var(--label-md-size);
   font-weight: 600;
   line-height: 1;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 .label-sm {
   font-family: var(--font-family);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   line-height: 1;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
@@ -612,9 +618,10 @@ button[class*="bg-neutral-9"][class*="text-white"] svg {
 
 @media (max-width: 768px) {
   :root {
-    --display-lg-size: 38px;
-    --headline-lg-size: 30px;
-    --headline-md-size: 26px;
+    --display-lg-size: 32px;
+    --headline-lg-size: 26px;
+    --headline-md-size: 22px;
+    --headline-sm-size: 17px;
     --body-lg-size: 16px;
     --body-md-size: 15px;
     --body-sm-size: 13px;
@@ -627,9 +634,10 @@ button[class*="bg-neutral-9"][class*="text-white"] svg {
 
 @media (max-width: 480px) {
   :root {
-    --display-lg-size: 32px;
-    --headline-lg-size: 26px;
-    --headline-md-size: 22px;
+    --display-lg-size: 30px;
+    --headline-lg-size: 24px;
+    --headline-md-size: 20px;
+    --headline-sm-size: 16px;
     --container-padding: 16px;
     --stack-xl: 64px;
     --stack-lg: 44px;

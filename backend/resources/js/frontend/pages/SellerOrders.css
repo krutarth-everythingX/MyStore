@@ -21,6 +21,37 @@
   box-shadow: var(--shadow-lg);
 }
 
+/* Empty state */
+.orders-empty {
+  flex-direction: column;
+  gap: 12px;
+  min-height: 360px;
+  padding: 48px 24px;
+  text-align: center;
+  animation: scaleIn var(--duration-slow) var(--ease-luxury) both;
+}
+
+.orders-empty:hover {
+  transform: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.orders-empty-icon {
+  color: var(--color-outline);
+  margin-bottom: 2px;
+}
+
+.orders-empty h3 {
+  margin: 0;
+  color: var(--color-on-surface);
+}
+
+.orders-empty p {
+  max-width: 520px;
+  margin: 0;
+  color: var(--color-outline);
+}
+
 /* ─── Meta grid ──────────────────────────────────────────── */
 .seller-order-meta-grid {
   display: grid;
@@ -273,22 +304,8 @@
     width: 100%;
   }
 
-  .orders-empty {
-    min-height: 360px;
-    height: auto !important;
-    padding: 36px 18px;
-    text-align: center;
-  }
-
-  .orders-empty-icon {
-    color: var(--color-outline);
-    margin-bottom: 14px;
-  }
-
   .orders-empty p {
     max-width: 340px;
-    margin: 8px auto 0;
-    color: var(--color-outline);
   }
 }
 

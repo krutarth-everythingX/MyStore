@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, ShoppingBag, Warehouse, ShoppingCart, LogOut, Settings, Menu, X } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Warehouse, ShoppingCart, LogOut, Settings, Menu, X, Search, FolderTree } from 'lucide-react';
 import './Sidebar.css';
 
 const normalizePath = (path) => {
@@ -25,10 +25,12 @@ export const Sidebar = () => {
   const { user, logout } = useAuth();
   const { url } = usePage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [menuSearch, setMenuSearch] = useState('');
   const pathname = normalizePath(new URL(url || window.location.href, window.location.origin).pathname);
 
   const handleLogout = async () => {
     setMobileMenuOpen(false);
+    setMenuSearch('');
     await logout();
   };
 
@@ -43,6 +45,11 @@ export const Sidebar = () => {
       href: '/seller/products',
       label: 'Products',
       icon: ShoppingBag,
+    },
+    {
+      href: '/seller/categories',
+      label: 'Categories',
+      icon: FolderTree,
     },
     {
       href: '/seller/inventory',
@@ -61,10 +68,19 @@ export const Sidebar = () => {
     },
   ];
 
+  const visibleMobileNavItems = navItems.filter((item) =>
+    item.label.toLowerCase().includes(menuSearch.trim().toLowerCase())
+  );
+
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
+    setMenuSearch('');
+  };
+
   return (
     <>
       <header className="seller-mobile-navbar">
-        <Link href="/seller" className="seller-mobile-brand" onClick={() => setMobileMenuOpen(false)}>
+        <Link href="/seller" className="seller-mobile-brand" onClick={closeMobileMenu}>
           <span className="seller-mobile-brand-title">MyStore Seller</span>
           {user?.brand_name && <span>{user.brand_name}</span>}
         </Link>
@@ -82,27 +98,74 @@ export const Sidebar = () => {
 
       {mobileMenuOpen && (
         <div className="seller-mobile-menu-panel">
-          <nav className="seller-mobile-menu">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`seller-mobile-nav-item label-md ${isActivePath(pathname, item.href, item.end) ? 'seller-mobile-nav-active' : ''}`}
-                >
-                  <Icon size={18} />
-                  {item.label}
-                </Link>
-              );
-            })}
+          <div className="seller-mobile-drawer">
+            <div className="seller-mobile-drawer-header">
+              <span>Menu</span>
+              <button
+                type="button"
+                className="seller-mobile-drawer-close"
+                aria-label="Close seller menu"
+                onClick={closeMobileMenu}
+              >
+                <X size={20} />
+              </button>
+            </div>
 
-            <button onClick={handleLogout} className="seller-mobile-nav-item seller-mobile-logout label-md">
-              <LogOut size={18} />
-              Logout
-            </button>
-          </nav>
+            <form className="seller-mobile-search" onSubmit={(event) => event.preventDefault()}>
+              <input
+                type="text"
+                placeholder="Search seller tools..."
+                value={menuSearch}
+                onChange={(event) => setMenuSearch(event.target.value)}
+              />
+              <button type="submit" aria-label="Search seller tools">
+                <Search size={16} />
+              </button>
+            </form>
+
+            <nav className="seller-mobile-menu">
+              {visibleMobileNavItems.length === 0 ? (
+                <span className="seller-mobile-empty-search label-md">No matches</span>
+              ) : (
+                visibleMobileNavItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={closeMobileMenu}
+                    className={`seller-mobile-nav-item label-md ${isActivePath(pathname, item.href, item.end) ? 'seller-mobile-nav-active' : ''}`}
+                  >
+                    {item.label}
+                  </Link>
+                ))
+              )}
+            </nav>
+
+            <div className="seller-mobile-account">
+              {user && (
+                <div className="seller-mobile-user-card">
+                  <div className="seller-mobile-avatar">
+                    {(user.name || user.brand_name || 'S').charAt(0).toUpperCase()}
+                  </div>
+                  <div className="seller-mobile-user-text">
+                    <span>{user.name || user.brand_name || 'Seller'}</span>
+                    <small>{user.email}</small>
+                  </div>
+                </div>
+              )}
+
+              <Link
+                href="/seller/profile"
+                className="seller-mobile-profile-link label-md"
+                onClick={closeMobileMenu}
+              >
+                My Profile
+              </Link>
+
+              <button onClick={handleLogout} className="seller-mobile-logout label-md">
+                Logout
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -2,15 +2,17 @@
 
 namespace App\Services\ReviewService;
 
-use App\Enums\OrderStatus;
 use App\Exceptions\ServiceException;
-use App\Models\Order;
 use App\Models\Product;
 use App\Models\Review;
 use App\Models\User;
 
 class CreateReview
 {
+    public function __construct(private readonly ReviewEligibility $reviewEligibility)
+    {
+    }
+
     public function handle(int $productId, User $user, array $fields): Review
     {
         $product = Product::find($productId);
@@ -19,12 +21,8 @@ class CreateReview
             throw ServiceException::notFound('Product not found.');
         }
 
-        $hasPurchased = Order::where('buyer_id', $user->id)
-            ->whereIn('status', OrderStatus::reviewEligibleValues())
-            ->whereHas('items', function ($query) use ($productId) {
-                $query->where('product_id', $productId);
-            })
-            ->exists();
+        $targetProduct = $this->reviewEligibility->resolveTargetProduct($product);
+        $hasPurchased = $this->reviewEligibility->hasPurchased($user, $targetProduct);
 
         if (! $hasPurchased) {
             throw ServiceException::forbidden(
@@ -33,7 +31,7 @@ class CreateReview
         }
 
         $alreadyReviewed = Review::where('user_id', $user->id)
-            ->where('product_id', $productId)
+            ->where('product_id', $targetProduct->id)
             ->exists();
 
         if ($alreadyReviewed) {
@@ -42,7 +40,7 @@ class CreateReview
 
         $review = Review::create([
             'user_id' => $user->id,
-            'product_id' => $productId,
+            'product_id' => $targetProduct->id,
             'rating' => $fields['rating'],
             'comment' => $fields['comment'] ?? '',
         ]);

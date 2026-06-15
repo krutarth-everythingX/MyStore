@@ -12,6 +12,10 @@ class RedirectPath
             return '/checkout';
         }
 
+        if ($user->role === 'seller' && ! seller_setup_complete($user)) {
+            return '/seller/setup';
+        }
+
         return $user->role === 'seller' ? '/seller' : '/';
     }
 }

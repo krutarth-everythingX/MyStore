@@ -2,18 +2,23 @@
 
 namespace App\Http\Controllers\WishlistController;
 
+use App\Http\Controllers\Concerns\EnsuresRoles;
 use App\Http\Controllers\Controller;
 use App\Services\WishlistService\ToggleProduct;
 use Illuminate\Http\Request;
 
 class Toggle extends Controller
 {
+    use EnsuresRoles;
+
     public function __construct(private readonly ToggleProduct $toggleProduct)
     {
     }
 
     public function __invoke(Request $request, int $productId)
     {
+        $this->ensureBuyer($request);
+
         $wishlisted = $this->toggleProduct->handle($request->user()->id, $productId);
         $message = $wishlisted ? 'Added to wishlist' : 'Removed from wishlist';
 

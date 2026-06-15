@@ -27,7 +27,7 @@ class SellerProducts extends Controller
 
         return Inertia::render('App', [
             'sellerProducts' => $this->listSellerProducts->handle($request->user()->id),
-            'categories' => $this->listCategories->handle(),
+            'categories' => $this->listCategories->handle($request->user()->id),
             'sellerWarehouses' => $this->listForSeller->handle($request->user()->id),
         ]);
     }

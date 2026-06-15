@@ -5,6 +5,8 @@ namespace App\Services\OrderService\Concerns;
 use App\Models\Order;
 use App\Models\User;
 use App\Exceptions\ServiceException;
+use App\Services\InventoryService\ManageStockMovement;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
 use Stripe\Webhook;
 
@@ -42,23 +44,7 @@ trait ManagesOrderOperations
 
     protected function restockOrderItems(Order $order): void
     {
-        foreach ($order->items as $item) {
-            $product = $item->product;
-
-            if (! $product || ! $product->manage_stock) {
-                continue;
-            }
-
-            $product->stock_quantity += $item->quantity;
-            $product->save();
-
-            $warehouse = $product->warehouses()->first();
-            if ($warehouse) {
-                $product->warehouses()->updateExistingPivot($warehouse->id, [
-                    'quantity' => $warehouse->pivot->quantity + $item->quantity,
-                ]);
-            }
-        }
+        App::make(ManageStockMovement::class)->restockReturnedOrder($order);
     }
 
     protected function issueStripeRefund(Order $order, string $logPrefix): void

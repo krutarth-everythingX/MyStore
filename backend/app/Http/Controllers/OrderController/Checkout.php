@@ -5,6 +5,7 @@ namespace App\Http\Controllers\OrderController;
 use App\DTOs\OrderCheckoutData;
 use App\Exceptions\ServiceException;
 use App\Http\Controllers\Concerns\HasOrderCheckoutRules;
+use App\Http\Controllers\Concerns\EnsuresRoles;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\OrderController\Concerns\InteractsWithResponses;
 use App\Services\OrderService\Checkout as CheckoutService;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 
 class Checkout extends Controller
 {
+    use EnsuresRoles;
     use HasOrderCheckoutRules;
     use InteractsWithResponses;
 
@@ -21,6 +23,8 @@ class Checkout extends Controller
 
     public function __invoke(Request $request)
     {
+        $this->ensureBuyer($request);
+
         try {
             $result = $this->checkoutService->handle(
                 OrderCheckoutData::fromArray($request->validate($this->checkoutRules())),

@@ -12,7 +12,8 @@ class Order extends Model
         'billing_address', 'payment_method', 'shipping_carrier', 'tracking_number',
         'stripe_payment_intent_id', 'shipping_cost', 'discount_amount', 'refund_status',
         'country', 'city', 'state', 'postal_code', 'company_name', 'buyer_gstin',
-        'cgst', 'sgst', 'igst', 'invoice_number', 'shipping_label_url', 'tracking_url'
+        'cgst', 'sgst', 'igst', 'invoice_number', 'shipping_label_url', 'tracking_url',
+        'fulfillment_channel', 'seller_shipping_acceptance_time',
     ];
 
     protected $casts = [

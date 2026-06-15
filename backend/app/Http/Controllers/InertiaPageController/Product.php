@@ -7,6 +7,7 @@ use App\Services\ProductService\FindProductDetails;
 use App\Services\ProductService\RelatedProducts;
 use App\Services\RecentlyViewedService\TrackProduct;
 use App\Services\ReviewService\ListProductReviews;
+use App\Services\ReviewService\ReviewEligibility;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -17,6 +18,7 @@ class Product extends Controller
         private readonly TrackProduct $trackProduct,
         private readonly ListProductReviews $listProductReviews,
         private readonly RelatedProducts $relatedProducts,
+        private readonly ReviewEligibility $reviewEligibility,
     ) {
     }
 
@@ -31,12 +33,14 @@ class Product extends Controller
         }
 
         $reviews = $this->listProductReviews->handle($product->id);
+        $reviewEligibility = $this->reviewEligibility->evaluate($product, $request->user());
 
         return Inertia::render('ProductDetails', [
             'product' => $product,
             'reviews' => $reviews['reviews'],
             'averageRating' => $reviews['average_rating'],
             'totalReviews' => $reviews['total_reviews'],
+            'reviewEligibility' => $reviewEligibility,
             'relatedProducts' => $this->relatedProducts->handle($product),
         ]);
     }

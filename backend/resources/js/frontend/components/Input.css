@@ -34,16 +34,17 @@
   min-height: 52px;
   padding: 14px 18px;
   border: 1.5px solid rgba(26, 28, 26, 0.14);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   background: rgba(255, 255, 255, 0.72);
   color: var(--color-on-surface);
   font-size: 15px;
   line-height: 1.5;
-  box-shadow: var(--shadow-inset);
+  box-shadow: inset 0 1px 2px rgba(17, 24, 39, 0.02);
   transition:
     border-color var(--duration-base) var(--ease-luxury),
     box-shadow   var(--duration-base) var(--ease-luxury),
-    background   var(--duration-base) var(--ease-luxury);
+    background   var(--duration-base) var(--ease-luxury),
+    border-radius var(--duration-base) var(--ease-luxury);
 }
 
 .input-field::placeholder {
@@ -56,13 +57,14 @@
   border-color: var(--color-primary);
   background: rgba(255, 255, 255, 0.92);
   box-shadow:
-    var(--shadow-inset),
-    0 0 0 3px rgba(26, 28, 26, 0.07);
+    0 0 0 3px rgba(26, 28, 26, 0.08);
+  border-radius: var(--radius-xl);
 }
 
 .input-field:hover:not(:focus):not(:disabled) {
   border-color: rgba(26, 28, 26, 0.24);
   background: rgba(255, 255, 255, 0.85);
+  border-radius: var(--radius-xl);
 }
 
 /* ─── Error state ────────────────────────────────────────── */
@@ -70,8 +72,8 @@
 .input-field.error {
   border-color: var(--color-error) !important;
   box-shadow:
-    var(--shadow-inset),
     0 0 0 3px rgba(186, 26, 26, 0.08) !important;
+  border-radius: var(--radius-xl);
 }
 
 .input-field.error {
@@ -105,6 +107,7 @@ textarea.input-field {
   min-height: 110px;
   padding-top: 14px;
   line-height: 1.6;
+  border-radius: var(--radius-xl);
 }
 
 /* ─── Underline style (legacy / minimal forms) ───────────── */

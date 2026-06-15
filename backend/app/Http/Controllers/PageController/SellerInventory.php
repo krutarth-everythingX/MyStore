@@ -4,6 +4,7 @@ namespace App\Http\Controllers\PageController;
 
 use App\Http\Controllers\Concerns\EnsuresRoles;
 use App\Http\Controllers\Controller;
+use App\Services\InventoryService\SellerInventorySnapshot;
 use App\Services\ProductService\ListSellerProducts;
 use App\Services\WarehouseService\GetAvailableCarriers;
 use App\Services\WarehouseService\ListForSeller;
@@ -18,6 +19,7 @@ class SellerInventory extends Controller
         private readonly ListForSeller $listForSeller,
         private readonly GetAvailableCarriers $getAvailableCarriers,
         private readonly ListSellerProducts $listSellerProducts,
+        private readonly SellerInventorySnapshot $sellerInventorySnapshot,
     ) {
     }
 
@@ -29,6 +31,7 @@ class SellerInventory extends Controller
             'sellerWarehouses' => $this->listForSeller->handle($request->user()->id),
             'sellerCarriers' => $this->getAvailableCarriers->handle(),
             'sellerProducts' => $this->listSellerProducts->handle($request->user()->id),
+            'sellerInventorySnapshot' => $this->sellerInventorySnapshot->handle($request->user()->id),
         ]);
     }
 }

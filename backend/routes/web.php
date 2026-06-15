@@ -1,12 +1,19 @@
 <?php
 
+use App\Http\Controllers\AuthController\GoogleCallback;
+use App\Http\Controllers\AuthController\GoogleRedirect;
 use App\Http\Controllers\AuthController\LoginWeb;
 use App\Http\Controllers\AuthController\LogoutWeb;
 use App\Http\Controllers\AuthController\RegisterWeb;
 use App\Http\Controllers\AuthController\ResendVerification;
+use App\Http\Controllers\AuthController\SendPhoneVerification;
 use App\Http\Controllers\AuthController\UpdateProfile;
 use App\Http\Controllers\AuthController\VerifyEmail;
+use App\Http\Controllers\AuthController\VerifyPhone;
 use App\Http\Controllers\CouponController\ValidateCoupon;
+use App\Http\Controllers\DemoProductImage;
+use App\Http\Controllers\InventoryController\AdjustStock;
+use App\Http\Controllers\InventoryController\StoreTraceabilityRecord;
 use App\Http\Controllers\OrderController\Cancel;
 use App\Http\Controllers\OrderController\Checkout as OrderCheckout;
 use App\Http\Controllers\OrderController\Invoice;
@@ -27,7 +34,10 @@ use App\Http\Controllers\PageController\Register;
 use App\Http\Controllers\PageController\SellerInventory;
 use App\Http\Controllers\PageController\SellerOrders;
 use App\Http\Controllers\PageController\SellerOverview;
+use App\Http\Controllers\PageController\SellerCategories;
+use App\Http\Controllers\PageController\SellerSetup;
 use App\Http\Controllers\PageController\SellerProducts;
+use App\Http\Controllers\PageController\SellerProductPreview;
 use App\Http\Controllers\PageController\SellerProfile;
 use App\Http\Controllers\PageController\WeekMostWanted;
 use App\Http\Controllers\ProductController\Destroy;
@@ -45,8 +55,10 @@ use App\Http\Controllers\WarehouseController\Store as WarehouseStore;
 use App\Http\Controllers\WarehouseController\GetCarriers as WarehouseGetCarriers;
 use App\Http\Controllers\WishlistController\Toggle as WishlistToggle;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', Home::class);
+Route::get('/demo-products/{sku}.svg', DemoProductImage::class);
 Route::get('/categories', Categories::class);
 Route::get('/categories/{category}', CategoryCatalog::class)->whereNumber('category');
 Route::get('/week-most-wanted', WeekMostWanted::class);
@@ -58,6 +70,8 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', LoginWeb::class);
     Route::get('/register', Register::class);
     Route::post('/register', RegisterWeb::class);
+    Route::get('/auth/google', GoogleRedirect::class);
+    Route::get('/auth/google/callback', GoogleCallback::class);
 });
 
 Route::get('/products', Index::class);
@@ -72,6 +86,8 @@ Route::middleware('auth')->group(function () {
     Route::put('/profile', UpdateProfile::class);
     Route::post('/verify-email', VerifyEmail::class);
     Route::post('/resend-verification', ResendVerification::class);
+    Route::post('/send-phone-verification', SendPhoneVerification::class);
+    Route::post('/verify-phone', VerifyPhone::class);
 
     Route::post('/wishlist/{productId}', WishlistToggle::class);
     Route::post('/products/{id}/reviews', ReviewStore::class);
@@ -85,7 +101,22 @@ Route::middleware('auth')->group(function () {
     Route::post('/recently-viewed/{productId}', RecentlyViewedTrack::class);
 
     Route::get('/seller', SellerOverview::class);
+    Route::get('/seller/setup', SellerSetup::class);
+    Route::get('/seller/categories', SellerCategories::class);
     Route::get('/seller/products', SellerProducts::class);
+    Route::get('/seller/products/preview-draft', function () {
+        abort_unless(request()->user()?->role === 'seller', 403);
+
+        if (! seller_setup_complete(request()->user())) {
+            return redirect('/seller/setup');
+        }
+
+        return Inertia::render('App', [
+            'sellerPreview' => true,
+            'previewDraftKey' => request('key'),
+        ]);
+    });
+    Route::get('/seller/products/{id}/preview', SellerProductPreview::class)->whereNumber('id');
     Route::get('/seller/inventory', SellerInventory::class);
     Route::get('/seller/orders', SellerOrders::class);
     Route::get('/seller/profile', SellerProfile::class);
@@ -97,6 +128,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/warehouses', WarehouseIndex::class);
     Route::post('/warehouses', WarehouseStore::class);
+    Route::post('/inventory/adjustments', AdjustStock::class);
+    Route::post('/inventory/traceability', StoreTraceabilityRecord::class);
     Route::get('/shipping-carriers', WarehouseGetCarriers::class);
 
     Route::put('/seller/orders/{id}', UpdateOrderStatus::class);

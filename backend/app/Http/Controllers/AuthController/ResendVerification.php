@@ -24,11 +24,12 @@ class ResendVerification extends Controller
         }
 
         if ($request->header('X-Inertia')) {
-            return back()->with('success', 'Verification code resent successfully.');
+            return back()->with('success', 'Verification code sent successfully.');
         }
 
         return response([
-            'message' => 'Verification code resent successfully.',
+            'message' => 'Verification code sent successfully.',
+            'user' => $user->refresh(),
         ], 200);
     }
 }

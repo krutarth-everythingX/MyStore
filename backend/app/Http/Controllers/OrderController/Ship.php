@@ -34,11 +34,11 @@ class Ship extends Controller
         }
 
         if ($request->header('X-Inertia')) {
-            return back()->with('success', 'Order successfully shipped via Shiprocket!');
+            return back()->with('success', 'Order marked as shipped.');
         }
 
         return response([
-            'message' => 'Order successfully shipped via Shiprocket!',
+            'message' => 'Order marked as shipped.',
             'order' => $shippedOrder,
         ], 200);
     }

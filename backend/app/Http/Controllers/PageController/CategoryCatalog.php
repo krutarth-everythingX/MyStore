@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\PageController;
 
+use App\Http\Controllers\Concerns\EnsuresRoles;
 use App\Http\Controllers\Controller;
 use App\Services\BrandService\ListBrands;
 use App\Services\CategoryService\ListCategories;
@@ -12,6 +13,8 @@ use Inertia\Inertia;
 
 class CategoryCatalog extends Controller
 {
+    use EnsuresRoles;
+
     public function __construct(
         private readonly ListStorefrontProducts $listStorefrontProducts,
         private readonly ListCategories $listCategories,
@@ -21,6 +24,8 @@ class CategoryCatalog extends Controller
 
     public function __invoke(Request $request, int $category)
     {
+        $this->ensureStorefrontAccess($request);
+
         $search = $request->query('search');
         $spellcheck = $request->query('spellcheck', '1') !== '0';
 

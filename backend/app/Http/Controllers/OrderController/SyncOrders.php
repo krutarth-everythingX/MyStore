@@ -17,7 +17,7 @@ class SyncOrders extends Controller
         $count = $this->queueOrdersForSynchronization->handle();
 
         return response([
-            'message' => "Queued {$count} orders for Shiprocket synchronization.",
+            'message' => "Queued {$count} orders for fulfillment synchronization.",
         ], 200);
     }
 }

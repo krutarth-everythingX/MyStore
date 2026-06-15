@@ -20,7 +20,7 @@ class UpdateOrderStatus extends Controller
     {
         $sellerId = $request->user()->id;
 
-        if ($request->user()->role !== 'seller') {
+        if ($request->user()->role !== 'seller' || ! seller_setup_complete($request->user())) {
             return response(['message' => 'Unauthorized. Sellers only.'], 403);
         }
 
@@ -36,6 +36,8 @@ class UpdateOrderStatus extends Controller
                 'status' => 'required|string|in:' . implode(',', OrderStatus::values()),
                 'shipping_carrier' => 'nullable|string',
                 'tracking_number' => 'nullable|string',
+                'fulfillment_channel' => 'nullable|string|max:120',
+                'seller_shipping_acceptance_time' => 'nullable|string|max:120',
             ]),
             $sellerId,
         );

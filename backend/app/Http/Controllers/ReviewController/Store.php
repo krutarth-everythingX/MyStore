@@ -3,18 +3,23 @@
 namespace App\Http\Controllers\ReviewController;
 
 use App\Exceptions\ServiceException;
+use App\Http\Controllers\Concerns\EnsuresRoles;
 use App\Http\Controllers\Controller;
 use App\Services\ReviewService\CreateReview;
 use Illuminate\Http\Request;
 
 class Store extends Controller
 {
+    use EnsuresRoles;
+
     public function __construct(private readonly CreateReview $createReview)
     {
     }
 
     public function __invoke(Request $request, int $productId)
     {
+        $this->ensureBuyer($request);
+
         try {
             $review = $this->createReview->handle(
                 $productId,

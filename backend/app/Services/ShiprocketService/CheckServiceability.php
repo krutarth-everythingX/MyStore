@@ -86,12 +86,12 @@ class CheckServiceability
                         'description' => 'Delhivery (Surface Standard) - 2 Days (Gujarat Delivery)'
                     ],
                     [
-                        'id' => 'sr_shiprocket_prime',
-                        'carrier' => 'Shiprocket Prime',
+                        'id' => 'local_air_express',
+                        'carrier' => 'MyStore Air Express',
                         'service' => 'Air Express',
                         'rate' => round($expressCost * 0.9, 2),
                         'days' => 1,
-                        'description' => 'Shiprocket Prime (Air Express) - 1 Day (Ahmedabad Hub)'
+                        'description' => 'MyStore Air Express - 1 Day (Ahmedabad Hub)'
                     ]
                 ]
             ];

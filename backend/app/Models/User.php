@@ -23,8 +23,15 @@ class User extends Authenticatable
         'name',
         'email',
         'phone',
+        'phone_verified_at',
+        'phone_verification_code',
+        'phone_verification_code_sent_at',
         'password',
+        'google_id',
+        'avatar',
+        'auth_provider',
         'verification_code',
+        'verification_code_sent_at',
         'role',
         'brand_name',
         'address',
@@ -34,8 +41,10 @@ class User extends Authenticatable
         'pincode',
         'country_code',
         'gst_number',
-        'shiprocket_email',
-        'shiprocket_password',
+        'fulfillment_channels',
+        'default_fulfillment_channel',
+        'shipping_acceptance_time',
+        'handling_time_business_days',
         'card_number',
         'card_expiry',
         'card_cvv',
@@ -49,10 +58,10 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'verification_code',
+        'phone_verification_code',
         'card_number',
         'card_expiry',
         'card_cvv',
-        'shiprocket_password',
         'remember_token',
     ];
 
@@ -65,7 +74,12 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'verification_code_sent_at' => 'datetime',
+            'phone_verified_at' => 'datetime',
+            'phone_verification_code_sent_at' => 'datetime',
             'password' => 'hashed',
+            'fulfillment_channels' => 'array',
+            'handling_time_business_days' => 'integer',
         ];
     }
 

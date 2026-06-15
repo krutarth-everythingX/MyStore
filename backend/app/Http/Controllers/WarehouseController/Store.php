@@ -15,7 +15,7 @@ class Store extends Controller
 
     public function __invoke(Request $request)
     {
-        if ($request->user()->role !== 'seller') {
+        if ($request->user()->role !== 'seller' || ! seller_setup_complete($request->user())) {
             return response(['message' => 'Unauthorized. Sellers only.'], 403);
         }
 
@@ -27,6 +27,11 @@ class Store extends Controller
                 'city' => 'nullable|string',
                 'state' => 'nullable|string',
                 'postal_code' => ['nullable', 'string', new IndianPostalCode()],
+                'country' => 'nullable|string|max:80',
+                'type' => 'nullable|string|max:60',
+                'timezone' => 'nullable|string|max:80',
+                'capacity_units' => 'nullable|integer|min:0',
+                'notes' => 'nullable|string|max:1000',
                 'default_carrier' => 'required|string',
             ]),
             $request->user(),

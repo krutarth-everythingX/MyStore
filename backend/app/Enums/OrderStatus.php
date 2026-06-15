@@ -31,6 +31,8 @@ enum OrderStatus: string
     {
         return [
             self::Processing->value,
+            self::Shipped->value,
+            self::OutForDelivery->value,
             self::Completed->value,
         ];
     }

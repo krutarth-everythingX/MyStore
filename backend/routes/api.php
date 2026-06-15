@@ -5,13 +5,17 @@ use App\Http\Controllers\AuthController\Logout;
 use App\Http\Controllers\AuthController\Profile;
 use App\Http\Controllers\AuthController\Register;
 use App\Http\Controllers\AuthController\ResendVerification;
+use App\Http\Controllers\AuthController\SendPhoneVerification;
 use App\Http\Controllers\AuthController\UpdateProfile;
 use App\Http\Controllers\AuthController\VerifyEmail;
+use App\Http\Controllers\AuthController\VerifyPhone;
 use App\Http\Controllers\BrandController\Index as BrandIndex;
 use App\Http\Controllers\BrandController\Store as BrandStore;
 use App\Http\Controllers\CategoryController\Index as CategoryIndex;
 use App\Http\Controllers\CategoryController\Store as CategoryStore;
 use App\Http\Controllers\CouponController\ValidateCoupon;
+use App\Http\Controllers\InventoryController\AdjustStock;
+use App\Http\Controllers\InventoryController\StoreTraceabilityRecord;
 use App\Http\Controllers\MediaController\Upload as MediaUpload;
 use App\Http\Controllers\OrderController\Cancel;
 use App\Http\Controllers\OrderController\Checkout;
@@ -59,6 +63,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', Logout::class);
     Route::post('/verify-email', VerifyEmail::class);
     Route::post('/resend-verification', ResendVerification::class);
+    Route::post('/send-phone-verification', SendPhoneVerification::class);
+    Route::post('/verify-phone', VerifyPhone::class);
 
     Route::post('/products', Store::class);
     Route::put('/products/{id}', Update::class);
@@ -69,6 +75,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/warehouses', WarehouseIndex::class);
     Route::post('/warehouses', WarehouseStore::class);
+    Route::post('/inventory/adjustments', AdjustStock::class);
+    Route::post('/inventory/traceability', StoreTraceabilityRecord::class);
     Route::get('/shipping-carriers', WarehouseGetCarriers::class);
 
     Route::post('/checkout', Checkout::class);

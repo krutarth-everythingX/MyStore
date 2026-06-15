@@ -18,6 +18,11 @@ class StorefrontQuery
             $query->where(function (Builder $subQuery) use ($search) {
                 $subQuery->where('name', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('manufacturer', 'like', "%{$search}%")
+                    ->orWhere('model_number', 'like', "%{$search}%")
+                    ->orWhere('product_type', 'like', "%{$search}%")
+                    ->orWhere('product_type_keyword', 'like', "%{$search}%")
+                    ->orWhere('seo_search_terms', 'like', "%{$search}%")
                     ->orWhere('tags', 'like', "%{$search}%")
                     ->orWhereHas('categories', function (Builder $cQuery) use ($search) {
                         $cQuery->where('categories.name', 'like', "%{$search}%");

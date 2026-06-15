@@ -10,10 +10,19 @@ export const ProductCard = ({ product }) => {
   const price = parseFloat(product.sale_price ?? product.regular_price ?? 0);
   const regularPrice = parseFloat(product.regular_price ?? 0);
   const savings = isSale && regularPrice > price ? Math.round(((regularPrice - price) / regularPrice) * 100) : 0;
+  const quickActionLabel = product.type === 'variable'
+    ? 'View options'
+    : product.type === 'grouped'
+      ? 'View collection'
+      : product.type === 'external'
+        ? (product.external_button_text || 'View deal')
+        : 'Quick Add';
+  const canQuickAdd = product.type === 'simple' && !outOfStock;
 
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!canQuickAdd) return;
     addToCart(product, 1);
   };
 
@@ -23,7 +32,7 @@ export const ProductCard = ({ product }) => {
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-neutral-50 to-neutral-200 text-neutral-400 font-serif italic text-4xl select-none">
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-neutral-50 to-neutral-200 text-neutral-400 text-3xl font-semibold select-none">
             {product.name.charAt(0)}
           </div>
         )}
@@ -42,21 +51,27 @@ export const ProductCard = ({ product }) => {
 
         {!outOfStock && (
           <div className="absolute inset-x-0 bottom-0 p-3 opacity-0 translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 hidden sm:block">
-            <button
-              className="w-full flex items-center justify-center gap-1.5 bg-neutral-950 hover:bg-neutral-900 text-white text-[10px] font-bold uppercase tracking-widest py-2.5 px-4 rounded-full shadow-md transition-colors"
-              onClick={handleAddToCart}
-              title="Add to cart"
-            >
-              <ShoppingCart size={13} />
-              Quick Add
-            </button>
+            {canQuickAdd ? (
+              <button
+                className="w-full flex items-center justify-center gap-1.5 bg-neutral-950 hover:bg-neutral-900 text-white text-[10px] font-bold uppercase tracking-widest py-2.5 px-4 rounded-full shadow-md transition-colors"
+                onClick={handleAddToCart}
+                title="Add to cart"
+              >
+                <ShoppingCart size={13} />
+                {quickActionLabel}
+              </button>
+            ) : (
+              <span className="flex w-full items-center justify-center rounded-full bg-neutral-950 px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-white shadow-md">
+                {quickActionLabel}
+              </span>
+            )}
           </div>
         )}
       </div>
 
       <div className="pt-3 pb-2 flex flex-1 flex-col gap-1">
         <div className="flex min-h-[56px] flex-col gap-1">
-          <h4 className="font-serif text-sm font-semibold text-neutral-900 group-hover:text-neutral-700 line-clamp-1 leading-snug sm:text-base">
+          <h4 className="text-sm font-semibold text-neutral-900 group-hover:text-neutral-700 line-clamp-1 leading-snug sm:text-[0.95rem]">
             {product.name}
           </h4>
           <div className="flex min-h-[30px] flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -76,13 +91,19 @@ export const ProductCard = ({ product }) => {
         
         {/* On mobile devices, make the quick-add button visible under the info block instead of hover-overlay */}
         {!outOfStock && (
-          <button
-            className="sm:hidden mt-auto w-full flex items-center justify-center gap-1.5 bg-neutral-950 hover:bg-neutral-900 active:scale-98 text-white text-[10px] font-bold uppercase tracking-widest py-2.5 px-4 rounded-full shadow-sm transition-all"
-            onClick={handleAddToCart}
-          >
-            <ShoppingCart size={12} />
-            Quick Add
-          </button>
+          canQuickAdd ? (
+            <button
+              className="sm:hidden mt-auto w-full flex items-center justify-center gap-1.5 bg-neutral-950 hover:bg-neutral-900 active:scale-98 text-white text-[10px] font-bold uppercase tracking-widest py-2.5 px-4 rounded-full shadow-sm transition-all"
+              onClick={handleAddToCart}
+            >
+              <ShoppingCart size={12} />
+              {quickActionLabel}
+            </button>
+          ) : (
+            <span className="sm:hidden mt-auto flex w-full items-center justify-center rounded-full bg-neutral-950 px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-white shadow-sm">
+              {quickActionLabel}
+            </span>
+          )
         )}
       </div>
     </Link>

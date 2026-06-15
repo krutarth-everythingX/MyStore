@@ -8,7 +8,7 @@ export const Footer = () => {
       <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-12 lg:gap-8 lg:px-8">
         {/* Brand Column */}
         <div className="flex flex-col items-start lg:col-span-4">
-          <Link href="/" className="flex items-center gap-2 font-serif text-2xl font-semibold text-white">
+          <Link href="/" className="flex items-center gap-2 text-xl font-semibold text-white">
             <ShoppingBag size={21} className="text-neutral-400" />
             <span>MyStore</span>
           </Link>
@@ -24,7 +24,7 @@ export const Footer = () => {
 
         {/* Quick Links */}
         <div className="flex flex-col lg:col-span-2">
-          <h5 className="relative mb-4 pb-2 text-xs font-bold uppercase tracking-widest text-white after:absolute after:bottom-0 after:left-0 after:h-px after:w-7 after:bg-neutral-600 after:content-['']">
+          <h5 className="relative mb-4 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-white after:absolute after:bottom-0 after:left-0 after:h-px after:w-7 after:bg-neutral-600 after:content-['']">
             Departments
           </h5>
           <ul className="flex flex-col gap-2.5 text-sm text-neutral-400">
@@ -38,7 +38,7 @@ export const Footer = () => {
 
         {/* Customer Service */}
         <div className="flex flex-col lg:col-span-2">
-          <h5 className="relative mb-4 pb-2 text-xs font-bold uppercase tracking-widest text-white after:absolute after:bottom-0 after:left-0 after:h-px after:w-7 after:bg-neutral-600 after:content-['']">
+          <h5 className="relative mb-4 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-white after:absolute after:bottom-0 after:left-0 after:h-px after:w-7 after:bg-neutral-600 after:content-['']">
             Support
           </h5>
           <ul className="flex flex-col gap-2.5 text-sm text-neutral-400">
@@ -52,7 +52,7 @@ export const Footer = () => {
 
         {/* Contact info / Newsletter */}
         <div className="flex flex-col lg:col-span-4">
-          <h5 className="relative mb-4 pb-2 text-xs font-bold uppercase tracking-widest text-white after:absolute after:bottom-0 after:left-0 after:h-px after:w-7 after:bg-neutral-600 after:content-['']">
+          <h5 className="relative mb-4 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-white after:absolute after:bottom-0 after:left-0 after:h-px after:w-7 after:bg-neutral-600 after:content-['']">
             Subscribe & Connect
           </h5>
           <p className="mb-4 max-w-sm text-sm leading-relaxed text-neutral-400">Sign up for special offers and seller announcements.</p>

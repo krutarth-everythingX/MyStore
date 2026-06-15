@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { router, usePage } from '@inertiajs/react';
+import { useAuth } from '../context/AuthContext';
 import { Sidebar } from '../components/Sidebar';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
@@ -8,8 +9,9 @@ import './SellerOrders.css';
 
 export const SellerOrders = () => {
   const { props } = usePage();
+  const { user } = useAuth();
   const [orders, setOrders] = useState(props.sellerOrders || []);
-  const [carriers, setCarriers] = useState(props.sellerCarriers || []);
+  const [carriers, setCarriers] = useState(props.sellerFulfillmentChannels || props.sellerCarriers || []);
   const [loading, setLoading] = useState(false);
 
   // Fulfillment form states (mapped by order ID)
@@ -18,14 +20,15 @@ export const SellerOrders = () => {
   useEffect(() => {
     const nextOrders = props.sellerOrders || [];
     setOrders(nextOrders);
-    setCarriers(props.sellerCarriers || []);
+    setCarriers(props.sellerFulfillmentChannels?.length ? props.sellerFulfillmentChannels : (props.sellerCarriers || []));
     setLoading(false);
 
     const initialStates = {};
     nextOrders.forEach(order => {
       initialStates[order.id] = {
         status: order.status,
-        carrier: order.shipping_carrier || 'Blue Dart',
+        carrier: order.fulfillment_channel || order.shipping_carrier || user?.default_fulfillment_channel || 'Seller Fulfilled',
+        acceptanceTime: order.seller_shipping_acceptance_time || user?.shipping_acceptance_time || '',
         tracking: order.tracking_number || '',
         successMsg: '',
         errorMsg: ''
@@ -54,18 +57,10 @@ export const SellerOrders = () => {
     router.put(`/seller/orders/${orderId}`, {
       status: state.status,
       shipping_carrier: state.carrier,
+      fulfillment_channel: state.carrier,
+      seller_shipping_acceptance_time: state.acceptanceTime,
       tracking_number: state.tracking
     }, {
-      preserveScroll: true,
-      preserveState: false,
-      only: ['sellerOrders', 'sellerCarriers', 'flash'],
-    });
-  };
-
-  const handleShipViaShiprocket = async (orderId) => {
-    handleStateChange(orderId, 'successMsg', '');
-    handleStateChange(orderId, 'errorMsg', '');
-    router.post(`/orders/${orderId}/ship`, {}, {
       preserveScroll: true,
       preserveState: false,
       only: ['sellerOrders', 'sellerCarriers', 'flash'],
@@ -118,7 +113,7 @@ export const SellerOrders = () => {
             <div className="seller-orders-list">
               {orders.map((order) => {
                 const fState = fulfillmentStates[order.id] || {
-                  status: 'pending', carrier: 'Blue Dart', tracking: '', successMsg: '', errorMsg: ''
+                  status: 'pending', carrier: user?.default_fulfillment_channel || 'Seller Fulfilled', acceptanceTime: user?.shipping_acceptance_time || '', tracking: '', successMsg: '', errorMsg: ''
                 };
                 
                 // Calculate seller-specific total in this order
@@ -203,16 +198,6 @@ export const SellerOrders = () => {
                       {fState.errorMsg && <div className="fulfill-alert fulfill-alert-error body-md">{fState.errorMsg}</div>}
 
                       <div className="shiprocket-actions-row">
-                        {order.status.toLowerCase() === 'processing' && !order.tracking_number && (
-                          <Button
-                            variant="primary"
-                            onClick={() => handleShipViaShiprocket(order.id)}
-                            style={{ backgroundColor: 'var(--color-primary)', borderColor: 'var(--color-primary)', color: 'var(--color-on-primary)' }}
-                          >
-                            Ship via Shiprocket
-                          </Button>
-                        )}
-                        
                         {order.shipping_label_url && (
                           <a 
                             href={order.shipping_label_url} 
@@ -284,7 +269,7 @@ export const SellerOrders = () => {
                           </div>
 
                           <div className="input-container" style={{ marginBottom: 0 }}>
-                            <label className="input-label label-md">Fulfillment Carrier (e.g. Blue Dart)</label>
+                            <label className="input-label label-md">Fulfillment Channel</label>
                             <select
                               className="input-field"
                               value={fState.carrier}
@@ -294,6 +279,17 @@ export const SellerOrders = () => {
                                 <option key={c} value={c}>{c}</option>
                               ))}
                             </select>
+                          </div>
+
+                          <div className="input-container" style={{ marginBottom: 0 }}>
+                            <label className="input-label label-md">Order Acceptance Time</label>
+                            <input
+                              type="text"
+                              className="input-field"
+                              placeholder="e.g. 2 hours"
+                              value={fState.acceptanceTime || ''}
+                              onChange={(e) => handleStateChange(order.id, 'acceptanceTime', e.target.value)}
+                            />
                           </div>
 
                           <div className="input-container" style={{ marginBottom: 0 }}>

@@ -22,10 +22,13 @@ class SellerOrders extends Controller
     public function __invoke(Request $request)
     {
         $this->ensureSeller($request);
+        $configuredChannels = array_values(array_filter($request->user()->fulfillment_channels ?? []));
+        $fallbackChannels = $this->getAvailableCarriers->handle();
 
         return Inertia::render('App', [
             'sellerOrders' => $this->listOrdersForSeller->handle($request->user()->id),
-            'sellerCarriers' => $this->getAvailableCarriers->handle(),
+            'sellerCarriers' => $configuredChannels !== [] ? $configuredChannels : $fallbackChannels,
+            'sellerFulfillmentChannels' => $configuredChannels,
         ]);
     }
 }

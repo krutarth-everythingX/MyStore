@@ -3,7 +3,6 @@
 namespace App\Services\ShippingService;
 
 use App\DTOs\ShippableItemData;
-use App\Services\ShiprocketService\Authenticate as ShiprocketAuthenticate;
 use App\Services\ShiprocketService\CheckServiceability as ShiprocketCheckServiceability;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -11,7 +10,6 @@ use Illuminate\Support\Facades\Log;
 class CalculateRates
 {
     public function __construct(
-        private readonly ShiprocketAuthenticate $shiprocketAuthenticate,
         private readonly ShiprocketCheckServiceability $shiprocketCheckServiceability,
     ) {
     }
@@ -54,12 +52,7 @@ class CalculateRates
                 }
             }
 
-            $token = null;
-            if (isset($productOwner) && $productOwner && $productOwner->shiprocket_email && $productOwner->shiprocket_password) {
-                $token = $this->shiprocketAuthenticate->handle($productOwner->shiprocket_email, $productOwner->shiprocket_password);
-            }
-
-            $res = $this->shiprocketCheckServiceability->handle($pickup, $zipCode, $totalWeight, 1, $token);
+            $res = $this->shiprocketCheckServiceability->handle($pickup, $zipCode, $totalWeight, 1);
             return $res['rates'];
         }
 

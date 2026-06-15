@@ -10,7 +10,15 @@ import { Button } from '../components/Button';
 import { Footer } from '../components/Footer';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 import {
-  User, ShoppingBag, Heart, MailCheck, Clock, Settings, MapPin,
+  codeActionLabel,
+  codeMinutesLeft,
+  codeStatus,
+  verificationActionLabel,
+  verificationCodeStatus,
+  verificationMinutesLeft,
+} from '../utils/emailVerification';
+import {
+  User, ShoppingBag, Heart, MailCheck, Phone, Clock, Settings, MapPin,
   MessageSquare, HelpCircle, LogOut, Package, Calendar,
   CreditCard, Truck, CheckCircle2, Star, AlertTriangle,
   Edit3, ChevronDown, ChevronUp
@@ -22,7 +30,15 @@ import './Profile.css';
 /* ──────────────────────────────────────────────────────────── */
 export const Profile = () => {
   const { props } = usePage();
-  const { user, logout, updateProfile, verifyEmailCode, resendVerificationCode } = useAuth();
+  const {
+    user,
+    logout,
+    updateProfile,
+    verifyEmailCode,
+    resendVerificationCode,
+    sendPhoneVerification,
+    verifyPhoneCode,
+  } = useAuth();
   const { wishlist } = useWishlist();
   const { showToast } = useToast();
 
@@ -50,6 +66,15 @@ export const Profile = () => {
   const [verificationCode, setVerificationCode] = useState('');
   const [verifyError, setVerifyError] = useState('');
   const [verifyLoading, setVerifyLoading] = useState(false);
+  const [verificationSentAt, setVerificationSentAt] = useState(user?.verification_code_sent_at || null);
+  const [verificationNow, setVerificationNow] = useState(Date.now());
+
+  // Phone Verification
+  const [phoneVerificationCode, setPhoneVerificationCode] = useState('');
+  const [phoneVerifyMsg, setPhoneVerifyMsg] = useState('');
+  const [phoneVerifyError, setPhoneVerifyError] = useState('');
+  const [phoneVerifyLoading, setPhoneVerifyLoading] = useState(false);
+  const [phoneVerificationSentAt, setPhoneVerificationSentAt] = useState(user?.phone_verification_code_sent_at || null);
 
   // ── Address Details ──
   const [address, setAddress] = useState('');
@@ -78,8 +103,37 @@ export const Profile = () => {
       setCountry(user.country || '');
       setPincode(user.pincode || '');
       setCountryCode(user.country_code || '');
+      setVerificationSentAt(user.verification_code_sent_at || null);
+      setPhoneVerificationSentAt(user.phone_verification_code_sent_at || null);
     }
   }, [user?.id]);
+
+  useEffect(() => {
+    if (user?.verification_code_sent_at !== verificationSentAt) {
+      setVerificationSentAt(user?.verification_code_sent_at || null);
+    }
+  }, [user?.verification_code_sent_at]);
+
+  useEffect(() => {
+    if (user?.phone_verification_code_sent_at !== phoneVerificationSentAt) {
+      setPhoneVerificationSentAt(user?.phone_verification_code_sent_at || null);
+    }
+  }, [user?.phone_verification_code_sent_at]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setVerificationNow(Date.now()), 30000);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const verificationStatus = verificationCodeStatus(verificationSentAt, verificationNow);
+  const verificationSendLabel = verificationActionLabel(verificationSentAt, verificationNow);
+  const verificationSendDisabled = verifyLoading || verificationStatus === 'active';
+  const verificationMinutesRemaining = verificationMinutesLeft(verificationSentAt, verificationNow);
+  const phoneVerificationStatus = codeStatus(phoneVerificationSentAt, verificationNow);
+  const phoneVerificationSendLabel = codeActionLabel(phoneVerificationSentAt, verificationNow);
+  const phoneVerificationSendDisabled = phoneVerifyLoading || phoneVerificationStatus === 'active' || !countryCode || !phone;
+  const phoneVerificationMinutesRemaining = codeMinutesLeft(phoneVerificationSentAt, verificationNow);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -166,6 +220,7 @@ export const Profile = () => {
       setVerifyMsg('Email verified successfully!');
       showToast('Email verified successfully! Welcome to MyStore.', 'success');
       setVerificationCode('');
+      setVerificationSentAt(null);
     } catch (err) {
       setVerifyError(err.message || 'Verification failed');
       showToast(err.message || 'Verification failed', 'error');
@@ -179,11 +234,50 @@ export const Profile = () => {
     setVerifyMsg('');
     try {
       const data = await resendVerificationCode();
-      setVerifyMsg(data.message || 'Verification code resent successfully!');
-      showToast(data.message || 'Verification code resent successfully.', 'success');
+      setVerificationSentAt(data.user?.verification_code_sent_at || new Date().toISOString());
+      setVerifyMsg(data.message || 'Verification code sent successfully!');
+      showToast(data.message || 'Verification code sent successfully.', 'success');
     } catch (err) {
-      setVerifyError(err.message || 'Failed to resend code');
-      showToast(err.message || 'Failed to resend code', 'error');
+      setVerifyError(err.message || 'Failed to send code');
+      showToast(err.message || 'Failed to send code', 'error');
+    }
+  };
+
+  const handleSendPhoneCode = async () => {
+    setPhoneVerifyError('');
+    setPhoneVerifyMsg('');
+    setPhoneVerifyLoading(true);
+
+    try {
+      const data = await sendPhoneVerification(countryCode, phone);
+      setPhoneVerificationSentAt(data.user?.phone_verification_code_sent_at || new Date().toISOString());
+      setPhoneVerifyMsg(data.message || 'Phone verification code sent successfully!');
+      showToast(data.message || 'Phone verification code sent successfully.', 'success');
+    } catch (err) {
+      setPhoneVerifyError(err.message || 'Failed to send phone verification code');
+      showToast(err.message || 'Failed to send phone verification code', 'error');
+    } finally {
+      setPhoneVerifyLoading(false);
+    }
+  };
+
+  const handleVerifyPhone = async (event) => {
+    event.preventDefault();
+    setPhoneVerifyError('');
+    setPhoneVerifyMsg('');
+    setPhoneVerifyLoading(true);
+
+    try {
+      await verifyPhoneCode(phoneVerificationCode);
+      setPhoneVerifyMsg('Phone number verified successfully!');
+      showToast('Phone number verified successfully!', 'success');
+      setPhoneVerificationCode('');
+      setPhoneVerificationSentAt(null);
+    } catch (err) {
+      setPhoneVerifyError(err.message || 'Phone verification failed');
+      showToast(err.message || 'Phone verification failed', 'error');
+    } finally {
+      setPhoneVerifyLoading(false);
     }
   };
 
@@ -333,7 +427,16 @@ export const Profile = () => {
                       <AlertTriangle size={32} />
                       <div>
                         <p className="pv-verify-title">Email not verified</p>
-                        <p className="body-sm" style={{ color: 'var(--color-outline)' }}>{user?.email}</p>
+                        <p className="body-sm" style={{ color: 'var(--color-outline)' }}>
+                          {verificationStatus === 'unsent'
+                            ? `Send a 6-digit verification code to ${user?.email}.`
+                            : `Enter the 6-digit code sent to ${user?.email}.`}
+                        </p>
+                        {verificationStatus === 'active' && (
+                          <p className="body-sm" style={{ color: 'var(--color-outline)', marginTop: 4 }}>
+                            Code expires in {verificationMinutesRemaining} minute{verificationMinutesRemaining === 1 ? '' : 's'}.
+                          </p>
+                        )}
                       </div>
                     </div>
                     
@@ -353,14 +456,87 @@ export const Profile = () => {
                         <Button type="submit" variant="primary" disabled={verifyLoading}>
                           {verifyLoading ? 'Verifying...' : 'Verify Code'}
                         </Button>
-                        <Button type="button" variant="outline" onClick={handleResendCode}>
-                          Resend Code
+                        <Button type="button" variant="outline" onClick={handleResendCode} disabled={verificationSendDisabled}>
+                          {verificationSendLabel}
                         </Button>
                       </div>
                     </form>
                   </>
                 )}
                 {verifyMsg && <div className="pv-toast success" style={{ marginTop: 12 }}>{verifyMsg}</div>}
+              </div>
+            </Section>
+
+            {/* VERIFY PHONE */}
+            <Section id="verify-phone" icon={Phone} label="Verify Phone" openSection={openSection} toggleSection={toggleSection}>
+              <div className="pv-verify-block">
+                {user?.phone_verified_at ? (
+                  <div className="pv-verify-row success">
+                    <CheckCircle2 size={32} />
+                    <div>
+                      <p className="pv-verify-title">Phone Verified</p>
+                      <p className="body-sm" style={{ color: 'var(--color-outline)' }}>+{user.country_code} {user.phone}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="pv-verify-row warn">
+                      <AlertTriangle size={32} />
+                      <div>
+                        <p className="pv-verify-title">Phone not verified</p>
+                        <p className="body-sm" style={{ color: 'var(--color-outline)' }}>
+                          Enter your country calling code and phone number, then send an SMS code.
+                        </p>
+                        {phoneVerificationStatus === 'active' && (
+                          <p className="body-sm" style={{ color: 'var(--color-outline)', marginTop: 4 }}>
+                            SMS code expires in {phoneVerificationMinutesRemaining} minute{phoneVerificationMinutesRemaining === 1 ? '' : 's'}.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {phoneVerifyError && <div className="pv-toast error" style={{ marginTop: 12 }}>{phoneVerifyError}</div>}
+
+                    <form onSubmit={handleVerifyPhone} style={{ marginTop: 16 }}>
+                      <div style={{ display: 'flex', gap: 12 }}>
+                        <Input
+                          label="Country Code"
+                          type="text"
+                          placeholder="91"
+                          value={countryCode}
+                          onChange={(event) => setCountryCode(event.target.value.replace(/[^\d]/g, ''))}
+                          required
+                        />
+                        <Input
+                          label="Phone Number"
+                          type="tel"
+                          placeholder="9876543210"
+                          value={phone}
+                          onChange={(event) => setPhone(event.target.value.replace(/[^\d]/g, ''))}
+                          required
+                        />
+                      </div>
+                      <Input
+                        label="6-Digit SMS Code"
+                        type="text"
+                        placeholder="Enter SMS code"
+                        maxLength={6}
+                        value={phoneVerificationCode}
+                        onChange={(event) => setPhoneVerificationCode(event.target.value.replace(/[^\d]/g, '').slice(0, 6))}
+                        required
+                      />
+                      <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+                        <Button type="submit" variant="primary" disabled={phoneVerifyLoading}>
+                          {phoneVerifyLoading ? 'Verifying...' : 'Verify Phone'}
+                        </Button>
+                        <Button type="button" variant="outline" onClick={handleSendPhoneCode} disabled={phoneVerificationSendDisabled}>
+                          {phoneVerificationSendLabel}
+                        </Button>
+                      </div>
+                    </form>
+                  </>
+                )}
+                {phoneVerifyMsg && <div className="pv-toast success" style={{ marginTop: 12 }}>{phoneVerifyMsg}</div>}
               </div>
             </Section>
 
@@ -528,7 +704,7 @@ const AccountSettings = ({
                 <Input label="Phone Number" type="tel" placeholder="e.g. 9876543210" value={phone} onChange={(e) => setPhone(e.target.value)} />
               </div>
               <div style={{ flex: 1 }}>
-                <Input label="Phone Country" type="text" placeholder="e.g. India" value={countryCode} onChange={(e) => setCountryCode(e.target.value)} />
+                <Input label="Country Code" type="text" placeholder="e.g. 91" value={countryCode} onChange={(e) => setCountryCode(e.target.value.replace(/[^\d]/g, ''))} />
               </div>
             </div>
 
@@ -616,8 +792,11 @@ const SellerSettingsForm = ({ user, updateProfile }) => {
   const [brandName, setBrandName] = useState(user?.brand_name || '');
   const [address, setAddress] = useState(user?.address || '');
   const [gstNumber, setGstNumber] = useState(user?.gst_number || '');
-  const [shiprocketEmail, setShiprocketEmail] = useState(user?.shiprocket_email || '');
-  const [shiprocketPassword, setShiprocketPassword] = useState(user?.shiprocket_password || '');
+  const [country, setCountry] = useState(user?.country || '');
+  const [fulfillmentChannels, setFulfillmentChannels] = useState(Array.isArray(user?.fulfillment_channels) ? user.fulfillment_channels.join(', ') : '');
+  const [defaultFulfillmentChannel, setDefaultFulfillmentChannel] = useState(user?.default_fulfillment_channel || '');
+  const [shippingAcceptanceTime, setShippingAcceptanceTime] = useState(user?.shipping_acceptance_time || '');
+  const [handlingTimeBusinessDays, setHandlingTimeBusinessDays] = useState(user?.handling_time_business_days ?? 1);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -633,8 +812,11 @@ const SellerSettingsForm = ({ user, updateProfile }) => {
         brand_name: brandName, 
         address,
         gst_number: gstNumber,
-        shiprocket_email: shiprocketEmail,
-        shiprocket_password: shiprocketPassword
+        country,
+        fulfillment_channels: fulfillmentChannels.split(',').map((item) => item.trim()).filter(Boolean),
+        default_fulfillment_channel: defaultFulfillmentChannel,
+        shipping_acceptance_time: shippingAcceptanceTime,
+        handling_time_business_days: Number(handlingTimeBusinessDays || 1)
       };
       if (password) data.password = password;
       await updateProfile(data);
@@ -658,10 +840,11 @@ const SellerSettingsForm = ({ user, updateProfile }) => {
         <Input label="New Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         <Input label="Store / Brand Name" type="text" value={brandName} onChange={(e) => setBrandName(e.target.value)} />
         <Input label="GSTIN Number *" type="text" maxLength={15} value={gstNumber} onChange={(e) => setGstNumber(e.target.value)} required />
-        <div style={{ display: 'flex', gap: 12 }}>
-          <Input label="Shiprocket Email" type="email" value={shiprocketEmail} onChange={(e) => setShiprocketEmail(e.target.value)} />
-          <Input label="Shiprocket Password" type="password" placeholder="••••••••" value={shiprocketPassword} onChange={(e) => setShiprocketPassword(e.target.value)} />
-        </div>
+        <Input label="Country" type="text" value={country} onChange={(e) => setCountry(e.target.value)} />
+        <Input label="Fulfillment Channels" type="text" value={fulfillmentChannels} onChange={(e) => setFulfillmentChannels(e.target.value)} />
+        <Input label="Default Fulfillment Channel" type="text" value={defaultFulfillmentChannel} onChange={(e) => setDefaultFulfillmentChannel(e.target.value)} />
+        <Input label="Shipping Acceptance Time" type="text" value={shippingAcceptanceTime} onChange={(e) => setShippingAcceptanceTime(e.target.value)} />
+        <Input label="Handling Time (Business Days)" type="number" min="0" max="30" value={handlingTimeBusinessDays} onChange={(e) => setHandlingTimeBusinessDays(e.target.value)} />
         <div className="input-container">
           <label className="input-label label-md">Business Address</label>
           <textarea className="input-field pv-textarea" rows={3} value={address} onChange={(e) => setAddress(e.target.value)} />
