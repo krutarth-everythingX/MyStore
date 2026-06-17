@@ -24,6 +24,10 @@ import { Sidebar } from '../components/Sidebar';
 import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
 import { Input } from '../components/Input';
+import { RightDrawer } from '../components/RightDrawer';
+import { WarehouseDrawer } from '../components/WarehouseDrawer';
+import { StockAdjustmentDrawer } from '../components/StockAdjustmentDrawer';
+import { TraceabilityDrawer } from '../components/TraceabilityDrawer';
 import './SellerInventory.css';
 
 const formatNumber = (value) => new Intl.NumberFormat('en-US').format(Number(value || 0));
@@ -48,44 +52,6 @@ const formatDate = (value) => {
 const titleCase = (value) => String(value || 'unknown')
   .replace(/_/g, ' ')
   .replace(/\b\w/g, (letter) => letter.toUpperCase());
-
-const defaultWarehouseForm = {
-  name: '',
-  code: '',
-  type: 'fulfillment',
-  address: '',
-  city: '',
-  state: '',
-  postal_code: '',
-  country: '',
-  timezone: 'Asia/Kolkata',
-  capacity_units: '',
-  notes: '',
-  default_carrier: 'Blue Dart',
-};
-
-const defaultAdjustmentForm = {
-  product_id: '',
-  warehouse_id: '',
-  counted_quantity: '',
-  reason: 'Cycle count correction',
-  bin_location: '',
-  safety_stock: '',
-  unit_cost: '',
-};
-
-const defaultTraceabilityForm = {
-  record_type: 'batch',
-  product_id: '',
-  warehouse_id: '',
-  batch_no: '',
-  manufactured_at: '',
-  expires_at: '',
-  quantity: '',
-  serial_no: '',
-  inventory_batch_id: '',
-  status: 'active',
-};
 
 const firstBinPath = (warehouse) => {
   const zone = warehouse?.zones?.[0];
@@ -137,10 +103,11 @@ export const SellerInventory = () => {
   const [carriers, setCarriers] = useState(props.sellerCarriers || []);
   const [products, setProducts] = useState(props.sellerProducts || []);
   const [showWarehouseForm, setShowWarehouseForm] = useState(false);
-  const [warehouseForm, setWarehouseForm] = useState(defaultWarehouseForm);
-  const [adjustmentForm, setAdjustmentForm] = useState(defaultAdjustmentForm);
-  const [traceabilityForm, setTraceabilityForm] = useState(defaultTraceabilityForm);
-  const [loadingAction, setLoadingAction] = useState('');
+  const [showAdjustmentForm, setShowAdjustmentForm] = useState(false);
+  const [showTraceabilityForm, setShowTraceabilityForm] = useState(false);
+  const [showLocationDrawer, setShowLocationDrawer] = useState(false);
+  const [selectedMovement, setSelectedMovement] = useState(null);
+  const [selectedAllocation, setSelectedAllocation] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const snapshot = props.sellerInventorySnapshot || {};
@@ -157,7 +124,6 @@ export const SellerInventory = () => {
     setProducts(props.sellerProducts || []);
     setSuccess(props.flash?.success || '');
     setError(props.flash?.error || '');
-    setLoadingAction('');
   }, [
     props.flash,
     props.sellerCarriers,
@@ -182,142 +148,6 @@ export const SellerInventory = () => {
     'sellerInventorySnapshot',
     'flash',
   ];
-
-  const setWarehouseField = (field, value) => {
-    setWarehouseForm((current) => ({ ...current, [field]: value }));
-  };
-
-  const setAdjustmentField = (field, value) => {
-    setAdjustmentForm((current) => ({ ...current, [field]: value }));
-  };
-
-  const setTraceabilityField = (field, value) => {
-    setTraceabilityForm((current) => ({
-      ...current,
-      [field]: value,
-      ...(field === 'record_type'
-        ? {
-          status: value === 'batch' ? 'active' : 'available',
-          batch_no: '',
-          manufactured_at: '',
-          expires_at: '',
-          quantity: '',
-          serial_no: '',
-          inventory_batch_id: '',
-        }
-        : {}),
-    }));
-  };
-
-  const handleSubmitWarehouse = (event) => {
-    event.preventDefault();
-    setError('');
-    setSuccess('');
-
-    if (!warehouseForm.name || !warehouseForm.code || !warehouseForm.default_carrier) {
-      setError('Add warehouse name, code, and default carrier.');
-      return;
-    }
-
-    setLoadingAction('warehouse');
-
-    router.post('/warehouses', {
-      ...warehouseForm,
-      capacity_units: warehouseForm.capacity_units ? parseInt(warehouseForm.capacity_units, 10) : null,
-    }, {
-      preserveScroll: true,
-      only: refreshOnly,
-      onSuccess: () => {
-        setWarehouseForm(defaultWarehouseForm);
-        setShowWarehouseForm(false);
-      },
-      onError: (errors) => setError(Object.values(errors)[0] || 'Warehouse could not be created.'),
-      onFinish: () => setLoadingAction(''),
-    });
-  };
-
-  const handleSubmitTraceability = (event) => {
-    event.preventDefault();
-    setError('');
-    setSuccess('');
-
-    if (!traceabilityForm.product_id) {
-      setError('Choose a product before saving traceability.');
-      return;
-    }
-
-    if (traceabilityForm.record_type === 'batch' && (!traceabilityForm.batch_no || traceabilityForm.quantity === '')) {
-      setError('Batch number and quantity are required for lot tracking.');
-      return;
-    }
-
-    if (traceabilityForm.record_type === 'serial' && !traceabilityForm.serial_no) {
-      setError('Serial number is required for serial tracking.');
-      return;
-    }
-
-    setLoadingAction('traceability');
-
-    router.post('/inventory/traceability', {
-      record_type: traceabilityForm.record_type,
-      product_id: parseInt(traceabilityForm.product_id, 10),
-      warehouse_id: traceabilityForm.warehouse_id ? parseInt(traceabilityForm.warehouse_id, 10) : null,
-      batch_no: traceabilityForm.batch_no,
-      manufactured_at: traceabilityForm.manufactured_at || null,
-      expires_at: traceabilityForm.expires_at || null,
-      quantity: traceabilityForm.quantity === '' ? null : parseInt(traceabilityForm.quantity, 10),
-      serial_no: traceabilityForm.serial_no,
-      inventory_batch_id: traceabilityForm.inventory_batch_id ? parseInt(traceabilityForm.inventory_batch_id, 10) : null,
-      status: traceabilityForm.status,
-    }, {
-      preserveScroll: true,
-      only: refreshOnly,
-      onSuccess: () => {
-        setTraceabilityForm((current) => ({
-          ...defaultTraceabilityForm,
-          record_type: current.record_type,
-          status: current.record_type === 'batch' ? 'active' : 'available',
-        }));
-      },
-      onError: (errors) => setError(Object.values(errors)[0] || 'Traceability record could not be saved.'),
-      onFinish: () => setLoadingAction(''),
-    });
-  };
-
-  const handleSubmitAdjustment = (event) => {
-    event.preventDefault();
-    setError('');
-    setSuccess('');
-
-    if (!adjustmentForm.product_id || !adjustmentForm.warehouse_id || adjustmentForm.counted_quantity === '') {
-      setError('Choose product, warehouse, and counted quantity before posting an adjustment.');
-      return;
-    }
-
-    setLoadingAction('adjustment');
-
-    router.post('/inventory/adjustments', {
-      product_id: parseInt(adjustmentForm.product_id, 10),
-      warehouse_id: parseInt(adjustmentForm.warehouse_id, 10),
-      counted_quantity: parseInt(adjustmentForm.counted_quantity, 10),
-      reason: adjustmentForm.reason,
-      bin_location: adjustmentForm.bin_location,
-      safety_stock: adjustmentForm.safety_stock === '' ? null : parseInt(adjustmentForm.safety_stock, 10),
-      unit_cost: adjustmentForm.unit_cost === '' ? null : Number(adjustmentForm.unit_cost),
-    }, {
-      preserveScroll: true,
-      only: refreshOnly,
-      onSuccess: () => {
-        setAdjustmentForm((current) => ({
-          ...defaultAdjustmentForm,
-          product_id: current.product_id,
-          warehouse_id: current.warehouse_id,
-        }));
-      },
-      onError: (errors) => setError(Object.values(errors)[0] || 'Inventory adjustment could not be posted.'),
-      onFinish: () => setLoadingAction(''),
-    });
-  };
 
   const allocationColumns = [
     {
@@ -392,6 +222,9 @@ export const SellerInventory = () => {
                 <RefreshCw size={16} />
                 Refresh
               </Button>
+              <Button variant="secondary" onClick={() => setShowAdjustmentForm(true)}>
+                Adjust Stock
+              </Button>
               <Button variant="primary" onClick={() => setShowWarehouseForm(true)}>
                 <Plus size={16} />
                 Warehouse
@@ -416,435 +249,346 @@ export const SellerInventory = () => {
             <MetricItem icon={ShieldCheck} label="Batches / Serials" value={`${formatNumber(metrics.batches)} / ${formatNumber(metrics.serials)}`} />
           </section>
 
-          <section className="inventory-control-panel">
-            <div className="inventory-panel-head">
+          <section className="inventory-section">
+            <div className="inventory-section-head" style={{ flexWrap: 'wrap', gap: '12px' }}>
               <div>
-                <span className="inventory-kicker">Stock control</span>
-                <h3>Cycle count and manual adjustment</h3>
+                <span className="inventory-kicker">Sellable inventory</span>
+                <h3>Warehouse allocations</h3>
               </div>
-              <span className="inventory-panel-note">
-                {formatNumber(metrics.movements)} movements, {formatNumber(metrics.adjustments)} adjustments
-              </span>
+              <div className="inventory-allocation-actions">
+                <Button variant="secondary" onClick={() => setShowLocationDrawer(true)} style={{ padding: '8px 14px', fontSize: '12px', minHeight: 'auto', whiteSpace: 'nowrap' }}>
+                  Locations & Bins
+                </Button>
+                <div className="inventory-search-chip" style={{ whiteSpace: 'nowrap' }}>
+                  {formatNumber(metrics.unassigned_bins)} unassigned bins
+                </div>
+              </div>
             </div>
 
-            <form className="inventory-adjustment-grid" onSubmit={handleSubmitAdjustment}>
-              <div className="input-container">
-                <label className="input-label label-md">Product</label>
-                <select
-                  className="input-field"
-                  value={adjustmentForm.product_id}
-                  onChange={(event) => setAdjustmentField('product_id', event.target.value)}
-                >
-                  <option value="">Select product</option>
-                  {productOptions.map((product) => (
-                    <option key={product.id} value={product.id}>{product.label}</option>
-                  ))}
-                </select>
-              </div>
+            <DataTable
+              className="inventory-allocations-table desktop-only"
+              columns={allocationColumns}
+              data={allocations}
+              emptyMessage={(
+                <EmptyState
+                  icon={LayoutList}
+                  title="No stock allocations"
+                  copy="Create a product with warehouse stock or post a manual count to start tracking on-hand, available, reserved, and safety stock."
+                />
+              )}
+            />
 
-              <div className="input-container">
-                <label className="input-label label-md">Warehouse</label>
-                <select
-                  className="input-field"
-                  value={adjustmentForm.warehouse_id}
-                  onChange={(event) => setAdjustmentField('warehouse_id', event.target.value)}
-                >
-                  <option value="">Select warehouse</option>
-                  {warehouses.map((warehouse) => (
-                    <option key={warehouse.id} value={warehouse.id}>
-                      {warehouse.name} ({warehouse.code})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <Input
-                label="Counted Qty"
-                type="number"
-                min="0"
-                value={adjustmentForm.counted_quantity}
-                onChange={(event) => setAdjustmentField('counted_quantity', event.target.value)}
-              />
-
-              <Input
-                label="Bin Location"
-                type="text"
-                placeholder="Z-01/A-01/R-01/S-01/BIN-01"
-                value={adjustmentForm.bin_location}
-                onChange={(event) => setAdjustmentField('bin_location', event.target.value)}
-              />
-
-              <Input
-                label="Safety Stock"
-                type="number"
-                min="0"
-                value={adjustmentForm.safety_stock}
-                onChange={(event) => setAdjustmentField('safety_stock', event.target.value)}
-              />
-
-              <Input
-                label="Unit Cost"
-                type="number"
-                min="0"
-                step="0.01"
-                value={adjustmentForm.unit_cost}
-                onChange={(event) => setAdjustmentField('unit_cost', event.target.value)}
-              />
-
-              <div className="input-container inventory-adjustment-reason">
-                <label className="input-label label-md">Reason</label>
-                <select
-                  className="input-field"
-                  value={adjustmentForm.reason}
-                  onChange={(event) => setAdjustmentField('reason', event.target.value)}
-                >
-                  <option>Cycle count correction</option>
-                  <option>Damaged stock</option>
-                  <option>Found stock</option>
-                  <option>Lost stock</option>
-                  <option>Opening balance</option>
-                  <option>Quality hold release</option>
-                </select>
-              </div>
-
-              <Button
-                type="submit"
-                variant="primary"
-                className="inventory-submit-adjustment"
-                disabled={loadingAction === 'adjustment'}
-              >
-                <Save size={16} />
-                {loadingAction === 'adjustment' ? 'Posting' : 'Post Count'}
-              </Button>
-            </form>
+            <div className="mobile-only mobile-allocations-list">
+              {allocations.length === 0 ? (
+                <EmptyState icon={LayoutList} title="No stock allocations" />
+              ) : (
+                allocations.map((row) => (
+                  <div key={`${row.product_id}-${row.warehouse_id}`} className="mobile-allocation-card" onClick={() => setSelectedAllocation(row)}>
+                    <div className="mobile-allocation-head" style={{ flexDirection: 'row', marginBottom: 0, paddingBottom: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ flex: 1, minWidth: 0, paddingRight: '12px' }}>
+                        <strong style={{ display: 'block', fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.product_name}</strong>
+                        <span style={{ fontSize: '12px', color: 'var(--inventory-muted)', display: 'block', marginTop: '4px', fontWeight: 500 }}>{row.warehouse_name}</span>
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <strong style={{ fontSize: '16px', display: 'block', color: 'var(--color-primary)' }}>{formatNumber(row.available_quantity)}</strong>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </section>
 
-          {showWarehouseForm && (
-            <section className="inventory-control-panel inventory-warehouse-form">
-              <div className="inventory-panel-head">
-                <div>
-                  <span className="inventory-kicker">Warehouse master</span>
-                  <h3>Create warehouse and default bin hierarchy</h3>
-                </div>
-                <button type="button" className="inventory-close-button" onClick={() => setShowWarehouseForm(false)} aria-label="Close warehouse form">
-                  <X size={17} />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmitWarehouse}>
-                <div className="inventory-warehouse-grid">
-                  <Input label="Warehouse Name" value={warehouseForm.name} onChange={(event) => setWarehouseField('name', event.target.value)} />
-                  <Input label="Code" placeholder="WH-AHM-01" value={warehouseForm.code} onChange={(event) => setWarehouseField('code', event.target.value)} />
-                  <div className="input-container">
-                    <label className="input-label label-md">Type</label>
-                    <select className="input-field" value={warehouseForm.type} onChange={(event) => setWarehouseField('type', event.target.value)}>
-                      <option value="fulfillment">Fulfillment</option>
-                      <option value="returns">Returns</option>
-                      <option value="dark_store">Dark store</option>
-                      <option value="3pl">3PL</option>
-                      <option value="cross_dock">Cross dock</option>
-                    </select>
-                  </div>
-                  <div className="input-container">
-                    <label className="input-label label-md">Default Carrier</label>
-                    <select className="input-field" value={warehouseForm.default_carrier} onChange={(event) => setWarehouseField('default_carrier', event.target.value)}>
-                      {carriers.map((carrier) => (
-                        <option key={carrier} value={carrier}>{carrier}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <Input label="Street Address" value={warehouseForm.address} onChange={(event) => setWarehouseField('address', event.target.value)} />
-                  <Input label="City" value={warehouseForm.city} onChange={(event) => setWarehouseField('city', event.target.value)} />
-                  <Input label="State" value={warehouseForm.state} onChange={(event) => setWarehouseField('state', event.target.value)} />
-                  <Input label="Postal Code" value={warehouseForm.postal_code} onChange={(event) => setWarehouseField('postal_code', event.target.value)} />
-                  <Input label="Country" value={warehouseForm.country} onChange={(event) => setWarehouseField('country', event.target.value)} />
-                  <Input label="Timezone" value={warehouseForm.timezone} onChange={(event) => setWarehouseField('timezone', event.target.value)} />
-                  <Input label="Capacity Units" type="number" min="0" value={warehouseForm.capacity_units} onChange={(event) => setWarehouseField('capacity_units', event.target.value)} />
-                  <div className="input-container inventory-warehouse-notes">
-                    <label className="input-label label-md">Notes</label>
-                    <textarea
-                      className="input-field"
-                      rows="3"
-                      value={warehouseForm.notes}
-                      onChange={(event) => setWarehouseField('notes', event.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="inventory-form-actions">
-                  <Button variant="secondary" onClick={() => setShowWarehouseForm(false)}>Cancel</Button>
-                  <Button type="submit" variant="primary" disabled={loadingAction === 'warehouse'}>
-                    <Plus size={16} />
-                    {loadingAction === 'warehouse' ? 'Creating' : 'Create Warehouse'}
-                  </Button>
-                </div>
-              </form>
-            </section>
-          )}
-
-          <section className="inventory-split-layout">
-            <div className="inventory-main-column">
+          {/* Bottom layout: Grid for Counts & Traceability, then full-width Recent Movements */}
+          <section className="inventory-dashboard-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+            {adjustments.length > 0 && (
               <section className="inventory-section">
-                <div className="inventory-section-head">
-                  <div>
-                    <span className="inventory-kicker">Sellable inventory</span>
-                    <h3>Warehouse allocations</h3>
-                  </div>
-                  <div className="inventory-search-chip">
-                    <Search size={15} />
-                    {formatNumber(metrics.unassigned_bins)} unassigned bins
-                  </div>
-                </div>
-
-                <DataTable
-                  className="inventory-allocations-table"
-                  columns={allocationColumns}
-                  data={allocations}
-                  emptyMessage={(
-                    <EmptyState
-                      icon={LayoutList}
-                      title="No stock allocations"
-                      copy="Create a product with warehouse stock or post a manual count to start tracking on-hand, available, reserved, and safety stock."
-                    />
-                  )}
-                />
-              </section>
-
-              <section className="inventory-section">
-                <div className="inventory-section-head">
-                  <div>
-                    <span className="inventory-kicker">Warehouse management</span>
-                    <h3>Locations and bin hierarchy</h3>
-                  </div>
-                  <div className="inventory-location-counts">
-                    <span>{formatNumber(locationCounts.zones)} zones</span>
-                    <span>{formatNumber(locationCounts.aisles)} aisles</span>
-                    <span>{formatNumber(locationCounts.bins)} bins</span>
-                  </div>
-                </div>
-
-                <div className="inventory-warehouse-list">
-                  {warehouses.length === 0 ? (
-                    <EmptyState
-                      icon={Warehouse}
-                      title="No warehouses yet"
-                      copy="Create a warehouse to seed the first zone, aisle, rack, shelf, and pick bin."
-                    />
-                  ) : (
-                    warehouses.map((warehouse) => {
-                      const totals = locationTotals(warehouse);
-
-                      return (
-                        <article className="inventory-warehouse-row" key={warehouse.id}>
-                          <div className="inventory-warehouse-title">
-                            <span className="inventory-warehouse-icon"><Warehouse size={18} /></span>
-                            <div>
-                              <h4>{warehouse.name}</h4>
-                              <p>{warehouse.code} / {titleCase(warehouse.type)} / {titleCase(warehouse.status)}</p>
-                            </div>
-                          </div>
-                          <div className="inventory-warehouse-meta">
-                            <span><MapPin size={14} />{[warehouse.city, warehouse.state, warehouse.country].filter(Boolean).join(', ') || 'No address'}</span>
-                            <span><Truck size={14} />{warehouse.default_carrier || 'No carrier'}</span>
-                            <span><Layers size={14} />{firstBinPath(warehouse)}</span>
-                          </div>
-                          <div className="inventory-location-grid">
-                            <span>{totals.zones} Zones</span>
-                            <span>{totals.aisles} Aisles</span>
-                            <span>{totals.racks} Racks</span>
-                            <span>{totals.shelves} Shelves</span>
-                            <span>{totals.bins} Bins</span>
-                          </div>
-                        </article>
-                      );
-                    })
-                  )}
-                </div>
-              </section>
-            </div>
-
-            <aside className="inventory-side-column">
-              <section className="inventory-section inventory-compact-section">
-                <div className="inventory-section-head">
-                  <div>
-                    <span className="inventory-kicker">Audit trail</span>
-                    <h3>Recent movements</h3>
-                  </div>
-                  <Activity size={18} />
-                </div>
-                <div className="inventory-event-list">
-                  {movements.length === 0 ? (
-                    <EmptyState
-                      icon={Activity}
-                      title="No movement yet"
-                      copy="Stock movements appear after counts, reservations, shipments, returns, and product opening stock."
-                    />
-                  ) : (
-                    movements.map((movement) => (
-                      <div className="inventory-event" key={movement.id}>
-                        <span className="inventory-event-type">{titleCase(movement.type)}</span>
-                        <strong>{movement.product?.name || 'Product'}</strong>
-                        <p>{movement.warehouse?.name || 'Product level'} / Qty {formatNumber(movement.quantity)} / After {formatNumber(movement.quantity_after)}</p>
-                        <small>{movement.reason || 'No reason'} / {formatDate(movement.created_at)}</small>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </section>
-
-              <section className="inventory-section inventory-compact-section">
                 <div className="inventory-section-head">
                   <div>
                     <span className="inventory-kicker">Reconciliation</span>
                     <h3>Posted counts</h3>
                   </div>
-                  <ClipboardCheck size={18} />
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <button type="button" onClick={() => setShowAdjustmentForm(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-outline)', display: 'flex', alignItems: 'center' }}>
+                      <Plus size={18} />
+                    </button>
+                    <ClipboardCheck size={18} style={{ color: 'var(--color-outline)' }} />
+                  </div>
                 </div>
                 <div className="inventory-event-list">
-                  {adjustments.length === 0 ? (
-                    <EmptyState
-                      icon={ClipboardCheck}
-                      title="No counts posted"
-                      copy="Manual cycle counts and variance corrections will show here."
-                    />
+                  {adjustments.map((adjustment) => (
+                    <div className="inventory-event" key={adjustment.id}>
+                      <span className={adjustment.variance_quantity < 0 ? 'inventory-event-type negative' : 'inventory-event-type'}>
+                        Variance {formatNumber(adjustment.variance_quantity)}
+                      </span>
+                      <strong>{adjustment.product?.name || 'Product'}</strong>
+                      <p>{formatNumber(adjustment.system_quantity)} system / {formatNumber(adjustment.counted_quantity)} counted</p>
+                      <small>{adjustment.reason || 'Manual stock count'} / {formatDate(adjustment.created_at)}</small>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <section className="inventory-section inventory-compact-section">
+              <div className="inventory-section-head" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <span className="inventory-kicker">Traceability</span>
+                  <h3 style={{ whiteSpace: 'nowrap' }}>Batches and serials</h3>
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <Button variant="secondary" onClick={() => setShowTraceabilityForm(true)} style={{ padding: '8px 14px', fontSize: '12px', minHeight: 'auto' }}>
+                    <Plus size={14} style={{ marginRight: 4 }} />
+                    Register<span className="desktop-only">&nbsp;Traceability</span>
+                  </Button>
+                </div>
+              </div>
+              <div className="inventory-traceability">
+                <div>
+                  <strong>Recent batches</strong>
+                  {(traceability.batches || []).length === 0 ? (
+                    <p>No batch or lot records yet.</p>
                   ) : (
-                    adjustments.map((adjustment) => (
-                      <div className="inventory-event" key={adjustment.id}>
-                        <span className={adjustment.variance_quantity < 0 ? 'inventory-event-type negative' : 'inventory-event-type'}>
-                          Variance {formatNumber(adjustment.variance_quantity)}
-                        </span>
-                        <strong>{adjustment.product?.name || 'Product'}</strong>
-                        <p>{formatNumber(adjustment.system_quantity)} system / {formatNumber(adjustment.counted_quantity)} counted</p>
-                        <small>{adjustment.reason || 'Manual stock count'} / {formatDate(adjustment.created_at)}</small>
-                      </div>
+                    (traceability.batches || []).map((batch) => (
+                      <span key={batch.id}>{batch.batch_no} / {batch.product?.name || 'Product'} / {formatNumber(batch.quantity)}</span>
                     ))
                   )}
                 </div>
-              </section>
-
-              <section className="inventory-section inventory-compact-section">
-                <div className="inventory-section-head">
-                  <div>
-                    <span className="inventory-kicker">Traceability</span>
-                    <h3>Batches and serials</h3>
-                  </div>
-                  <ShieldCheck size={18} />
-                </div>
-                <div className="inventory-traceability">
-                  <div>
-                    <strong>Recent batches</strong>
-                    {(traceability.batches || []).length === 0 ? (
-                      <p>No batch or lot records yet.</p>
-                    ) : (
-                      (traceability.batches || []).map((batch) => (
-                        <span key={batch.id}>{batch.batch_no} / {batch.product?.name || 'Product'} / {formatNumber(batch.quantity)}</span>
-                      ))
-                    )}
-                  </div>
-                  <div>
-                    <strong>Recent serials</strong>
-                    {(traceability.serials || []).length === 0 ? (
-                      <p>No serial records yet.</p>
-                    ) : (
-                      (traceability.serials || []).map((serial) => (
-                        <span key={serial.id}>{serial.serial_no} / {serial.product?.name || 'Product'} / {titleCase(serial.status)}</span>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </section>
-
-              <section className="inventory-section inventory-compact-section">
-                <div className="inventory-section-head">
-                  <div>
-                    <span className="inventory-kicker">Register traceability</span>
-                    <h3>Lot or serial intake</h3>
-                  </div>
-                  <Archive size={18} />
-                </div>
-                <form className="inventory-traceability-form" onSubmit={handleSubmitTraceability}>
-                  <div className="inventory-segmented-control">
-                    <button
-                      type="button"
-                      className={traceabilityForm.record_type === 'batch' ? 'is-active' : ''}
-                      onClick={() => setTraceabilityField('record_type', 'batch')}
-                    >
-                      Batch
-                    </button>
-                    <button
-                      type="button"
-                      className={traceabilityForm.record_type === 'serial' ? 'is-active' : ''}
-                      onClick={() => setTraceabilityField('record_type', 'serial')}
-                    >
-                      Serial
-                    </button>
-                  </div>
-
-                  <div className="input-container">
-                    <label className="input-label label-md">Product</label>
-                    <select
-                      className="input-field"
-                      value={traceabilityForm.product_id}
-                      onChange={(event) => setTraceabilityField('product_id', event.target.value)}
-                    >
-                      <option value="">Select product</option>
-                      {productOptions.map((product) => (
-                        <option key={product.id} value={product.id}>{product.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="input-container">
-                    <label className="input-label label-md">Warehouse</label>
-                    <select
-                      className="input-field"
-                      value={traceabilityForm.warehouse_id}
-                      onChange={(event) => setTraceabilityField('warehouse_id', event.target.value)}
-                    >
-                      <option value="">Product level</option>
-                      {warehouses.map((warehouse) => (
-                        <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {traceabilityForm.record_type === 'batch' ? (
-                    <>
-                      <Input label="Batch / Lot No." value={traceabilityForm.batch_no} onChange={(event) => setTraceabilityField('batch_no', event.target.value)} />
-                      <Input label="Quantity" type="number" min="0" value={traceabilityForm.quantity} onChange={(event) => setTraceabilityField('quantity', event.target.value)} />
-                      <div className="inventory-traceability-dates">
-                        <Input label="Mfg Date" type="date" value={traceabilityForm.manufactured_at} onChange={(event) => setTraceabilityField('manufactured_at', event.target.value)} />
-                        <Input label="Expiry" type="date" value={traceabilityForm.expires_at} onChange={(event) => setTraceabilityField('expires_at', event.target.value)} />
-                      </div>
-                    </>
+                <div>
+                  <strong>Recent serials</strong>
+                  {(traceability.serials || []).length === 0 ? (
+                    <p>No serial records yet.</p>
                   ) : (
-                    <>
-                      <Input label="Serial No." value={traceabilityForm.serial_no} onChange={(event) => setTraceabilityField('serial_no', event.target.value)} />
-                      <div className="input-container">
-                        <label className="input-label label-md">Batch Link</label>
-                        <select
-                          className="input-field"
-                          value={traceabilityForm.inventory_batch_id}
-                          onChange={(event) => setTraceabilityField('inventory_batch_id', event.target.value)}
-                        >
-                          <option value="">No batch link</option>
-                          {(traceability.batches || []).map((batch) => (
-                            <option key={batch.id} value={batch.id}>{batch.batch_no}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </>
+                    (traceability.serials || []).map((serial) => (
+                      <span key={serial.id}>{serial.serial_no} / {serial.product?.name || 'Product'} / {titleCase(serial.status)}</span>
+                    ))
                   )}
+                </div>
+              </div>
+            </section>
+          </section>
 
-                  <Button type="submit" variant="secondary" disabled={loadingAction === 'traceability'}>
-                    <Save size={16} />
-                    {loadingAction === 'traceability' ? 'Saving' : 'Save Record'}
-                  </Button>
-                </form>
-              </section>
-            </aside>
+          <section className="inventory-section">
+            <div className="inventory-section-head" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <span className="inventory-kicker">Audit Trail</span>
+                <h3>Recent movements</h3>
+              </div>
+            </div>
+            <div className="desktop-only">
+              <div className="inventory-movement-list">
+                {movements.length === 0 ? (
+                  <EmptyState
+                    icon={Activity}
+                    title="No movements yet"
+                    copy="Stock movements, adjustments, and receipts will appear here."
+                  />
+                ) : (
+                  movements.map((movement) => (
+                    <div key={movement.id} className="inventory-movement-item">
+                      <div className="inventory-movement-header">
+                        <strong>{movement.product?.name || 'Unknown Product'}</strong>
+                        <span className="inventory-movement-type">{titleCase(movement.type)}</span>
+                      </div>
+                      <div className="inventory-movement-details">
+                        <p>
+                          <span style={{ color: 'var(--color-on-surface)' }}>{movement.warehouse?.name || 'Unknown Location'}</span>
+                          <span style={{ margin: '0 8px', color: 'var(--inventory-line)' }}>|</span>
+                          Qty Change: <strong style={{ color: movement.quantity > 0 ? 'var(--color-success)' : movement.quantity < 0 ? 'var(--color-error)' : 'inherit' }}>{movement.quantity > 0 ? '+' : ''}{formatNumber(movement.quantity)}</strong>
+                        </p>
+                        <p style={{ marginTop: '4px' }}>
+                          Final: <strong>{formatNumber(movement.after_quantity)}</strong>
+                        </p>
+                      </div>
+                      <div className="inventory-movement-footer">
+                        <small>{movement.reason || 'No reason provided'}</small>
+                        <small>{formatDate(movement.created_at)}</small>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+            
+            <div className="mobile-only">
+              <div className="inventory-movement-list">
+                {movements.length === 0 ? (
+                  <EmptyState icon={Activity} title="No movements yet" copy="Stock movements will appear here." />
+                ) : (
+                  movements.slice(0, 3).map((movement) => (
+                    <div key={movement.id} className="inventory-movement-item" style={{ padding: '12px', cursor: 'pointer' }} onClick={() => setSelectedMovement(movement)}>
+                      <div className="inventory-movement-header" style={{ marginBottom: 0 }}>
+                        <strong>{movement.product?.name || 'Unknown Product'}</strong>
+                      </div>
+                      <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--color-outline)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>
+                          Qty Change: <strong style={{ color: movement.quantity > 0 ? 'var(--color-success)' : movement.quantity < 0 ? 'var(--color-error)' : 'inherit' }}>{movement.quantity > 0 ? '+' : ''}{formatNumber(movement.quantity)}</strong>
+                        </span>
+                        <span className="inventory-movement-type" style={{ fontSize: '10px', padding: '2px 6px' }}>{titleCase(movement.type)}</span>
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </section>
         </div>
       </div>
+
+      <WarehouseDrawer isOpen={showWarehouseForm} onClose={() => setShowWarehouseForm(false)} />
+      <StockAdjustmentDrawer isOpen={showAdjustmentForm} onClose={() => setShowAdjustmentForm(false)} />
+      <TraceabilityDrawer isOpen={showTraceabilityForm} onClose={() => setShowTraceabilityForm(false)} />
+
+      <RightDrawer isOpen={showLocationDrawer} onClose={() => setShowLocationDrawer(false)} title="Locations and Bin Hierarchy">
+        <div className="inventory-location-counts" style={{ alignSelf: 'flex-start' }}>
+          <span>{formatNumber(locationCounts.zones)} zones</span>
+          <span>{formatNumber(locationCounts.aisles)} aisles</span>
+          <span>{formatNumber(locationCounts.bins)} bins</span>
+        </div>
+        <div className="inventory-warehouse-list">
+          {warehouses.length === 0 ? (
+            <EmptyState
+              icon={Warehouse}
+              title="No warehouses yet"
+              copy="Create a warehouse to seed the first zone, aisle, rack, shelf, and pick bin."
+            />
+          ) : (
+            warehouses.map((warehouse) => {
+              const totals = locationTotals(warehouse);
+
+              return (
+                <article className="inventory-warehouse-row" key={warehouse.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '16px' }}>
+                  <div className="inventory-warehouse-title">
+                    <span className="inventory-warehouse-icon"><Warehouse size={18} /></span>
+                    <div>
+                      <h4>{warehouse.name}</h4>
+                      <p>{warehouse.code} / {titleCase(warehouse.type)} / {titleCase(warehouse.status)}</p>
+                    </div>
+                  </div>
+                  <div className="inventory-warehouse-meta">
+                    <span><MapPin size={14} />{[warehouse.city, warehouse.state, warehouse.country].filter(Boolean).join(', ') || 'No address'}</span>
+                    <span><Truck size={14} />{warehouse.default_carrier || 'No carrier'}</span>
+                    <span><Layers size={14} />{firstBinPath(warehouse)}</span>
+                  </div>
+                  <div className="inventory-location-grid" style={{ width: '100%' }}>
+                    <span>{totals.zones} Zones</span>
+                    <span>{totals.aisles} Aisles</span>
+                    <span>{totals.racks} Racks</span>
+                    <span>{totals.shelves} Shelves</span>
+                    <span>{totals.bins} Bins</span>
+                  </div>
+                </article>
+              );
+            })
+          )}
+        </div>
+      </RightDrawer>
+
+      <div className={`bottom-sheet-overlay ${selectedMovement ? 'is-open' : ''}`} onClick={() => setSelectedMovement(null)}>
+        <div className="bottom-sheet-container" onClick={(e) => e.stopPropagation()}>
+          <div className="bottom-sheet-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--inventory-line)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '750', color: 'var(--color-on-surface)' }}>Movement Details</h4>
+              {selectedMovement && (
+                <span className="inventory-movement-type" style={{ fontSize: '10px', padding: '4px 8px', display: 'inline-flex', background: 'var(--color-surface-variant)', color: 'var(--color-on-surface)', borderRadius: '20px', fontWeight: '700', letterSpacing: '0.05em' }}>
+                  {titleCase(selectedMovement.type)}
+                </span>
+              )}
+            </div>
+            <button className="bottom-sheet-close" onClick={() => setSelectedMovement(null)}>
+              <X size={18} />
+            </button>
+          </div>
+          <div className="bottom-sheet-content" style={{ padding: '12px 20px 20px' }}>
+            {selectedMovement && (
+              <div className="inventory-movement-item" style={{ border: 'none', padding: 0, boxShadow: 'none', background: 'transparent' }}>
+                <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <strong style={{ fontSize: '20px', display: 'block', lineHeight: 1.2, color: 'var(--color-on-surface)' }}>
+                    {selectedMovement.product?.name || 'Unknown Product'}
+                  </strong>
+                </div>
+                <div className="inventory-movement-details" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div style={{ background: 'var(--color-surface-variant)', padding: '12px 16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <small style={{ color: 'var(--color-outline)', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quantity Change</small>
+                      <span style={{ fontSize: '24px', fontWeight: '800', color: selectedMovement.quantity > 0 ? 'var(--color-success)' : selectedMovement.quantity < 0 ? 'var(--color-error)' : 'var(--color-on-surface)' }}>
+                        {selectedMovement.quantity > 0 ? '+' : ''}{formatNumber(selectedMovement.quantity)}
+                      </span>
+                    </div>
+                    <div style={{ background: 'var(--color-surface-variant)', padding: '12px 16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <small style={{ color: 'var(--color-outline)', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Final Quantity</small>
+                      <span style={{ fontSize: '24px', fontWeight: '800', color: 'var(--color-on-surface)' }}>
+                        {formatNumber(selectedMovement.after_quantity)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '12px 16px', border: '1px solid var(--inventory-line)', borderRadius: '12px', background: 'var(--color-surface)' }}>
+                    <small style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-outline)', marginBottom: '4px', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      <MapPin size={12} /> Location
+                    </small>
+                    <span style={{ fontSize: '14px', color: 'var(--color-on-surface)', fontWeight: 600 }}>{selectedMovement.warehouse?.name || 'Unknown Location'}</span>
+                  </div>
+
+                  <div style={{ padding: '12px 16px', border: '1px solid var(--inventory-line)', borderRadius: '12px', background: 'var(--color-surface)' }}>
+                    <small style={{ display: 'block', color: 'var(--color-outline)', marginBottom: '4px', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reason</small>
+                    <span style={{ fontSize: '14px', color: 'var(--color-on-surface)', lineHeight: 1.4 }}>{selectedMovement.reason || 'No reason provided'}</span>
+                  </div>
+
+                  <div style={{ padding: '12px 16px', background: 'rgba(26, 28, 26, 0.03)', borderRadius: '12px', textAlign: 'center', marginTop: '4px' }}>
+                    <small style={{ display: 'block', color: 'var(--color-outline)', marginBottom: '2px', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Logged At</small>
+                    <span style={{ fontSize: '13px', color: 'var(--color-on-surface)', fontWeight: 500 }}>{formatDate(selectedMovement.created_at)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <RightDrawer isOpen={!!selectedAllocation} onClose={() => setSelectedAllocation(null)} title="Allocation Details">
+        {selectedAllocation && (
+          <>
+            <div>
+              <h4 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 750, color: 'var(--color-on-surface)' }}>{selectedAllocation.product_name}</h4>
+              <span style={{ fontSize: '13px', color: 'var(--color-outline)', fontWeight: 650 }}>{selectedAllocation.sku || 'No SKU'}</span>
+            </div>
+
+            <div>
+              <strong style={{ display: 'block', marginBottom: '4px', fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-outline)', letterSpacing: '0.05em' }}>Location</strong>
+              <div style={{ color: 'var(--color-on-surface)', fontSize: '15px', fontWeight: 650 }}>{selectedAllocation.warehouse_name}</div>
+              <div style={{ color: 'var(--color-outline)', fontSize: '13px' }}>{selectedAllocation.warehouse_code} / {selectedAllocation.bin_location || 'Unassigned'}</div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', padding: '20px', borderRadius: '16px', background: 'rgba(26, 28, 26, 0.04)' }}>
+              <div>
+                <span style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-outline)', letterSpacing: '0.05em', marginBottom: '4px' }}>On Hand</span>
+                <strong style={{ fontSize: '18px', color: 'var(--color-on-surface)' }}>{formatNumber(selectedAllocation.quantity)}</strong>
+              </div>
+              <div>
+                <span style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-outline)', letterSpacing: '0.05em', marginBottom: '4px' }}>Available</span>
+                <strong style={{ fontSize: '18px', color: 'var(--color-on-surface)' }}>{formatNumber(selectedAllocation.available_quantity)}</strong>
+              </div>
+              <div>
+                <span style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-outline)', letterSpacing: '0.05em', marginBottom: '4px' }}>Reserved</span>
+                <strong style={{ fontSize: '18px', color: 'var(--color-on-surface)' }}>{formatNumber(selectedAllocation.reserved_quantity)}</strong>
+              </div>
+              <div>
+                <span style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-outline)', letterSpacing: '0.05em', marginBottom: '4px' }}>Safety Stock</span>
+                <strong style={{ fontSize: '18px', color: 'var(--color-on-surface)' }}>{formatNumber(selectedAllocation.safety_stock)}</strong>
+              </div>
+            </div>
+
+            <div style={{ paddingTop: '20px', borderTop: '1px solid var(--inventory-line)', marginTop: 'auto' }}>
+              <span className={`inventory-status ${selectedAllocation.stock_status}`}>{titleCase(selectedAllocation.stock_status)}</span>
+              <div style={{ marginTop: '12px', fontSize: '14px', color: 'var(--color-on-surface)' }}>
+                <strong>Valuation:</strong> {formatCurrency(selectedAllocation.valuation)}
+              </div>
+            </div>
+          </>
+        )}
+      </RightDrawer>
     </div>
   );
 };

@@ -5,16 +5,7 @@ import { Sidebar } from '../components/Sidebar';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import {
-  DollarSign,
-  ShoppingCart,
-  BarChart3,
-  AlertTriangle,
   ArrowRight,
-  Download,
-  PlusCircle,
-  Warehouse,
-  PackageCheck,
-  Settings,
 } from 'lucide-react';
 import './SellerOverview.css';
 
@@ -89,15 +80,15 @@ export const SellerOverview = () => {
             </div>
             <div className="seller-header-actions">
               <div className="export-buttons-group">
-                <Button variant="outline" size="sm" onClick={() => handleExport('inventory')} className="export-btn">
-                  <Download size={14} /> Export Inventory
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => handleExport('orders')} className="export-btn">
-                  <Download size={14} /> Export Orders
-                </Button>
+                <button type="button" onClick={() => handleExport('inventory')} className="action-btn">
+                  Export Inventory
+                </button>
+                <button type="button" onClick={() => handleExport('orders')} className="action-btn">
+                  Export Orders
+                </button>
               </div>
-              <Link href="/seller/products" className="seller-manage-products-link">
-                <Button variant="primary" className="seller-manage-products-btn">Manage Products</Button>
+              <Link href="/seller/products" className="action-btn primary">
+                Manage Products
               </Link>
             </div>
           </div>
@@ -111,9 +102,6 @@ export const SellerOverview = () => {
               {/* Stats Grid */}
               <div className="seller-stats-grid">
                 <Card className="stat-card">
-                  <div className="stat-icon-wrapper flex-center" style={{ backgroundColor: 'var(--color-surface-container-low)', color: 'var(--color-primary)' }}>
-                    <DollarSign size={24} />
-                  </div>
                   <div className="stat-details">
                     <span className="stat-label label-md">Total Sales Revenue</span>
                     <span className="stat-value headline-md">${parseFloat(stats?.revenue || 0).toFixed(2)}</span>
@@ -121,9 +109,6 @@ export const SellerOverview = () => {
                 </Card>
 
                 <Card className="stat-card">
-                  <div className="stat-icon-wrapper flex-center" style={{ backgroundColor: 'var(--color-tertiary-container)', color: 'var(--color-on-tertiary)' }}>
-                    <ShoppingCart size={24} />
-                  </div>
                   <div className="stat-details">
                     <span className="stat-label label-md">Total Orders</span>
                     <span className="stat-value headline-md">{stats?.orders_count || 0}</span>
@@ -131,19 +116,13 @@ export const SellerOverview = () => {
                 </Card>
 
                 <Card className="stat-card">
-                  <div className="stat-icon-wrapper flex-center" style={{ backgroundColor: 'var(--color-surface-container-high)', color: 'var(--color-secondary)' }}>
-                    <BarChart3 size={24} />
-                  </div>
                   <div className="stat-details">
                     <span className="stat-label label-md">Products Cataloged</span>
                     <span className="stat-value headline-md">{stats?.products_count || 0}</span>
                   </div>
                 </Card>
 
-                <Card className="stat-card">
-                  <div className="stat-icon-wrapper flex-center" style={{ backgroundColor: stats?.low_stock_count > 0 ? 'var(--color-error-container)' : 'var(--color-surface-container)', color: stats?.low_stock_count > 0 ? 'var(--color-error)' : 'var(--color-outline)' }}>
-                    <AlertTriangle size={24} />
-                  </div>
+                <Card className="stat-card stat-card-alert">
                   <div className="stat-details">
                     <span className="stat-label label-md">Low Stock Warnings</span>
                     <span className="stat-value headline-md" style={{ color: stats?.low_stock_count > 0 ? 'var(--color-error)' : 'inherit' }}>
@@ -262,99 +241,61 @@ export const SellerOverview = () => {
                 </Card>
               </div>
 
-              {/* Warnings and Recent Sales Grid */}
-              <div className="seller-dashboard-main-grid grid-12">
-                <div className="col-span-8" style={{ gridColumn: 'span 8' }}>
-                  <Card
-                    title="Recent Sales Activity"
-                    extra={
-                      <Link href="/seller/orders" className="recent-sales-link label-md">
-                        View All Orders <ArrowRight size={14} style={{ marginLeft: 4 }} />
-                      </Link>
-                    }
-                  >
-                    {stats?.recent_sales && stats.recent_sales.length > 0 ? (
-                      <div className="recent-sales-list">
-                        {stats.recent_sales.map((sale) => (
-                          <div key={sale.id} className="recent-sale-row body-md">
-                            <div className="sale-product">
-                              <span className="sale-prod-name font-weight-600">{sale.product?.name || 'Removed Product'}</span>
-                              <span className="sale-buyer-email body-md" style={{ color: 'var(--color-outline)', fontSize: 12 }}>
-                                Customer: {sale.order?.buyer?.name} ({sale.order?.buyer?.email})
-                              </span>
-                            </div>
-                            <div className="sale-meta text-align-right">
-                              <span className="sale-price-qty font-weight-600">{sale.quantity} x ${parseFloat(sale.price).toFixed(2)}</span>
-                              <span className="sale-total" style={{ color: 'var(--color-primary)', display: 'block', fontWeight: 700 }}>
-                                ${parseFloat(sale.price * sale.quantity).toFixed(2)}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
+              {/* Recent Sales Activity */}
+              <Card
+                title="Recent Sales Activity"
+                extra={
+                  <Link href="/seller/orders" className="recent-sales-link label-md">
+                    View All Orders <ArrowRight size={14} style={{ marginLeft: 4 }} />
+                  </Link>
+                }
+              >
+                {stats?.recent_sales && stats.recent_sales.length > 0 ? (
+                  <div className="recent-sales-list">
+                    {stats.recent_sales.map((sale) => (
+                      <div key={sale.id} className="recent-sale-row body-md">
+                        <div className="sale-product">
+                          <span className="sale-prod-name font-weight-600">{sale.product?.name || 'Removed Product'}</span>
+                          <span className="sale-buyer-email body-md" style={{ color: 'var(--color-outline)', fontSize: 12 }}>
+                            Customer: {sale.order?.buyer?.name} ({sale.order?.buyer?.email})
+                          </span>
+                        </div>
+                        <div className="sale-meta text-align-right">
+                          <span className="sale-price-qty font-weight-600">{sale.quantity} x ${parseFloat(sale.price).toFixed(2)}</span>
+                          <span className="sale-total" style={{ color: 'var(--color-primary)', display: 'block', fontWeight: 700 }}>
+                            ${parseFloat(sale.price * sale.quantity).toFixed(2)}
+                          </span>
+                        </div>
                       </div>
-                    ) : (
-                      <p className="body-md" style={{ color: 'var(--color-outline)', textAlign: 'center', padding: '24px 0' }}>
-                        No sales transactions recorded yet.
-                      </p>
-                    )}
-                  </Card>
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="body-md" style={{ color: 'var(--color-outline)', textAlign: 'center', padding: '24px 0' }}>
+                    No sales transactions recorded yet.
+                  </p>
+                )}
+              </Card>
 
-                <div className="col-span-4" style={{ gridColumn: 'span 4', display: 'flex', flexDirection: 'column', gap: 'var(--spacing-lg)' }}>
-                  {stats?.low_stock_products && stats.low_stock_products.length > 0 && (
-                    <Card title="Low Stock Alerts" style={{ border: '1px solid var(--color-error-container)' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        {stats.low_stock_products.map((p) => (
-                          <div key={p.id} className="low-stock-alert-item animate-fade-in">
-                            <div className="low-stock-meta">
-                              <span className="body-md font-weight-600" style={{ color: 'var(--color-error)' }}>{p.name}</span>
-                              <span className="label-sm" style={{ color: 'var(--color-outline)', marginTop: 2 }}>
-                                Qty: <strong>{p.stock_quantity}</strong> (Threshold: {p.low_stock_amount})
-                              </span>
-                            </div>
-                            <Link href="/seller/products" className="low-stock-action-link">
-                              Restock
-                            </Link>
-                          </div>
-                        ))}
+              {/* Low Stock Alerts */}
+              {stats?.low_stock_products && stats.low_stock_products.length > 0 && (
+                <Card title="Low Stock Alerts" style={{ border: '1px solid var(--color-error-container)', marginTop: '24px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+                    {stats.low_stock_products.map((p) => (
+                      <div key={p.id} className="low-stock-alert-item animate-fade-in" style={{ marginBottom: 0 }}>
+                        <div className="low-stock-meta">
+                          <span className="body-md font-weight-600" style={{ color: 'var(--color-error)' }}>{p.name}</span>
+                          <span className="label-sm" style={{ color: 'var(--color-outline)', marginTop: 2 }}>
+                            Qty: <strong>{p.stock_quantity}</strong> (Threshold: {p.low_stock_amount})
+                          </span>
+                        </div>
+                        <Link href="/seller/products" className="low-stock-action-link">
+                          Restock
+                        </Link>
                       </div>
-                    </Card>
-                  )}
-
-                  <Card title="Quick Management Links" className="quick-links-card">
-                    <div className="quick-links-list">
-                      <Link href="/seller/products" className="quick-link body-md">
-                        <span className="quick-link-label">
-                          <PlusCircle size={16} />
-                          Add New Product
-                        </span>
-                        <ArrowRight size={16} />
-                      </Link>
-                      <Link href="/seller/inventory" className="quick-link body-md">
-                        <span className="quick-link-label">
-                          <Warehouse size={16} />
-                          Manage Warehouses
-                        </span>
-                        <ArrowRight size={16} />
-                      </Link>
-                      <Link href="/seller/orders" className="quick-link body-md">
-                        <span className="quick-link-label">
-                          <PackageCheck size={16} />
-                          Process Pending Shipments
-                        </span>
-                        <ArrowRight size={16} />
-                      </Link>
-                      <Link href="/seller/profile" className="quick-link body-md">
-                        <span className="quick-link-label">
-                          <Settings size={16} />
-                          Edit Store Profile
-                        </span>
-                        <ArrowRight size={16} />
-                      </Link>
-                    </div>
-                  </Card>
-                </div>
-              </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
             </>
           )}
         </div>

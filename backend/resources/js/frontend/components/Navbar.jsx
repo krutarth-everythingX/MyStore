@@ -1,17 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, router, usePage } from '@inertiajs/react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { ShoppingCart, Layout, Search, Menu, X, Home as HomeIcon, Bell, ChevronDown } from 'lucide-react';
+import { ShoppingCart, Layout, Search, Menu, X, Home as HomeIcon, Bell, ChevronDown, ArrowUpRight } from 'lucide-react';
 
 export const Navbar = ({ onSearch, opaque = false }) => {
   const { user, logout } = useAuth();
   const { cartCount } = useCart();
-  const { url } = usePage();
+  const { props, url } = usePage();
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const searchContainerRef = useRef(null);
 
   useEffect(() => {
     const params = new URL(url, window.location.origin).searchParams;
@@ -51,20 +55,50 @@ export const Navbar = ({ onSearch, opaque = false }) => {
 
   const [categories, setCategories] = useState([]);
   const [categoriesDropdownOpen, setCategoriesDropdownOpen] = useState(false);
+  const categoriesLoadedRef = useRef(false);
 
   useEffect(() => {
-    const fetchCategories = async () => {
+    const pageCategories = Array.isArray(props.categories) ? props.categories : [];
+
+    if (pageCategories.length > 0) {
+      setCategories(pageCategories.filter((category) => !category.parent_id).slice(0, 10));
+      categoriesLoadedRef.current = true;
+    }
+  }, [props.categories]);
+
+  const loadNavCategories = async () => {
+    if (categoriesLoadedRef.current || categories.length > 0) {
+      return;
+    }
+
+    const cached = sessionStorage.getItem('mystore.navCategories');
+    if (cached) {
       try {
-        const response = await fetch('/api/categories');
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          setCategories(parsed);
+          categoriesLoadedRef.current = true;
+          return;
+        }
+      } catch (error) {
+        sessionStorage.removeItem('mystore.navCategories');
+      }
+    }
+
+      try {
+        const response = await fetch('/api/categories/nav', {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
         const data = await response.json();
         const cats = Array.isArray(data) ? data : (data.data || []);
-        setCategories(cats.filter(c => !c.parent_id).slice(0, 10));
+        const nextCategories = cats.filter((category) => !category.parent_id).slice(0, 10);
+        sessionStorage.setItem('mystore.navCategories', JSON.stringify(nextCategories));
+        setCategories(nextCategories);
+        categoriesLoadedRef.current = true;
       } catch (error) {
         console.error('Failed to load categories', error);
       }
-    };
-    fetchCategories();
-  }, []);
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -74,10 +108,47 @@ export const Navbar = ({ onSearch, opaque = false }) => {
       if (!event.target.closest('.nav-categories-dropdown-container')) {
         setCategoriesDropdownOpen(false);
       }
+      if (!event.target.closest('.nav-search-container')) {
+        setSuggestionsOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    const query = searchQuery.trim();
+
+    if (query.length < 2) {
+      setSuggestions([]);
+      setSuggestionsLoading(false);
+      return undefined;
+    }
+
+    setSuggestionsLoading(true);
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch(`/search/suggestions?q=${encodeURIComponent(query)}&limit=6`, {
+          signal: controller.signal,
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        const payload = await response.json();
+        setSuggestions(Array.isArray(payload.data) ? payload.data : []);
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          setSuggestions([]);
+        }
+      } finally {
+        setSuggestionsLoading(false);
+      }
+    }, 180);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [searchQuery]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -90,6 +161,7 @@ export const Navbar = ({ onSearch, opaque = false }) => {
       });
     }
     setMobileMenuOpen(false);
+    setSuggestionsOpen(false);
   };
 
   const handleLogoutClick = async () => {
@@ -138,12 +210,20 @@ export const Navbar = ({ onSearch, opaque = false }) => {
                 ? 'bg-neutral-950 text-white shadow-xs'
                 : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100/60'
                 }`}
-              onClick={() => setCategoriesDropdownOpen(!categoriesDropdownOpen)}
+              onMouseEnter={loadNavCategories}
+              onFocus={loadNavCategories}
+              onClick={() => {
+                loadNavCategories();
+                setCategoriesDropdownOpen(!categoriesDropdownOpen);
+              }}
             >
               Categories <ChevronDown size={12} />
             </button>
             {categoriesDropdownOpen && (
               <div className="absolute left-0 mt-2 w-96 bg-white rounded-2xl shadow-xl border border-neutral-100 p-5 z-50 grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                {categories.length === 0 && (
+                  <span className="col-span-2 px-3 py-2 text-xs text-neutral-400">Loading categories...</span>
+                )}
                 {categories.map((cat) => (
                   <Link
                     key={cat.id}
@@ -171,17 +251,48 @@ export const Navbar = ({ onSearch, opaque = false }) => {
         {/* Search & Actions */}
         <div className="flex items-center gap-2 sm:gap-4 flex-1 justify-end">
           {/* Desktop Search */}
-          <form className="hidden lg:flex items-center relative max-w-xs w-full" onSubmit={handleSearchSubmit}>
+          <form ref={searchContainerRef} className="nav-search-container hidden lg:flex items-center relative max-w-xs w-full" onSubmit={handleSearchSubmit}>
             <input
               type="text"
               placeholder="Search the collection..."
               className="w-full bg-neutral-50 border border-neutral-200 rounded-full py-2 pl-4 pr-10 text-xs text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setSuggestionsOpen(true);
+              }}
+              onFocus={() => setSuggestionsOpen(true)}
             />
             <button type="submit" className="absolute right-3 text-neutral-400 hover:text-neutral-900">
               <Search size={14} />
             </button>
+            {suggestionsOpen && (suggestions.length > 0 || suggestionsLoading) && (
+              <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-xl">
+                {suggestionsLoading && suggestions.length === 0 ? (
+                  <div className="px-4 py-3 text-xs text-neutral-400">Searching...</div>
+                ) : suggestions.map((item) => (
+                  <Link
+                    key={`${item.type}-${item.id}`}
+                    href={item.url || `/categories?search=${encodeURIComponent(item.label)}`}
+                    className="flex items-center gap-3 border-b border-neutral-50 px-4 py-3 last:border-b-0 hover:bg-neutral-50"
+                    onClick={() => setSuggestionsOpen(false)}
+                  >
+                    {item.image_url ? (
+                      <img src={item.image_url} alt="" className="h-9 w-9 shrink-0 rounded-lg object-cover" />
+                    ) : (
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-[10px] font-bold uppercase text-neutral-500">
+                        {item.type?.charAt(0)}
+                      </span>
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-xs font-semibold text-neutral-900">{item.label}</span>
+                      <span className="block truncate text-[10px] uppercase tracking-wider text-neutral-400">{item.subtitle || item.type}</span>
+                    </span>
+                    <ArrowUpRight size={13} className="shrink-0 text-neutral-300" />
+                  </Link>
+                ))}
+              </div>
+            )}
           </form>
 
           {/* Action Buttons */}
@@ -310,17 +421,39 @@ export const Navbar = ({ onSearch, opaque = false }) => {
             </div>
 
             {/* Mobile Search */}
-            <form className="relative" onSubmit={handleSearchSubmit}>
+            <form className="nav-search-container relative" onSubmit={handleSearchSubmit}>
               <input
                 type="text"
                 placeholder="Search catalog..."
                 className="w-full bg-neutral-50 border border-neutral-200 rounded-full py-2.5 pl-4 pr-10 text-xs text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setSuggestionsOpen(true);
+                }}
+                onFocus={() => setSuggestionsOpen(true)}
               />
               <button type="submit" className="absolute right-3 top-2.5 text-neutral-400 hover:text-neutral-900">
                 <Search size={16} />
               </button>
+              {suggestionsOpen && suggestions.length > 0 && (
+                <div className="mt-2 overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
+                  {suggestions.slice(0, 5).map((item) => (
+                    <Link
+                      key={`${item.type}-${item.id}`}
+                      href={item.url || `/categories?search=${encodeURIComponent(item.label)}`}
+                      className="flex items-center justify-between gap-3 border-b border-neutral-50 px-4 py-3 text-xs font-semibold text-neutral-800 last:border-b-0"
+                      onClick={() => {
+                        setSuggestionsOpen(false);
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <span className="truncate">{item.label}</span>
+                      <span className="shrink-0 text-[10px] uppercase tracking-wider text-neutral-400">{item.type}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </form>
 
             {/* Navigation links */}

@@ -5,7 +5,7 @@ namespace App\Http\Controllers\PageController;
 use App\Http\Controllers\Concerns\EnsuresRoles;
 use App\Http\Controllers\Controller;
 use App\Services\ProductService\FindProductDetails;
-use App\Services\ProductService\RelatedProducts;
+use App\Services\ProductService\CustomersAlsoBought;
 use App\Services\ReviewService\ListProductReviews;
 use App\Services\ReviewService\ReviewEligibility;
 use Illuminate\Http\Request;
@@ -18,7 +18,7 @@ class Product extends Controller
     public function __construct(
         private readonly FindProductDetails $findProductDetails,
         private readonly ListProductReviews $listProductReviews,
-        private readonly RelatedProducts $relatedProducts,
+        private readonly CustomersAlsoBought $customersAlsoBought,
         private readonly ReviewEligibility $reviewEligibility,
     ) {
     }
@@ -48,7 +48,7 @@ class Product extends Controller
             'averageRating' => $reviews['average_rating'] ?? 0,
             'totalReviews' => $reviews['total_reviews'] ?? 0,
             'reviewEligibility' => $reviewEligibility,
-            'relatedProducts' => $this->relatedProducts->handle($product),
+            'relatedProducts' => $this->customersAlsoBought->handle($product),
         ]);
     }
 }

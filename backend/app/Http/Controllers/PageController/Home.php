@@ -6,7 +6,7 @@ use App\Http\Controllers\Concerns\EnsuresRoles;
 use App\Http\Controllers\Controller;
 use App\Services\BrandService\ListBrands;
 use App\Services\CategoryService\ListCategories;
-use App\Services\ProductService\ListStorefrontProducts;
+use App\Services\ProductService\SearchStorefrontProducts;
 use App\Services\ProductService\Spellchecker;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -16,7 +16,7 @@ class Home extends Controller
     use EnsuresRoles;
 
     public function __construct(
-        private readonly ListStorefrontProducts $listStorefrontProducts,
+        private readonly SearchStorefrontProducts $searchStorefrontProducts,
         private readonly ListCategories $listCategories,
         private readonly ListBrands $listBrands,
     ) {
@@ -45,13 +45,16 @@ class Home extends Controller
             }
         }
 
-        return Inertia::render('App', [
-            'products' => $this->listStorefrontProducts->handle([
+        $searchResult = $this->searchStorefrontProducts->handle([
                 'search' => $search,
                 'category_id' => $category,
-            ]),
+            ]);
+
+        return Inertia::render('App', [
+            'products' => $searchResult['products'],
             'categories' => $this->listCategories->handle(),
             'brands' => $this->listBrands->handle(),
+            'searchMeta' => $searchResult['meta'],
             'searchSuggestion' => [
                 'original_search' => $originalSearch,
                 'corrected_search' => $correctedSearch,

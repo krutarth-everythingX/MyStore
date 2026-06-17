@@ -6,7 +6,7 @@ use App\Http\Controllers\Concerns\EnsuresRoles;
 use App\Http\Controllers\Controller;
 use App\Services\BrandService\ListBrands;
 use App\Services\CategoryService\ListCategories;
-use App\Services\ProductService\ListStorefrontProducts;
+use App\Services\ProductService\SearchStorefrontProducts;
 use App\Services\ProductService\Spellchecker;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -16,7 +16,7 @@ class CategoryCatalog extends Controller
     use EnsuresRoles;
 
     public function __construct(
-        private readonly ListStorefrontProducts $listStorefrontProducts,
+        private readonly SearchStorefrontProducts $searchStorefrontProducts,
         private readonly ListCategories $listCategories,
         private readonly ListBrands $listBrands,
     ) {
@@ -44,14 +44,23 @@ class CategoryCatalog extends Controller
             }
         }
 
-        return Inertia::render('App', [
-            'products' => $this->listStorefrontProducts->handle([
+        $searchResult = $this->searchStorefrontProducts->handle([
                 'search' => $search,
                 'category_id' => $category,
-            ]),
+                'brand_id' => $request->query('brand_id'),
+                'stock_status' => $request->query('stock_status'),
+                'min_price' => $request->query('min_price'),
+                'max_price' => $request->query('max_price'),
+                'in_stock' => $request->boolean('in_stock'),
+                'sort' => $request->query('sort', 'latest'),
+            ]);
+
+        return Inertia::render('App', [
+            'products' => $searchResult['products'],
             'categories' => $this->listCategories->handle(),
             'brands' => $this->listBrands->handle(),
             'activeCategoryId' => $category,
+            'searchMeta' => $searchResult['meta'],
             'searchSuggestion' => [
                 'original_search' => $originalSearch,
                 'corrected_search' => $correctedSearch,

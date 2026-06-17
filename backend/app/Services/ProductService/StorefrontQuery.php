@@ -49,6 +49,22 @@ class StorefrontQuery
             $query->where('user_id', $filters['seller_id']);
         }
 
+        if (! empty($filters['stock_status'])) {
+            $query->where('stock_status', $filters['stock_status']);
+        }
+
+        if (! empty($filters['in_stock']) || ! empty($filters['only_in_stock'])) {
+            $query->where('stock_status', 'instock');
+        }
+
+        if (isset($filters['min_price']) && $filters['min_price'] !== '') {
+            $query->whereRaw('COALESCE(sale_price, regular_price) >= ?', [(float) $filters['min_price']]);
+        }
+
+        if (isset($filters['max_price']) && $filters['max_price'] !== '') {
+            $query->whereRaw('COALESCE(sale_price, regular_price) <= ?', [(float) $filters['max_price']]);
+        }
+
         return $query;
     }
 }

@@ -28,6 +28,7 @@ use App\Http\Controllers\OrderController\StripeWebhook;
 use App\Http\Controllers\OrderController\SyncOrders;
 use App\Http\Controllers\ProductController\Destroy;
 use App\Http\Controllers\ProductController\Index;
+use App\Http\Controllers\ProductController\Recommendations;
 use App\Http\Controllers\ProductController\Show;
 use App\Http\Controllers\ProductController\Store;
 use App\Http\Controllers\ProductController\Update;
@@ -35,6 +36,7 @@ use App\Http\Controllers\RecentlyViewedController\Index as RecentlyViewedIndex;
 use App\Http\Controllers\RecentlyViewedController\Track as RecentlyViewedTrack;
 use App\Http\Controllers\ReviewController\Index as ReviewIndex;
 use App\Http\Controllers\ReviewController\Store as ReviewStore;
+use App\Http\Controllers\SearchController\Suggestions as SearchSuggestions;
 use App\Http\Controllers\SellerDashboardController\ExportInventory;
 use App\Http\Controllers\SellerDashboardController\ExportOrders;
 use App\Http\Controllers\SellerDashboardController\Orders;
@@ -53,8 +55,11 @@ Route::post('/webhooks/stripe', StripeWebhook::class);
 
 Route::get('/products', Index::class)->middleware('throttle:search');
 Route::get('/products/{id}', Show::class);
+Route::get('/products/{id}/recommendations', Recommendations::class)->whereNumber('id')->middleware('throttle:search');
 Route::get('/products/{id}/reviews', ReviewIndex::class);
+Route::get('/search/suggestions', SearchSuggestions::class)->middleware('throttle:search');
 Route::get('/categories', CategoryIndex::class);
+Route::get('/categories/nav', [CategoryIndex::class, 'nav']);
 Route::get('/brands', BrandIndex::class);
 
 Route::middleware('auth:sanctum')->group(function () {

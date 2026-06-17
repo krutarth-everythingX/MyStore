@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\ProductController;
 
 use App\Http\Controllers\Controller;
-use App\Services\ProductService\ListStorefrontProducts;
+use App\Services\ProductService\SearchStorefrontProducts;
 use App\Services\ProductService\Spellchecker;
 use Illuminate\Http\Request;
 
 class Index extends Controller
 {
-    public function __construct(private readonly ListStorefrontProducts $listStorefrontProducts)
+    public function __construct(private readonly SearchStorefrontProducts $searchStorefrontProducts)
     {
     }
 
@@ -30,12 +30,19 @@ class Index extends Controller
             'category_id',
             'brand_id',
             'seller_id',
+            'stock_status',
+            'min_price',
+            'max_price',
+            'in_stock',
+            'only_in_stock',
+            'sort',
         ]);
         $filters['search'] = $search;
+        $result = $this->searchStorefrontProducts->handle($filters, (int) $request->integer('limit', config('search.defaults.limit')));
 
-        return response(
-            $this->listStorefrontProducts->handle($filters),
-            200,
-        );
+        return response([
+            'data' => $result['products'],
+            'meta' => $result['meta'],
+        ], 200);
     }
 }

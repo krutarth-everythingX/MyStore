@@ -22,18 +22,44 @@ const StarSelector = ({ rating, onChange, readonly = false }) => (
   </div>
 );
 
-const ProductRecommendations = ({ productId, categoryId, initialRelated = [] }) => {
+const ProductRecommendations = ({ productId, initialRelated = [] }) => {
   const [related, setRelated] = useState(initialRelated);
 
   useEffect(() => {
     setRelated(initialRelated);
-  }, [categoryId, initialRelated, productId]);
+  }, [initialRelated]);
+
+  useEffect(() => {
+    if (!productId) {
+      return undefined;
+    }
+
+    const controller = new AbortController();
+
+    fetch(`/products/${productId}/recommendations?limit=4`, {
+      signal: controller.signal,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    })
+      .then((response) => response.ok ? response.json() : null)
+      .then((payload) => {
+        if (Array.isArray(payload?.data)) {
+          setRelated(payload.data);
+        }
+      })
+      .catch((error) => {
+        if (error.name !== 'AbortError') {
+          setRelated(initialRelated);
+        }
+      });
+
+    return () => controller.abort();
+  }, [initialRelated, productId]);
 
   if (related.length === 0) return null;
 
   return (
     <div className="mt-14">
-      <h3 className="font-serif text-lg font-semibold text-neutral-900 mb-6">Related Products</h3>
+      <h3 className="font-serif text-lg font-semibold text-neutral-900 mb-6">Customers Also Bought</h3>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
         {related.map((p) => {
           const price = p.sale_price ?? p.regular_price;
@@ -586,7 +612,7 @@ export const ProductDetails = () => {
         </div>
 
         {!isSellerPreview && (
-          <ProductRecommendations productId={product.id} categoryId={product.categories?.[0]?.id} initialRelated={props.relatedProducts || []} />
+          <ProductRecommendations productId={product.id} initialRelated={props.relatedProducts || []} />
         )}
       </main>
 

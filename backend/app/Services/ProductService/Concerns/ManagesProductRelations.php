@@ -21,7 +21,7 @@ trait ManagesProductRelations
             ? $fields['fulfillment_channel']
             : $seller->default_fulfillment_channel;
 
-        foreach (['gallery_images', 'bullet_points', 'seo_search_terms', 'whats_inside_box'] as $key) {
+        foreach (['gallery_images', 'bullet_points', 'seo_search_terms', 'whats_inside_box', 'tags'] as $key) {
             if (array_key_exists($key, $fields) && is_array($fields[$key])) {
                 $fields[$key] = array_values(array_filter($fields[$key], function ($item) use ($key) {
                     if (is_array($item)) {
@@ -39,6 +39,11 @@ trait ManagesProductRelations
 
         if (array_key_exists('size_chart', $fields) && is_array($fields['size_chart'])) {
             $fields['size_chart'] = array_filter($fields['size_chart'], fn ($value) => filled($value));
+        }
+
+        // Keep numeric product fields compatible with the current SQLite schema defaults.
+        if (! filled($fields['weight_kg'] ?? null)) {
+            $fields['weight_kg'] = 0.5;
         }
 
         $type = $fields['type'] ?? 'simple';
@@ -64,7 +69,9 @@ trait ManagesProductRelations
         if ($isNew) {
             $fields['user_id'] = $seller->id;
             $fields['slug'] = Str::slug($fields['name']) . '-' . uniqid();
-            $fields['status'] = 'published';
+            $fields['status'] = $fields['status'] ?? 'published';
+        } elseif (array_key_exists('status', $fields) && blank($fields['status'])) {
+            unset($fields['status']);
         }
 
         return $fields;
@@ -99,6 +106,16 @@ trait ManagesProductRelations
     protected function resolveCategoryIds(array $fields, User $seller): array
     {
         $categoryIds = $fields['categories'] ?? [];
+
+        if (filled($fields['new_category_name'] ?? null)) {
+            $newCat = Category::create([
+                'user_id' => $seller->id,
+                'name' => $fields['new_category_name'],
+                'slug' => Str::slug($fields['new_category_name']) . '-' . uniqid(),
+                'parent_id' => $fields['new_category_parent_id'] ?? null,
+            ]);
+            $categoryIds[] = $newCat->id;
+        }
 
         if ($categoryIds === []) {
             return [];

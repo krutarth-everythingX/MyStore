@@ -1,3 +1,49 @@
+/* ============================================================
+   SELLER WORKSPACE — GLOBAL TOKENS & SHELL
+   Shared variables, layouts, and typography.
+   ============================================================ */
+
+/* ─── Shared Header Actions ──────────────────────────────── */
+.seller-header-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.export-buttons-group {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(26, 28, 26, 0.04);
+  color: var(--color-on-surface);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 10px 18px;
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+  transition: all var(--duration-fast);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.action-btn:hover {
+  background: rgba(26, 28, 26, 0.08);
+}
+
+.action-btn.primary {
+  background: var(--color-on-surface);
+  color: var(--color-surface);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
 /* Shared seller workspace refinement for product, inventory, and category screens. */
 
 .seller-products-page,
@@ -19,8 +65,8 @@
 .inventory-page .seller-page-header,
 .seller-categories-page .seller-page-header {
   align-items: flex-start;
-  gap: 16px;
-  padding-bottom: 18px;
+  gap: 24px;
+  padding-bottom: 24px;
   margin-bottom: 0;
   border-bottom: 1px solid var(--seller-ui-border-soft);
 }
@@ -81,6 +127,7 @@
 .seller-categories-page .input-field:hover:not(:focus):not(:disabled) {
   border-color: rgba(26, 28, 26, 0.18);
   background: #ffffff;
+  border-radius: var(--seller-ui-radius-sm);
 }
 
 .seller-products-page .input-field:focus,
@@ -106,13 +153,16 @@
 .inventory-page .btn,
 .seller-categories-page .btn {
   letter-spacing: 0.07em;
+  border-radius: 100px;
+  padding: 12px 28px;
+  font-weight: 700;
 }
 
 /* Product catalog */
 .seller-products-page {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 32px;
 }
 
 .seller-products-page .product-form-card {
@@ -136,7 +186,7 @@
 }
 
 .seller-products-page .catalog-editor-shell {
-  gap: 18px;
+  gap: 32px;
 }
 
 .seller-products-page .catalog-editor-hero,
@@ -157,7 +207,7 @@
 }
 
 .seller-products-page .catalog-editor-hero {
-  padding: 18px;
+  padding: 32px;
   border-radius: var(--seller-ui-radius);
 }
 
@@ -197,8 +247,8 @@
 
 .seller-products-page .catalog-primary-fields {
   grid-template-columns: minmax(0, 1.25fr) minmax(180px, 0.65fr);
-  gap: 12px;
-  padding: 14px;
+  gap: 24px;
+  padding: 24px;
   border-radius: 14px;
   background: var(--seller-ui-surface-muted);
 }
@@ -243,8 +293,8 @@
 }
 
 .seller-products-page .catalog-editor-workspace {
-  grid-template-columns: 232px minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 32px;
 }
 
 .seller-products-page .catalog-editor-nav {
@@ -253,7 +303,7 @@
 }
 
 .seller-products-page .catalog-nav-card {
-  padding: 10px;
+  padding: 24px;
   border-radius: var(--seller-ui-radius);
   background: rgba(255, 255, 255, 0.64);
 }
@@ -303,7 +353,7 @@
 }
 
 .seller-products-page .catalog-section {
-  padding: 20px;
+  padding: 32px;
   border-radius: var(--seller-ui-radius);
   background: rgba(255, 255, 255, 0.72);
 }
@@ -320,11 +370,11 @@
 }
 
 .seller-products-page .catalog-stack {
-  gap: 14px;
+  gap: 24px;
 }
 
 .seller-products-page .form-subfields {
-  gap: 12px;
+  gap: 24px;
 }
 
 .seller-products-page .product-dimensions-grid {
@@ -370,7 +420,7 @@
 
 .seller-products-page .attributes-config-section,
 .seller-products-page .variations-config-section {
-  padding: 16px;
+  padding: 24px;
   border-radius: var(--seller-ui-radius);
   background: var(--seller-ui-surface-muted);
 }
@@ -432,12 +482,11 @@
 .inventory-page {
   --inventory-line: var(--seller-ui-border);
   --inventory-muted: var(--seller-ui-text-muted);
-  gap: 18px;
+  gap: 32px;
 }
 
 .inventory-page .inventory-metrics-strip {
-  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
-  gap: 10px;
+  gap: 16px;
   overflow: visible;
   border: 0;
   background: transparent;
@@ -453,8 +502,8 @@
 }
 
 .inventory-page .inventory-metric {
-  min-height: 72px;
-  padding: 13px;
+  min-height: 80px;
+  padding: 24px;
   border-radius: var(--seller-ui-radius);
 }
 
@@ -481,7 +530,7 @@
 
 .inventory-page .inventory-control-panel,
 .inventory-page .inventory-section {
-  padding: 18px;
+  padding: 32px;
   border-radius: var(--seller-ui-radius);
   background: rgba(255, 255, 255, 0.74);
 }
@@ -566,7 +615,6 @@
 }
 
 .inventory-page .inventory-warehouse-row {
-  grid-template-columns: minmax(220px, 0.9fr) minmax(240px, 1fr) minmax(260px, 0.9fr);
   padding: 13px;
   border-radius: 14px;
   background: var(--seller-ui-surface-muted);
@@ -873,6 +921,11 @@
     flex-basis: 100%;
   }
 
+  .mobile-only .inventory-movement-list {
+    margin: 0;
+    gap: 12px;
+  }
+
   .seller-products-page .dynamic-row,
   .seller-products-page .bullet-row {
     grid-template-columns: 1fr;
@@ -883,6 +936,8 @@
   }
 
   .inventory-page .inventory-header-actions,
+  .seller-products-page .seller-products-actions,
+  .seller-products-page .seller-products-actions .btn,
   .inventory-page .inventory-header-actions .btn,
   .seller-products-page .seller-add-product-btn {
     width: 100%;

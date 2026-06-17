@@ -27,7 +27,7 @@ class Store extends Controller
         );
 
         if ($request->header('X-Inertia')) {
-            return back()->with('success', 'Category saved.');
+            return back();
         }
 
         return response($category, 201);

@@ -37,7 +37,7 @@
 .seller-categories-layout {
   display: grid;
   grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
-  gap: 18px;
+  gap: 32px;
   align-items: start;
 }
 
@@ -55,8 +55,8 @@
   top: 104px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 18px;
+  gap: 24px;
+  padding: 32px;
 }
 
 .seller-category-form .input-container {
@@ -131,7 +131,7 @@
 .seller-category-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 20px;
 }
 
 .seller-category-stats > div {
@@ -139,7 +139,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 16px;
+  padding: 24px;
 }
 
 .seller-category-stats svg {
@@ -162,7 +162,7 @@
 }
 
 .seller-category-panel {
-  padding: 18px;
+  padding: 32px;
 }
 
 .seller-category-panel-head {
@@ -178,7 +178,20 @@
 .seller-category-children {
   grid-column: 1 / -1;
   margin-top: 10px;
-  padding-left: 18px;
+  padding-left: 24px;
+  margin-right: -14px;
+  position: relative;
+}
+
+.seller-category-children::before {
+  content: '';
+  position: absolute;
+  top: -14px;
+  bottom: 30px;
+  left: 6px;
+  width: 2px;
+  background: rgba(26, 28, 26, 0.1);
+  border-radius: 2px;
 }
 
 .seller-category-row {
@@ -190,6 +203,18 @@
   border: 1px solid rgba(26, 28, 26, 0.08);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.72);
+  position: relative;
+}
+
+.seller-category-children .seller-category-row::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -18px;
+  width: 14px;
+  height: 2px;
+  background: rgba(26, 28, 26, 0.1);
+  border-radius: 2px;
 }
 
 .seller-category-row-main {
@@ -272,7 +297,7 @@
 
 /* Minimal category manager refresh */
 .seller-categories-page {
-  gap: 16px;
+  gap: 32px;
 }
 
 .seller-categories-page .seller-page-title-block h2 {
@@ -295,7 +320,7 @@
 }
 
 .seller-category-form {
-  padding: 18px;
+  padding: 32px;
 }
 
 .seller-category-form-head {
@@ -326,7 +351,7 @@
 }
 
 .seller-category-panel {
-  padding: 18px;
+  padding: 32px;
 }
 
 .seller-category-row {

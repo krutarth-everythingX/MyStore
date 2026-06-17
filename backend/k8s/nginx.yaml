@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mystore-nginx
+  namespace: mystore
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mystore-nginx
+  template:
+    metadata:
+      labels:
+        app: mystore-nginx
+    spec:
+      containers:
+        - name: nginx
+          image: ghcr.io/your-org/mystore-nginx:latest
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  namespace: mystore
+spec:
+  type: LoadBalancer
+  selector:
+    app: mystore-nginx
+  ports:
+    - port: 80
+      targetPort: 80

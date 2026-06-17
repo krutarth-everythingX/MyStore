@@ -4,7 +4,7 @@ namespace App\Http\Controllers\InertiaPageController;
 
 use App\Http\Controllers\Controller;
 use App\Services\ProductService\FindProductDetails;
-use App\Services\ProductService\RelatedProducts;
+use App\Services\ProductService\CustomersAlsoBought;
 use App\Services\RecentlyViewedService\TrackProduct;
 use App\Services\ReviewService\ListProductReviews;
 use App\Services\ReviewService\ReviewEligibility;
@@ -17,7 +17,7 @@ class Product extends Controller
         private readonly FindProductDetails $findProductDetails,
         private readonly TrackProduct $trackProduct,
         private readonly ListProductReviews $listProductReviews,
-        private readonly RelatedProducts $relatedProducts,
+        private readonly CustomersAlsoBought $customersAlsoBought,
         private readonly ReviewEligibility $reviewEligibility,
     ) {
     }
@@ -41,7 +41,7 @@ class Product extends Controller
             'averageRating' => $reviews['average_rating'],
             'totalReviews' => $reviews['total_reviews'],
             'reviewEligibility' => $reviewEligibility,
-            'relatedProducts' => $this->relatedProducts->handle($product),
+            'relatedProducts' => $this->customersAlsoBought->handle($product),
         ]);
     }
 }

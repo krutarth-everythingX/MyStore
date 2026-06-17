@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mystore-config
+  namespace: mystore
+data:
+  APP_NAME: MyStore
+  APP_ENV: production
+  APP_DEBUG: "false"
+  APP_URL: https://mystore.example.com
+  LOG_CHANNEL: stderr
+  DB_CONNECTION: mysql
+  DB_HOST: mysql
+  DB_PORT: "3306"
+  DB_DATABASE: mystore
+  CACHE_STORE: redis
+  QUEUE_CONNECTION: redis
+  REDIS_HOST: redis
+  SEARCH_DRIVER: meilisearch
+  MEILISEARCH_HOST: http://meilisearch:7700
+  MEILISEARCH_PRODUCTS_INDEX: products

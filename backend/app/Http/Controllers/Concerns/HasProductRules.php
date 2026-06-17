@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Concerns;
 
+use Illuminate\Validation\Rule;
+
 trait HasProductRules
 {
     protected function productRules(): array
@@ -10,6 +12,8 @@ trait HasProductRules
             'name' => 'required|string',
             'description' => 'nullable|string',
             'short_description' => 'nullable|string',
+            'status' => 'nullable|string|in:draft,published,pending',
+            'mystore_product_id' => ['nullable', 'string', 'max:255', Rule::unique('products', 'mystore_product_id')->ignore(request()->route('id'))],
             'featured_image' => 'nullable|string|max:2048',
             'gallery_images' => 'nullable|array',
             'gallery_images.*' => 'nullable|string|max:2048',
@@ -30,6 +34,8 @@ trait HasProductRules
             'stock_quantity' => 'integer',
             'brand_id' => 'nullable|integer',
             'categories' => 'nullable|array',
+            'new_category_name' => 'nullable|string|max:255',
+            'new_category_parent_id' => 'nullable|integer|exists:categories,id',
             'warehouse_id' => 'nullable|integer',
             'warehouse_qty' => 'nullable|integer',
             'bin_location' => 'nullable|string',
@@ -60,6 +66,8 @@ trait HasProductRules
             'seo_search_terms.*' => 'nullable|string|max:120',
             'whats_inside_box' => 'nullable|array',
             'whats_inside_box.*' => 'nullable|string|max:255',
+            'tags' => 'nullable|array',
+            'tags.*' => 'nullable|string|max:80',
             'menu_order' => 'nullable|integer',
         ];
     }

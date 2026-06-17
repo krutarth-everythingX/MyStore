@@ -15,4 +15,10 @@ class Index extends Controller
     {
         return response($this->listCategories->handle(), 200);
     }
+
+    public function nav()
+    {
+        return response($this->listCategories->nav(), 200)
+            ->header('Cache-Control', 'public, max-age=300, stale-while-revalidate=3600');
+    }
 }

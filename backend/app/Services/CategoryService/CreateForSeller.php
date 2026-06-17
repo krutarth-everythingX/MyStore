@@ -4,6 +4,7 @@ namespace App\Services\CategoryService;
 
 use App\Models\Category;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 
 class CreateForSeller
 {
@@ -18,6 +19,9 @@ class CreateForSeller
             'name' => $fields['name'],
             'parent_id' => $fields['parent_id'] ?? null,
         ]);
+
+        Cache::forget('categories.storefront.all');
+        Cache::forget('categories.storefront.nav.10');
 
         return $category->load('parent');
     }

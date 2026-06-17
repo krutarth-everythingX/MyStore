@@ -24,6 +24,12 @@ use App\Http\Controllers\PageController\BuyerOrders;
 use App\Http\Controllers\PageController\Cart;
 use App\Http\Controllers\PageController\CategoryCatalog;
 use App\Http\Controllers\PageController\Categories;
+use App\Http\Controllers\CategoryController\Store as CategoryStore;
+use App\Http\Controllers\CategoryController\Update as CategoryUpdate;
+use App\Http\Controllers\CategoryController\Destroy as CategoryDestroy;
+use App\Http\Controllers\AttributeController\Store as AttributeStore;
+use App\Http\Controllers\AttributeController\Update as AttributeUpdate;
+use App\Http\Controllers\AttributeController\Destroy as AttributeDestroy;
 use App\Http\Controllers\PageController\Checkout;
 use App\Http\Controllers\PageController\Home;
 use App\Http\Controllers\PageController\Login;
@@ -42,16 +48,20 @@ use App\Http\Controllers\PageController\SellerProfile;
 use App\Http\Controllers\PageController\WeekMostWanted;
 use App\Http\Controllers\ProductController\Destroy;
 use App\Http\Controllers\ProductController\Index;
+use App\Http\Controllers\ProductController\Recommendations;
 use App\Http\Controllers\ProductController\Show;
 use App\Http\Controllers\ProductController\Store;
 use App\Http\Controllers\ProductController\Update;
 use App\Http\Controllers\RecentlyViewedController\Track as RecentlyViewedTrack;
 use App\Http\Controllers\ReviewController\Store as ReviewStore;
+use App\Http\Controllers\SearchController\Suggestions as SearchSuggestions;
 use App\Http\Controllers\SellerDashboardController\ExportInventory;
 use App\Http\Controllers\SellerDashboardController\ExportOrders;
 use App\Http\Controllers\SellerDashboardController\UpdateOrderStatus;
 use App\Http\Controllers\WarehouseController\Index as WarehouseIndex;
 use App\Http\Controllers\WarehouseController\Store as WarehouseStore;
+use App\Http\Controllers\WarehouseController\Update as WarehouseUpdate;
+use App\Http\Controllers\WarehouseController\Destroy as WarehouseDestroy;
 use App\Http\Controllers\WarehouseController\GetCarriers as WarehouseGetCarriers;
 use App\Http\Controllers\WishlistController\Toggle as WishlistToggle;
 use Illuminate\Support\Facades\Route;
@@ -75,6 +85,8 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::get('/products', Index::class);
+Route::get('/products/{id}/recommendations', Recommendations::class)->whereNumber('id');
+Route::get('/search/suggestions', SearchSuggestions::class)->middleware('throttle:search');
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', LogoutWeb::class);
@@ -123,11 +135,19 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/products/{id}/data', Show::class)->whereNumber('id');
     Route::post('/products', Store::class);
+    Route::post('/categories', CategoryStore::class);
+    Route::put('/categories/{id}', CategoryUpdate::class)->whereNumber('id');
+    Route::delete('/categories/{id}', CategoryDestroy::class)->whereNumber('id');
+    Route::post('/seller/attributes', AttributeStore::class);
+    Route::put('/seller/attributes/{id}', AttributeUpdate::class)->whereNumber('id');
+    Route::delete('/seller/attributes/{id}', AttributeDestroy::class)->whereNumber('id');
     Route::put('/products/{id}', Update::class)->whereNumber('id');
     Route::delete('/products/{id}', Destroy::class)->whereNumber('id');
 
     Route::get('/warehouses', WarehouseIndex::class);
     Route::post('/warehouses', WarehouseStore::class);
+    Route::put('/warehouses/{id}', WarehouseUpdate::class)->whereNumber('id');
+    Route::delete('/warehouses/{id}', WarehouseDestroy::class)->whereNumber('id');
     Route::post('/inventory/adjustments', AdjustStock::class);
     Route::post('/inventory/traceability', StoreTraceabilityRecord::class);
     Route::get('/shipping-carriers', WarehouseGetCarriers::class);

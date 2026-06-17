@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mystore-app
+  namespace: mystore
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mystore-app
+  template:
+    metadata:
+      labels:
+        app: mystore-app
+    spec:
+      containers:
+        - name: php-fpm
+          image: ghcr.io/your-org/mystore-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9000
+          envFrom:
+            - configMapRef:
+                name: mystore-config
+            - secretRef:
+                name: mystore-secrets
+          readinessProbe:
+            tcpSocket:
+              port: 9000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 9000
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app
+  namespace: mystore
+spec:
+  selector:
+    app: mystore-app
+  ports:
+    - port: 9000
+      targetPort: 9000

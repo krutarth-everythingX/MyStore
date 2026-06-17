@@ -3,6 +3,9 @@
 namespace App\Observers;
 
 use App\Models\Product;
+use App\Services\ProductService\ProductSearchIndexer;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ProductObserver
@@ -35,6 +38,28 @@ class ProductObserver
         $product->updateQuietly([
             'mystore_product_id' => 'MYS-' . str_pad((string) $product->id, 8, '0', STR_PAD_LEFT),
         ]);
+    }
+
+    public function saved(Product $product): void
+    {
+        Cache::forget('search_vocabulary');
+        $productId = $product->id;
+
+        DB::afterCommit(function () use ($productId) {
+            $freshProduct = Product::with(['user', 'brand', 'categories'])->find($productId);
+
+            if ($freshProduct) {
+                app(ProductSearchIndexer::class)->sync($freshProduct);
+            }
+        });
+    }
+
+    public function deleted(Product $product): void
+    {
+        Cache::forget('search_vocabulary');
+        $productId = $product->id;
+
+        DB::afterCommit(fn () => app(ProductSearchIndexer::class)->delete($productId));
     }
 
     public function saving(Product $product): void

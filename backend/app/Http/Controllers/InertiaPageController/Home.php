@@ -5,7 +5,7 @@ namespace App\Http\Controllers\InertiaPageController;
 use App\Http\Controllers\Controller;
 use App\Services\BrandService\ListBrands;
 use App\Services\CategoryService\ListCategories;
-use App\Services\ProductService\ListStorefrontProducts;
+use App\Services\ProductService\SearchStorefrontProducts;
 use App\Services\ProductService\Spellchecker;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,7 +13,7 @@ use Inertia\Inertia;
 class Home extends Controller
 {
     public function __construct(
-        private readonly ListStorefrontProducts $listStorefrontProducts,
+        private readonly SearchStorefrontProducts $searchStorefrontProducts,
         private readonly ListCategories $listCategories,
         private readonly ListBrands $listBrands,
     ) {
@@ -46,10 +46,13 @@ class Home extends Controller
         ]);
         $filters['search'] = $search;
 
+        $searchResult = $this->searchStorefrontProducts->handle($filters);
+
         return Inertia::render('Home', [
-            'products' => $this->listStorefrontProducts->handle($filters),
+            'products' => $searchResult['products'],
             'categories' => $this->listCategories->handle(),
             'brands' => $this->listBrands->handle(),
+            'searchMeta' => $searchResult['meta'],
             'searchSuggestion' => [
                 'original_search' => $originalSearch,
                 'corrected_search' => $correctedSearch,

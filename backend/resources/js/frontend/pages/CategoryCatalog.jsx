@@ -97,6 +97,9 @@ export const CategoryCatalog = () => {
   const { props, url } = usePage();
   const currentUrl = new URL(url || window.location.href, window.location.origin);
   const search = currentUrl.searchParams.get('search') || '';
+  const searchMeta = props.searchMeta || {};
+  const searchSuggestion = props.searchSuggestion || {};
+  const facets = searchMeta.facets || {};
   const [products, setProducts] = useState(props.products || []);
   const [categories, setCategories] = useState(props.categories || []);
   const [brands, setBrands] = useState(props.brands || []);
@@ -159,6 +162,10 @@ export const CategoryCatalog = () => {
   const categoryBrands = brands.filter((brand) =>
     products.some((product) => product.brand_id === brand.id),
   );
+  const brandFacetCounts = useMemo(() => (
+    new Map((facets.brands || []).map((brand) => [String(brand.id), brand.count]))
+  ), [facets.brands]);
+  const totalResultCount = Number(searchMeta.total ?? products.length);
 
   const filteredProducts = products
     .filter((product) => {
@@ -197,7 +204,7 @@ export const CategoryCatalog = () => {
     router.visit(`/categories/${categoryId}${params.toString() ? `?${params.toString()}` : ''}`, {
       preserveScroll: false,
       preserveState: true,
-      only: ['products', 'categories', 'brands', 'activeCategoryId', 'searchSuggestion'],
+      only: ['products', 'categories', 'brands', 'activeCategoryId', 'searchMeta', 'searchSuggestion'],
     });
   };
 
@@ -285,6 +292,11 @@ export const CategoryCatalog = () => {
               }}
             >
               <span className="truncate text-xs font-bold uppercase tracking-wider">{brand.name}</span>
+              {brandFacetCounts.has(String(brand.id)) && (
+                <span className={`shrink-0 text-[10px] font-bold ${active ? 'text-white/70' : 'text-neutral-400'}`}>
+                  {brandFacetCounts.get(String(brand.id))}
+                </span>
+              )}
               {active && <Check size={14} className="shrink-0" />}
             </button>
           );
@@ -385,7 +397,9 @@ export const CategoryCatalog = () => {
                   {search ? `${catalogTitle}: "${search}"` : catalogTitle}
                 </h1>
                 <p className="mt-3 text-sm leading-relaxed text-neutral-500">
-                  Browse this category only, then refine by subcategory, brand, price, and availability.
+                  {searchSuggestion.is_corrected
+                    ? `Showing results for "${searchSuggestion.corrected_search}" instead of "${searchSuggestion.original_search}".`
+                    : `${totalResultCount} result${totalResultCount === 1 ? '' : 's'} available in this view.`}
                 </p>
               </div>
 
@@ -507,6 +521,14 @@ export const CategoryCatalog = () => {
               </div>
             ) : (
               <>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-xs text-neutral-500">
+                  <span>{filteredProducts.length} shown</span>
+                  {facets.price?.min !== null && facets.price?.max !== null && facets.price?.min !== undefined && facets.price?.max !== undefined && (
+                    <span>
+                      ${Number(facets.price.min).toFixed(0)}-${Number(facets.price.max).toFixed(0)}
+                    </span>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                   {paginatedProducts.map((product) => (
                     <ProductCard key={product.id} product={product} />
