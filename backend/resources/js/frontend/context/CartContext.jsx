@@ -9,6 +9,7 @@ export const CartProvider = ({ children }) => {
     const localData = localStorage.getItem('mystore_cart');
     return localData ? JSON.parse(localData) : [];
   });
+  const getSellerId = (product) => product?.user_id || product?.user?.id || null;
 
   useEffect(() => {
     localStorage.setItem('mystore_cart', JSON.stringify(cart));
@@ -16,6 +17,18 @@ export const CartProvider = ({ children }) => {
 
   const addToCart = (product, quantity = 1) => {
     setCart(prevCart => {
+      const incomingSellerId = getSellerId(product);
+      const existingSellerIds = Array.from(new Set(prevCart.map(item => getSellerId(item.product)).filter(Boolean)));
+
+      if (
+        incomingSellerId
+        && existingSellerIds.length > 0
+        && !existingSellerIds.includes(incomingSellerId)
+      ) {
+        showToast('Checkout currently supports items from one seller at a time. Clear the cart to add this product.', 'info');
+        return prevCart;
+      }
+
       const existing = prevCart.find(item => item.product.id === product.id);
       if (existing) {
         return prevCart.map(item =>

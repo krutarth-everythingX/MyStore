@@ -22,6 +22,12 @@ class CalculateShippingRates
             );
         }, $shippingRateRequest->items);
 
-        return $this->calculateRatesService->handle($itemsWithProducts, $shippingRateRequest->shippingAddress);
+        return $this->calculateRatesService->handle(
+            $itemsWithProducts,
+            $shippingRateRequest->shippingAddress,
+            $shippingRateRequest->allowedChannels,
+            $shippingRateRequest->country,
+            $shippingRateRequest->postalCode,
+        );
     }
 }

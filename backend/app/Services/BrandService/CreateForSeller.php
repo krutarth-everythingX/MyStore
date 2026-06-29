@@ -13,6 +13,7 @@ class CreateForSeller
             'user_id' => $seller->id,
             'name' => $fields['name'],
             'logo' => $fields['logo'] ?? null,
+            'website_url' => $fields['website_url'] ?? null,
         ]);
     }
 }

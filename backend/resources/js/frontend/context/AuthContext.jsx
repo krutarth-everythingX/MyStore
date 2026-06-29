@@ -163,6 +163,81 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
+  const sendPasswordResetLink = async (email = null, source = 'forgot') => {
+    setLoading(true);
+
+    return new Promise((resolve, reject) => {
+      router.post('/send-password-reset-link', {
+        email,
+        source,
+      }, {
+        preserveScroll: true,
+        onSuccess: (page) => {
+          setLoading(false);
+          if (page.props.flash?.error) {
+            reject(new Error(page.props.flash.error));
+            return;
+          }
+
+          resolve({
+            message: page.props.flash?.success || 'Password reset link sent successfully.',
+          });
+        },
+        onError: (errors) => {
+          setLoading(false);
+          reject(new Error(Object.values(errors)[0] || 'Failed to send password reset link'));
+        },
+      });
+    });
+  };
+
+  const resetPassword = async (payload) => {
+    setLoading(true);
+
+    return new Promise((resolve, reject) => {
+      router.post('/reset-password', payload, {
+        preserveScroll: true,
+        onSuccess: (page) => {
+          setLoading(false);
+          resolve({
+            user: page.props.auth?.user ?? null,
+            message: page.props.flash?.success || 'Password changed successfully.',
+          });
+        },
+        onError: (errors) => {
+          setLoading(false);
+          reject(new Error(Object.values(errors)[0] || 'Failed to reset password'));
+        },
+      });
+    });
+  };
+
+  const requestAccountDeletion = async () => {
+    setLoading(true);
+
+    return new Promise((resolve, reject) => {
+      router.post('/account/delete-request', {}, {
+        preserveScroll: true,
+        onSuccess: (page) => {
+          setLoading(false);
+
+          if (page.props.flash?.error) {
+            reject(new Error(page.props.flash.error));
+            return;
+          }
+
+          resolve({
+            message: page.props.flash?.success || 'Account deletion has been scheduled.',
+          });
+        },
+        onError: (errors) => {
+          setLoading(false);
+          reject(new Error(Object.values(errors)[0] || 'Failed to schedule account deletion'));
+        },
+      });
+    });
+  };
+
   const value = useMemo(() => ({
     user,
     token: user ? 'session' : null,
@@ -175,6 +250,9 @@ export const AuthProvider = ({ children }) => {
     resendVerificationCode,
     sendPhoneVerification,
     verifyPhoneCode,
+    sendPasswordResetLink,
+    resetPassword,
+    requestAccountDeletion,
   }), [loading, user]);
 
   return (

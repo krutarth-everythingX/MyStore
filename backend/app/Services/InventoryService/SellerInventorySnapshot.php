@@ -9,6 +9,7 @@ use App\Models\InventorySerialNumber;
 use App\Models\InventoryTransaction;
 use App\Models\Product;
 use App\Models\Warehouse;
+use Carbon\CarbonImmutable;
 
 class SellerInventorySnapshot
 {
@@ -62,6 +63,52 @@ class SellerInventorySnapshot
 
         $lowStockCount = $allocations->filter(fn (array $row) => $row['available_quantity'] <= max(1, $row['safety_stock']))->count();
         $unassignedBinCount = $allocations->filter(fn (array $row) => $row['bin_location'] === 'Unassigned')->count();
+        $activeProductCount = $products->filter(fn (Product $product) => ($product->status ?? 'published') === 'published')->count();
+        $outOfStockCount = $allocations->filter(fn (array $row) => $row['available_quantity'] <= 0)->count();
+        $stockedPercent = $products->count() > 0
+            ? (int) round((($products->count() - $outOfStockCount) / $products->count()) * 100)
+            : 0;
+        $categoryCounts = $products
+            ->flatMap(fn (Product $product) => $product->categories->pluck('name'))
+            ->countBy()
+            ->sortDesc()
+            ->take(4)
+            ->map(fn ($count, $name) => ['name' => $name, 'count' => $count])
+            ->values();
+
+        $monthStart = CarbonImmutable::now()->startOfMonth()->subMonths(5);
+        $trendMonths = collect(range(0, 5))->map(function (int $offset) use ($monthStart, $productIds) {
+            $month = $monthStart->addMonths($offset);
+            $transactions = InventoryTransaction::whereIn('product_id', $productIds)
+                ->whereBetween('created_at', [$month->startOfMonth(), $month->endOfMonth()])
+                ->get();
+
+            return [
+                'label' => $month->format('Y-m-01'),
+                'incoming' => (float) $transactions->filter(fn (InventoryTransaction $transaction) => $transaction->quantity > 0)
+                    ->sum(fn (InventoryTransaction $transaction) => abs((int) $transaction->quantity) * (float) ($transaction->unit_cost ?? 0)),
+                'outgoing' => (float) $transactions->filter(fn (InventoryTransaction $transaction) => $transaction->quantity < 0)
+                    ->sum(fn (InventoryTransaction $transaction) => abs((int) $transaction->quantity) * (float) ($transaction->unit_cost ?? 0)),
+            ];
+        });
+
+        $movementTypeCounts = InventoryTransaction::whereIn('product_id', $productIds)
+            ->selectRaw('type, count(*) as total')
+            ->groupBy('type')
+            ->orderByDesc('total')
+            ->get()
+            ->map(fn ($row) => ['type' => $row->type, 'count' => (int) $row->total]);
+
+        $today = CarbonImmutable::today();
+        $nearExpiry = $today->addDays(30);
+        $expiredBatches = InventoryBatch::whereIn('product_id', $productIds)
+            ->whereNotNull('expires_at')
+            ->whereDate('expires_at', '<', $today)
+            ->count();
+        $nearExpiryBatches = InventoryBatch::whereIn('product_id', $productIds)
+            ->whereNotNull('expires_at')
+            ->whereBetween('expires_at', [$today, $nearExpiry])
+            ->count();
 
         $locationCounts = [
             'warehouses' => $warehouses->count(),
@@ -75,15 +122,20 @@ class SellerInventorySnapshot
         return [
             'metrics' => [
                 'products' => $products->count(),
+                'active_products' => $activeProductCount,
                 'warehouses' => $warehouses->count(),
                 'on_hand' => $totalOnHand,
                 'available' => $totalAvailable,
                 'reserved' => $totalReserved,
                 'low_stock' => $lowStockCount,
+                'out_of_stock' => $outOfStockCount,
+                'stocked_percent' => $stockedPercent,
                 'unassigned_bins' => $unassignedBinCount,
                 'valuation' => $totalValuation,
                 'batches' => InventoryBatch::whereIn('product_id', $productIds)->count(),
                 'serials' => InventorySerialNumber::whereIn('product_id', $productIds)->count(),
+                'expired_batches' => $expiredBatches,
+                'near_expiry_batches' => $nearExpiryBatches,
                 'open_reservations' => InventoryReservation::whereIn('product_id', $productIds)->where('status', 'reserved')->sum('quantity'),
                 'adjustments' => InventoryAdjustment::whereIn('product_id', $productIds)->count(),
                 'movements' => InventoryTransaction::whereIn('product_id', $productIds)->count(),
@@ -95,6 +147,25 @@ class SellerInventorySnapshot
                 ->latest()
                 ->take(8)
                 ->get(),
+            'stock_entries' => InventoryTransaction::with(['product', 'warehouse', 'fromWarehouse', 'toWarehouse'])
+                ->whereIn('product_id', $productIds)
+                ->latest()
+                ->take(50)
+                ->get(),
+            'products' => $products
+                ->map(fn (Product $product) => [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'sku' => $product->sku ?: $product->mystore_product_id,
+                ])
+                ->values(),
+            'warehouses' => $warehouses
+                ->map(fn (Warehouse $warehouse) => [
+                    'id' => $warehouse->id,
+                    'name' => $warehouse->name,
+                    'code' => $warehouse->code,
+                ])
+                ->values(),
             'recent_adjustments' => InventoryAdjustment::with(['product', 'warehouse'])
                 ->whereIn('product_id', $productIds)
                 ->latest()
@@ -103,6 +174,11 @@ class SellerInventorySnapshot
             'traceability' => [
                 'batches' => InventoryBatch::with(['product', 'warehouse'])->whereIn('product_id', $productIds)->latest()->take(8)->get(),
                 'serials' => InventorySerialNumber::with(['product', 'warehouse'])->whereIn('product_id', $productIds)->latest()->take(8)->get(),
+            ],
+            'dashboard' => [
+                'category_counts' => $categoryCounts,
+                'movement_trend' => $trendMonths,
+                'movement_types' => $movementTypeCounts,
             ],
             'warehouse_ids' => $warehouseIds,
         ];

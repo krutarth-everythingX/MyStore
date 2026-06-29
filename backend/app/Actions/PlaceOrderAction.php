@@ -26,8 +26,13 @@ class PlaceOrderAction
     public function handle(OrderCheckoutData $checkoutData, User $buyer): array
     {
         return DB::transaction(function () use ($checkoutData, $buyer) {
+            $buyerCountry = country_name_for($checkoutData->country ?: $buyer->country);
+            $displayCurrency = currency_for_country($buyerCountry);
+            $orderCurrency = base_money_currency();
+            $orderTimezone = 'UTC';
             $itemsSubtotal = 0;
             $itemsToCreate = [];
+            $sellerIds = [];
             $requiresPaymentConfirmation = false;
 
             foreach ($checkoutData->items as $itemData) {
@@ -55,7 +60,9 @@ class PlaceOrderAction
                     }
                 }
 
-                $price = $product->sale_price ?? $product->regular_price;
+                $sourceCurrency = $product->price_currency ?: currency_for_country($product->user?->country);
+                $basePrice = (float) ($product->sale_price ?? $product->regular_price ?? 0);
+                $price = money_to_base($basePrice, $sourceCurrency);
                 $itemsSubtotal += $price * $itemData->quantity;
 
                 $itemsToCreate[] = [
@@ -63,28 +70,42 @@ class PlaceOrderAction
                     'seller_id' => $product->user_id,
                     'quantity' => $itemData->quantity,
                     'price' => $price,
+                    'currency' => $orderCurrency,
                 ];
+                $sellerIds[] = (int) $product->user_id;
             }
 
-            $taxableBase = max(0.00, $itemsSubtotal + $checkoutData->shippingCost - $checkoutData->discountAmount);
+            if (count(array_unique(array_filter($sellerIds))) > 1) {
+                throw new HttpResponseException(
+                    response([
+                        'message' => 'Checkout currently supports items from one seller at a time.'
+                    ], 400)
+                );
+            }
+
+            $shippingCost = money_to_base($checkoutData->shippingCost, $displayCurrency);
+            $discountAmount = money_to_base($checkoutData->discountAmount, $displayCurrency);
+            $taxableBase = max(0.00, $itemsSubtotal + $shippingCost - $discountAmount);
 
             $firstProduct = Product::find($checkoutData->items[0]->productId);
             $seller = $firstProduct ? User::find($firstProduct->user_id) : null;
+            $sellerCountry = country_name_for($seller?->country);
             $sellerState = $seller ? ($seller->state ?: 'Gujarat') : 'Gujarat';
             $buyerState = $checkoutData->state;
+            $isIndianSeller = strcasecmp($sellerCountry, 'India') === 0;
 
             $cgst = 0;
             $sgst = 0;
             $igst = 0;
 
-            if (
+            if ($isIndianSeller && (
                 strcasecmp(trim($sellerState), trim($buyerState)) === 0 ||
                 stripos($sellerState, $buyerState) !== false ||
                 stripos($buyerState, $sellerState) !== false
-            ) {
+            )) {
                 $cgst = round($taxableBase * 0.09, 2);
                 $sgst = round($taxableBase * 0.09, 2);
-            } else {
+            } elseif ($isIndianSeller) {
                 $igst = round($taxableBase * 0.18, 2);
             }
 
@@ -98,10 +119,12 @@ class PlaceOrderAction
                 'buyer_id' => $buyer->id,
                 'buyer_phone' => $checkoutData->buyerPhone,
                 'total_amount' => $totalAmount,
+                'currency' => $orderCurrency,
+                'timezone' => $orderTimezone,
                 'status' => $initialStatus,
                 'shipping_address' => $checkoutData->shippingAddress,
                 'billing_address' => $checkoutData->billingAddress ?? $checkoutData->shippingAddress,
-                'country' => $checkoutData->country,
+                'country' => $buyerCountry,
                 'city' => $checkoutData->city,
                 'state' => $checkoutData->state,
                 'postal_code' => $checkoutData->postalCode,
@@ -109,8 +132,8 @@ class PlaceOrderAction
                 'buyer_gstin' => $checkoutData->buyerGstin,
                 'payment_method' => $checkoutData->paymentMethod,
                 'shipping_carrier' => $checkoutData->shippingCarrier,
-                'shipping_cost' => $checkoutData->shippingCost,
-                'discount_amount' => $checkoutData->discountAmount,
+                'shipping_cost' => $shippingCost,
+                'discount_amount' => $discountAmount,
                 'cgst' => $cgst,
                 'sgst' => $sgst,
                 'igst' => $igst,
@@ -150,15 +173,18 @@ class PlaceOrderAction
             $clientSecret = null;
             if ($checkoutData->paymentMethod === 'Credit Card') {
                 $stripeSecret = config('services.stripe.secret') ?: env('STRIPE_SECRET_KEY');
+                $stripeAmount = convert_money($totalAmount, $orderCurrency, $displayCurrency);
                 if ($stripeSecret) {
                     try {
                         Stripe::setApiKey($stripeSecret);
                         $intent = PaymentIntent::create([
-                            'amount' => (int) round($totalAmount * 100),
-                            'currency' => 'usd',
+                            'amount' => (int) round($stripeAmount * 100),
+                            'currency' => strtolower($displayCurrency),
                             'metadata' => [
                                 'order_id' => $order->id,
                                 'buyer_id' => $buyer->id,
+                                'currency' => $displayCurrency,
+                                'base_currency' => $orderCurrency,
                             ],
                         ]);
                         $order->update(['stripe_payment_intent_id' => $intent->id]);

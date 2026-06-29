@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use App\Traits\HasSlug;
+use App\Traits\StoresUtcTimestamps;
 use Illuminate\Database\Eloquent\Model;
 
 class Brand extends Model
 {
-    use HasSlug;
+    use HasSlug, StoresUtcTimestamps;
 
-    protected $fillable = ['user_id', 'name', 'slug', 'logo'];
+    protected $fillable = ['user_id', 'name', 'slug', 'logo', 'website_url'];
 
     public function user()
     {

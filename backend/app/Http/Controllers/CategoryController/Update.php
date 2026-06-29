@@ -20,7 +20,14 @@ class Update extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:120',
             'parent_id' => 'nullable|integer|exists:categories,id',
+            'type' => 'nullable|string|in:product,service',
+            'description' => 'nullable|string|max:1000',
+            'image' => 'nullable|string|max:2048',
+            'is_active' => 'nullable|boolean',
         ]);
+
+        $validated['type'] ??= $category->type ?: 'product';
+        $validated['is_active'] = (bool) ($validated['is_active'] ?? true);
 
         if ($validated['name'] !== $category->name) {
             $validated['slug'] = Str::slug($validated['name']) . '-' . uniqid();

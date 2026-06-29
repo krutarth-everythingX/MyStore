@@ -34,6 +34,7 @@ class ListCategories
     private function query()
     {
         return Category::with(['user', 'children', 'parent'])
+            ->withCount('products')
             ->orderBy('parent_id')
             ->orderBy('name');
     }

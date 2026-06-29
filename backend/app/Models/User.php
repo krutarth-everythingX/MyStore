@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Traits\StoresUtcTimestamps;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -13,7 +14,7 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, StoresUtcTimestamps;
 
     /**
      * The attributes that are mass assignable.
@@ -27,6 +28,8 @@ class User extends Authenticatable
         'phone_verified_at',
         'phone_verification_code',
         'phone_verification_code_sent_at',
+        'account_deletion_requested_at',
+        'account_deletion_scheduled_for',
         'password',
         'google_id',
         'avatar',
@@ -46,6 +49,7 @@ class User extends Authenticatable
         'default_fulfillment_channel',
         'shipping_acceptance_time',
         'handling_time_business_days',
+        'seller_settings',
         'card_number',
         'card_expiry',
         'card_cvv',
@@ -78,9 +82,12 @@ class User extends Authenticatable
             'verification_code_sent_at' => 'datetime',
             'phone_verified_at' => 'datetime',
             'phone_verification_code_sent_at' => 'datetime',
+            'account_deletion_requested_at' => 'datetime',
+            'account_deletion_scheduled_for' => 'datetime',
             'password' => 'hashed',
             'fulfillment_channels' => 'array',
             'handling_time_business_days' => 'integer',
+            'seller_settings' => 'array',
         ];
     }
 
@@ -104,6 +111,11 @@ class User extends Authenticatable
         return $this->hasMany(Warehouse::class);
     }
 
+    public function vendors(): HasMany
+    {
+        return $this->hasMany(Vendor::class);
+    }
+
     public function attributes(): HasMany
     {
         return $this->hasMany(Attribute::class);
@@ -117,5 +129,10 @@ class User extends Authenticatable
     public function sellerOrderItems()
     {
         return $this->hasMany(OrderItem::class, 'seller_id');
+    }
+
+    public function sellerVerification()
+    {
+        return $this->hasOne(SellerVerification::class);
     }
 }

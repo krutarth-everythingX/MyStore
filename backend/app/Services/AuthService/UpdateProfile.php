@@ -10,8 +10,12 @@ class UpdateProfile
 {
     public function handle(User $user, array $fields): User
     {
+        $resolvedCountry = array_key_exists('country', $fields)
+            ? country_localization($fields['country'] ?? null)
+            : country_localization($user->country);
         $nextPhone = $fields['phone'] ?? $user->phone;
-        $nextCountryCode = $fields['country_code'] ?? $user->country_code;
+        $nextCountryCode = $fields['country_code']
+            ?? ($resolvedCountry['code'] ?? $user->country_code);
         $phoneChanged = array_key_exists('phone', $fields) && $nextPhone !== $user->phone;
         $countryCodeChanged = array_key_exists('country_code', $fields) && $nextCountryCode !== $user->country_code;
 
@@ -25,7 +29,7 @@ class UpdateProfile
             'address' => $fields['address'] ?? $user->address,
             'city' => $fields['city'] ?? $user->city,
             'state' => $fields['state'] ?? $user->state,
-            'country' => $fields['country'] ?? $user->country,
+            'country' => $resolvedCountry['name'] ?? ($fields['country'] ?? $user->country),
             'pincode' => $fields['pincode'] ?? $user->pincode,
             'country_code' => $nextCountryCode,
             'gst_number' => $fields['gst_number'] ?? $user->gst_number,
@@ -39,6 +43,9 @@ class UpdateProfile
             'handling_time_business_days' => $fields['handling_time_business_days']
                 ?? $user->handling_time_business_days
                 ?? 1,
+            'seller_settings' => array_key_exists('seller_settings', $fields)
+                ? array_replace_recursive($user->seller_settings ?? [], $fields['seller_settings'] ?? [])
+                : $user->seller_settings,
             'card_number' => $fields['card_number'] ?? $user->card_number,
             'card_expiry' => $fields['card_expiry'] ?? $user->card_expiry,
             'card_cvv' => $fields['card_cvv'] ?? $user->card_cvv,

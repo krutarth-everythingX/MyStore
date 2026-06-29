@@ -2,16 +2,19 @@
 
 namespace App\Models;
 
+use App\Traits\StoresUtcTimestamps;
 use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model
 {
+    use StoresUtcTimestamps;
+
     protected $fillable = [
         'user_id', 'name', 'slug', 'description', 'short_description', 'status',
         'featured_image', 'gallery_images', 'mystore_product_id', 'manufacturer',
         'model_number', 'country_of_origin', 'product_type', 'product_type_keyword',
-        'target_gender', 'recommended_age', 'condition', 'fulfillment_channel',
-        'regular_price', 'sale_price', 'tax_status', 'tax_class', 'sku',
+        'target_gender', 'recommended_age', 'condition', 'fulfillment_channel', 'fulfillment_channels',
+        'regular_price', 'sale_price', 'price_currency', 'tax_status', 'tax_class', 'sku',
         'parent_sku_id', 'manage_stock', 'stock_quantity', 'stock_status',
         'low_stock_amount', 'sold_individually', 'weight', 'length', 'width',
         'height', 'weight_kg', 'length_cm', 'width_cm', 'height_cm',
@@ -35,6 +38,7 @@ class Product extends Model
         'whats_inside_box' => 'array',
         'tags' => 'array',
         'grouped_product_ids' => 'array',
+        'fulfillment_channels' => 'array',
         'manage_stock' => 'boolean',
         'sold_individually' => 'boolean',
         'enable_reviews' => 'boolean',

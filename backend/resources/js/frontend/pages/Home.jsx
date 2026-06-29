@@ -1,171 +1,112 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, router, usePage } from '@inertiajs/react';
+import { ArrowRight, Layers } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
-import {
-  ArrowRight,
-  Baby,
-  BookOpen,
-  Briefcase,
-  Car,
-  Code,
-  Dumbbell,
-  FileText,
-  Gamepad,
-  Gamepad2,
-  Gift,
-  Heart,
-  Home as HomeIcon,
-  Laptop,
-  Layers,
-  Leaf,
-  Music,
-  PenTool,
-  Plug,
-  Shirt,
-  ShoppingBag,
-  Smile,
-  Sparkles,
-  Watch,
-  Wrench,
-} from 'lucide-react';
-
-const ALLOWED_MAIN_CATEGORIES = [
-  { name: 'Electronics', match: 'Computers & Electronics' },
-  { name: 'Fashion', match: 'Fashion & Apparel' },
-  { name: 'Baby Product', match: 'Baby Products' },
-  { name: 'Toys', match: 'Entertainment & Toys' },
-  { name: 'Home & Kitchen', match: 'Home & Kitchen' },
-  { name: 'Tools', match: 'Industrial & Tools' },
-  { name: 'Accessories', match: 'Jewelry & Accessories' },
-  { name: 'Sports', match: 'Sports & Fitness' },
-  { name: 'Books', match: 'Books & Media' },
-  { name: 'Furniture', match: 'Furniture & Decor' },
-];
-
-const getCategoryDisplayName = (name) => {
-  if (!name) return '';
-  const allowed = ALLOWED_MAIN_CATEGORIES.find(
-    (item) => item.match.toLowerCase() === name.toLowerCase(),
-  );
-  return allowed ? allowed.name : name;
-};
-
-const getCategoryIcon = (name, size = 22) => {
-  const norm = (name || '').toLowerCase();
-  if (norm.includes('automotive') || norm.includes('car')) return <Car size={size} />;
-  if (norm.includes('baby')) return <Baby size={size} />;
-  if (norm.includes('computer') || norm.includes('electronic') || norm.includes('laptop') || norm.includes('phone')) return <Laptop size={size} />;
-  if (norm.includes('book') || norm.includes('media') || norm.includes('reading')) return <BookOpen size={size} />;
-  if (norm.includes('toy') || norm.includes('entertainment')) return <Gamepad2 size={size} />;
-  if (norm.includes('fashion') || norm.includes('apparel') || norm.includes('clothing') || norm.includes('shirt')) return <Shirt size={size} />;
-  if (norm.includes('grocery') || norm.includes('food') || norm.includes('snack')) return <ShoppingBag size={size} />;
-  if (norm.includes('home') || norm.includes('kitchen') || norm.includes('furniture') || norm.includes('lighting')) return <HomeIcon size={size} />;
-  if (norm.includes('industrial') || norm.includes('tool') || norm.includes('equipment')) return <Wrench size={size} />;
-  if (norm.includes('jewelry') || norm.includes('watch') || norm.includes('accessory')) return <Watch size={size} />;
-  if (norm.includes('kid')) return <Smile size={size} />;
-  if (norm.includes('luggage') || norm.includes('bag') || norm.includes('backpack')) return <Briefcase size={size} />;
-  if (norm.includes('musical') || norm.includes('instrument') || norm.includes('guitar')) return <Music size={size} />;
-  if (norm.includes('novelty') || norm.includes('gift')) return <Gift size={size} />;
-  if (norm.includes('office') || norm.includes('stationery') || norm.includes('planner')) return <PenTool size={size} />;
-  if (norm.includes('pet') || norm.includes('dog') || norm.includes('cat')) return <Heart size={size} />;
-  if (norm.includes('recreation') || norm.includes('sport') || norm.includes('fitness') || norm.includes('camp')) return <Dumbbell size={size} />;
-  if (norm.includes('software') || norm.includes('app')) return <Code size={size} />;
-  if (norm.includes('utility') || norm.includes('hardware') || norm.includes('plug') || norm.includes('bulb')) return <Plug size={size} />;
-  if (norm.includes('video game') || norm.includes('console')) return <Gamepad size={size} />;
-  if (norm.includes('wellness') || norm.includes('cosmetic') || norm.includes('makeup')) return <Sparkles size={size} />;
-  if (norm.includes('paper') || norm.includes('notebook')) return <FileText size={size} />;
-  if (norm.includes('yard') || norm.includes('garden') || norm.includes('seed') || norm.includes('eco')) return <Leaf size={size} />;
-  return <Layers size={size} />;
-};
+import { formatProductMoney } from '../utils/localization';
+import { getCategoryDisplayName, getCategoryIcon, getRootCategories } from '../utils/categoryPresentation';
 
 const productPrice = (product) => Number(product.sale_price ?? product.regular_price ?? 0);
 
 const productBelongsToCategory = (product, category) => {
   const categoryIds = [category.id, ...(category.children || []).map((child) => child.id)];
-  return product.categories?.some((productCategory) =>
-    categoryIds.includes(productCategory.id) || categoryIds.includes(productCategory.parent_id),
+  return product.categories?.some(
+    (productCategory) => categoryIds.includes(productCategory.id) || categoryIds.includes(productCategory.parent_id),
   );
 };
 
-const ProductSpotlightGrid = ({ products }) => (
-  <div className="grid h-auto grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:h-[70vh]">
-    {products.slice(0, 3).map((product, index) => (
+const SectionHeading = ({ eyebrow, title, description, href, hrefLabel }) => (
+  <div className="mb-5 flex flex-col gap-3 border-b-2 border-neutral-950 pb-3 md:mb-6 md:flex-row md:items-end md:justify-between md:gap-4 md:pb-4">
+    <div className="max-w-2xl">
+      <span className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">{eyebrow}</span>
+      <h2 className="mt-2 text-2xl font-semibold tracking-tight text-neutral-950 sm:text-3xl">{title}</h2>
+      <p className="mt-2 text-sm leading-6 text-neutral-600">{description}</p>
+    </div>
+    {href && (
+      <Link href={href} className="hidden md:inline-flex items-center gap-2 border-2 border-neutral-950 bg-white px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-950 hover:text-white">
+        {hrefLabel} <ArrowRight size={14} />
+      </Link>
+    )}
+  </div>
+);
+
+const MobileViewAllCard = ({ href, label }) => (
+  <Link
+    href={href}
+    className="flex min-h-[13.5rem] items-end border-2 border-neutral-950 bg-neutral-950 p-3 text-white shadow-[6px_6px_0_#171717] transition hover:-translate-y-1 md:hidden"
+  >
+    <div>
+      <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70">More</span>
+      <span className="mt-2 inline-flex items-center gap-2 text-base font-semibold">
+        {label} <ArrowRight size={14} />
+      </span>
+    </div>
+  </Link>
+);
+
+const ProductSpotlightGrid = ({ products, pageProps, mobileViewAllHref, mobileViewAllLabel }) => (
+  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+    {products.slice(0, 3).map((product) => (
       <Link
         key={product.id}
         href={`/products/${product.id}`}
-        className={`group relative min-h-56 overflow-hidden bg-neutral-200 ${
-          index === 0 ? 'sm:col-span-2 md:col-span-2 md:row-span-2 md:h-full' : 'h-56 sm:h-64 md:h-auto'
-        }`}
+        className="group border-2 border-neutral-950 bg-white shadow-[6px_6px_0_#171717] transition hover:-translate-y-1 md:shadow-[8px_8px_0_#171717]"
       >
-        {product.image_url ? (
-          <img
-            src={product.image_url}
-            alt={product.name}
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-100 to-neutral-200 text-4xl font-semibold text-neutral-400">
-            {product.name?.charAt(0)}
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
-          <span className="mb-1 block text-[10px] uppercase tracking-widest opacity-75">
+        <div className="aspect-[4/3.7] border-b-2 border-neutral-950 bg-neutral-100 md:aspect-[4/4.2]">
+          {product.image_url ? (
+            <img src={product.image_url} alt={product.name} className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full items-center justify-center text-3xl font-semibold uppercase text-neutral-300 md:text-4xl">
+              {product.name?.charAt(0)}
+            </div>
+          )}
+        </div>
+        <div className="space-y-2 p-3 md:space-y-3 md:p-4">
+          <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-500 md:text-xs md:tracking-[0.16em]">
             {product.brand?.name || product.user?.name || 'Featured'}
           </span>
-          <h4 className={`mb-3 font-semibold leading-tight ${index === 0 ? 'text-lg sm:text-xl' : 'text-sm sm:text-base'}`}>
-            {product.name}
-          </h4>
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-base font-semibold">${productPrice(product).toFixed(2)}</span>
-            <span className="rounded-full bg-white px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-900 transition-transform group-hover:-translate-y-0.5">
-              Discover
-            </span>
+          <h4 className="line-clamp-2 text-sm font-semibold leading-5 text-neutral-950 md:text-lg md:leading-6">{product.name}</h4>
+          <div className="flex items-center justify-between gap-3 border-t border-neutral-200 pt-2 md:pt-3">
+            <span className="text-sm font-semibold text-neutral-950 md:text-base">{formatProductMoney(product, productPrice(product), pageProps)}</span>
+            <span className="hidden text-sm text-neutral-600 transition group-hover:text-neutral-950 md:inline">Discover</span>
           </div>
         </div>
       </Link>
     ))}
+    {mobileViewAllHref && mobileViewAllLabel && <MobileViewAllCard href={mobileViewAllHref} label={mobileViewAllLabel} />}
   </div>
 );
 
-const CategorySpotlightGrid = ({ categories, products }) => (
-  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-    {categories.slice(0, 4).map((category) => {
+const CategorySpotlightGrid = ({ categories, products, mobileViewAllHref, mobileViewAllLabel }) => (
+  <div className="grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-4">
+    {categories.slice(0, 3).map((category) => {
       const heroProduct = products.find((product) => productBelongsToCategory(product, category));
-
       return (
         <Link
           key={category.id}
           href={`/categories/${category.id}`}
-          className="group relative min-h-36 overflow-hidden bg-neutral-200 sm:min-h-52"
+          className="group border-2 border-neutral-950 bg-white shadow-[6px_6px_0_#171717] transition hover:-translate-y-1 md:shadow-[8px_8px_0_#171717]"
         >
-          {heroProduct?.image_url ? (
-            <img
-              src={heroProduct.image_url}
-              alt={getCategoryDisplayName(category.name)}
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-100 to-neutral-300 text-neutral-500">
-              {getCategoryIcon(category.name, 38)}
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-            <span className="mb-1 block text-[9px] uppercase tracking-widest opacity-75">
-              {category.children?.length || 0} edits
+          <div className="flex aspect-[1/0.92] items-center justify-center border-b-2 border-neutral-950 bg-neutral-100 md:aspect-square">
+            {heroProduct?.image_url ? (
+              <img src={heroProduct.image_url} alt={getCategoryDisplayName(category.name)} className="h-full w-full object-cover" />
+            ) : (
+              <div className="scale-75 text-neutral-500 md:scale-100">{getCategoryIcon(category.name, 38)}</div>
+            )}
+          </div>
+          <div className="space-y-2 p-3 md:p-4">
+            <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-500 md:text-xs md:tracking-[0.16em]">
+              {category.children?.length || 0} sections
             </span>
-            <h4 className="mb-3 text-base font-semibold leading-tight sm:text-lg">
-              {getCategoryDisplayName(category.name)}
-            </h4>
-            <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[9px] font-semibold uppercase tracking-[0.14em] text-neutral-900 transition-transform group-hover:-translate-y-0.5">
-              View <ArrowRight size={11} />
+            <h4 className="text-sm font-semibold text-neutral-950 md:text-lg">{getCategoryDisplayName(category.name)}</h4>
+            <span className="inline-flex items-center gap-2 text-sm text-neutral-600 transition group-hover:text-neutral-950">
+              View <ArrowRight size={12} />
             </span>
           </div>
         </Link>
       );
     })}
+    {mobileViewAllHref && mobileViewAllLabel && <MobileViewAllCard href={mobileViewAllHref} label={mobileViewAllLabel} />}
   </div>
 );
 
@@ -173,6 +114,7 @@ export const Home = () => {
   const { props, url } = usePage();
   const [products, setProducts] = useState(props.products || []);
   const [categories, setCategories] = useState(props.categories || []);
+  const [collections, setCollections] = useState(props.collections || []);
 
   const currentUrl = new URL(url || window.location.href, window.location.origin);
   const legacyCategory = currentUrl.searchParams.get('category') || currentUrl.searchParams.get('category_id');
@@ -188,10 +130,7 @@ export const Home = () => {
         preserveScroll: true,
       });
     } else if (legacyExplore) {
-      router.visit('/categories', {
-        replace: true,
-        preserveScroll: true,
-      });
+      router.visit('/categories', { replace: true, preserveScroll: true });
     } else if (legacySearch) {
       router.visit(`/categories?search=${encodeURIComponent(legacySearch)}`, {
         replace: true,
@@ -203,21 +142,10 @@ export const Home = () => {
   useEffect(() => {
     setProducts(Array.isArray(props.products) ? props.products : []);
     setCategories(Array.isArray(props.categories) ? props.categories : []);
-  }, [props.products, props.categories]);
+    setCollections(Array.isArray(props.collections) ? props.collections : []);
+  }, [props.products, props.categories, props.collections]);
 
-  const rootCategories = useMemo(() => (
-    categories
-      .filter((category) => category.parent_id === null)
-      .filter((category) => ALLOWED_MAIN_CATEGORIES.some((allowed) => (
-        allowed.match.toLowerCase() === category.name.toLowerCase()
-      )))
-      .map((category) => ({
-        ...category,
-        displayName: getCategoryDisplayName(category.name),
-        children: categories.filter((child) => child.parent_id === category.id),
-      }))
-  ), [categories]);
-
+  const rootCategories = useMemo(() => getRootCategories(categories), [categories]);
   const categorySections = rootCategories
     .map((category) => ({
       category,
@@ -227,6 +155,7 @@ export const Home = () => {
     .slice(0, 3);
 
   const weeklyProducts = products.slice(0, 3);
+  const popularProducts = products.slice(3, 6);
 
   const handleSearch = (query) => {
     const params = new URLSearchParams();
@@ -235,116 +164,172 @@ export const Home = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-neutral-50">
+    <div className="min-h-dvh bg-neutral-50 text-neutral-950">
       <Navbar onSearch={handleSearch} />
 
-      <section className="relative flex min-h-[calc(100vh-72px)] items-center justify-center overflow-hidden px-4 py-20">
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-neutral-50 to-rose-50" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_80%_at_8%_20%,rgba(239,224,205,0.85),transparent_42%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_55%_60%_at_90%_10%,rgba(255,218,218,0.5),transparent_36%)]" />
+      <section className="border-b-2 border-neutral-950">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
+            <div className="hidden border-2 border-neutral-950 bg-white p-6 shadow-[10px_10px_0_#171717] sm:block sm:p-8">
+              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">Storefront</span>
+              <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">Premium essentials with a straight-edge presentation.</h1>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-neutral-600 sm:text-base">
+                Browse clean category edits, curated collections, and standout products from verified sellers in one minimal storefront.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link href="/categories" className="border-2 border-neutral-950 bg-neutral-950 px-5 py-3 text-sm font-medium text-white">
+                  Explore categories
+                </Link>
+                <Link href="/week-most-wanted" className="border-2 border-neutral-950 bg-white px-5 py-3 text-sm font-medium text-neutral-950">
+                  Most wanted this weekend
+                </Link>
+              </div>
+            </div>
 
-        <div className="relative z-10 mx-auto flex max-w-3xl flex-col items-center text-center">
-          <div className="mb-6 flex items-center gap-4">
-            <span className="h-px w-10 bg-amber-600/60" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700">Modern Chic Editorial</span>
-            <span className="h-px w-10 bg-amber-600/60" />
+            <div className="border-2 border-neutral-950 bg-white p-4 shadow-[8px_8px_0_#171717] sm:hidden">
+              <div className="flex items-start gap-3">
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-neutral-500">Storefront</span>
+                  <h1 className="mt-2 text-2xl font-semibold leading-8 tracking-tight text-neutral-950">Premium essentials in a straight-edge storefront.</h1>
+                  <p className="mt-2 text-sm leading-6 text-neutral-600">
+                    Browse categories, collections, and standout products from verified sellers.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                <Link href="/categories" className="shrink-0 border-2 border-neutral-950 bg-neutral-950 px-4 py-2 text-sm font-medium text-white">
+                  Categories
+                </Link>
+                <Link href="/week-most-wanted" className="shrink-0 border-2 border-neutral-950 bg-white px-4 py-2 text-sm font-medium text-neutral-950">
+                  Weekend picks
+                </Link>
+              </div>
+            </div>
+
+            <div className="hidden gap-4 sm:grid">
+              <div className="border-2 border-neutral-950 bg-[#dbeafe] p-5 shadow-[8px_8px_0_#171717]">
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-600">Popular now</span>
+                <p className="mt-3 text-xl font-semibold text-neutral-950">Clean category-first browsing for faster shopping.</p>
+              </div>
+              <div className="border-2 border-neutral-950 bg-[#f5f5f4] p-5 shadow-[8px_8px_0_#171717]">
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-600">This weekend</span>
+                <p className="mt-3 text-xl font-semibold text-neutral-950">Top picks, curated collections, and tighter product edits.</p>
+              </div>
+            </div>
           </div>
-
-          <h1 className="mb-6 text-3xl font-semibold leading-tight text-neutral-900 sm:text-4xl md:text-5xl">
-            Premium essentials, presented with calm and rhythm.
-          </h1>
-          <p className="mb-10 max-w-2xl text-sm leading-relaxed text-neutral-500 sm:text-base">
-            MyStore brings verified sellers, elevated discovery, and category-first browsing into one refined shopping experience.
-          </p>
-          <Link
-            href="/categories"
-            className="flex items-center gap-2 rounded-full bg-neutral-950 px-7 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-neutral-900"
-          >
-            Explore categories <ArrowRight size={14} />
-          </Link>
         </div>
       </section>
 
-      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-16 px-4 py-12 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-7xl space-y-8 px-4 py-6 sm:space-y-10 sm:px-6 sm:py-8 lg:px-8">
         {rootCategories.length > 0 && (
           <section>
-            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <span className="mb-2 inline-flex rounded-full bg-amber-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-700">
-                  Category edit
-                </span>
-                <h2 className="mb-1 text-xl font-semibold text-neutral-900 sm:text-2xl">
-                  Shop by category
-                </h2>
-                <p className="max-w-2xl text-sm text-neutral-500">
-                  Choose a department first, then refine with subcategories and brands inside that category.
-                </p>
-              </div>
-              <Link
-                href="/categories"
-                className="flex items-center gap-2 whitespace-nowrap text-[11px] font-bold uppercase tracking-widest text-neutral-700 transition-all hover:gap-3"
-              >
-                View directory <ArrowRight size={14} />
-              </Link>
-            </div>
+            <SectionHeading
+              eyebrow="Categories"
+              title="Shop by category"
+              description="Choose a department first, then move into the right products with less clutter and clearer entry points."
+              href="/categories"
+              hrefLabel="View all"
+            />
+            <CategorySpotlightGrid
+              categories={rootCategories}
+              products={products}
+              mobileViewAllHref="/categories"
+              mobileViewAllLabel="View all"
+            />
+          </section>
+        )}
 
-            <CategorySpotlightGrid categories={rootCategories} products={products} />
+        {collections.length > 0 && (
+          <section>
+            <SectionHeading
+              eyebrow="Collections"
+              title="Collection products"
+              description="Seller-built groups designed for quick discovery and focused browsing."
+            />
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-4">
+              {collections.slice(0, 3).map((collection) => (
+                <Link
+                  key={collection.id}
+                  href={`/collections/${collection.handle}`}
+                  className="group border-2 border-neutral-950 bg-white shadow-[6px_6px_0_#171717] transition hover:-translate-y-1 md:shadow-[8px_8px_0_#171717]"
+                >
+                  <div className="flex aspect-[1/0.92] items-center justify-center border-b-2 border-neutral-950 bg-neutral-100 md:aspect-[1/1]">
+                    {collection.image ? (
+                      <img src={collection.image} alt={collection.title} className="h-full w-full object-cover" />
+                    ) : (
+                      <Layers size={30} className="text-neutral-500 md:size-[34px]" />
+                    )}
+                  </div>
+                  <div className="space-y-2 p-3 md:space-y-3 md:p-4">
+                    <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-500 md:text-xs md:tracking-[0.16em]">
+                      {collection.product_count || 0} product{collection.product_count === 1 ? '' : 's'}
+                    </span>
+                    <h3 className="text-sm font-semibold text-neutral-950 md:text-lg">{collection.title}</h3>
+                    <p className="line-clamp-3 text-xs leading-5 text-neutral-600 md:text-sm md:leading-6">{collection.description || 'Explore this curated seller collection.'}</p>
+                    <span className="inline-flex items-center gap-2 text-sm text-neutral-600 transition group-hover:text-neutral-950">
+                      View collection <ArrowRight size={12} />
+                    </span>
+                  </div>
+                </Link>
+              ))}
+              <MobileViewAllCard href="/collections" label="View all" />
+            </div>
+          </section>
+        )}
+
+        <section>
+          <SectionHeading
+            eyebrow="Most Wanted"
+            title="Most wanted this weekend"
+            description="A tighter hero edit with fewer distractions and more focus on the products themselves."
+            href="/week-most-wanted"
+            hrefLabel="View all"
+          />
+          {weeklyProducts.length > 0 ? (
+            <ProductSpotlightGrid
+              products={weeklyProducts}
+              pageProps={props}
+              mobileViewAllHref="/week-most-wanted"
+              mobileViewAllLabel="View all"
+            />
+          ) : (
+            <div className="border-2 border-neutral-950 bg-white p-6 text-sm text-neutral-600 shadow-[8px_8px_0_#171717]">No items currently available.</div>
+          )}
+        </section>
+
+        {popularProducts.length > 0 && (
+          <section>
+            <SectionHeading
+              eyebrow="Popular"
+              title="Popular right now"
+              description="The products customers are likely to check first, presented in a simpler grid."
+            />
+            <ProductSpotlightGrid
+              products={popularProducts}
+              pageProps={props}
+              mobileViewAllHref="/categories"
+              mobileViewAllLabel="View all"
+            />
           </section>
         )}
 
         {categorySections.map(({ category, products: categoryProducts }) => (
           <section key={category.id}>
-            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <span className="mb-2 inline-flex rounded-full bg-neutral-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-600">
-                  {getCategoryDisplayName(category.name)}
-                </span>
-                <h2 className="mb-1 text-xl font-semibold text-neutral-900 sm:text-2xl">
-                  {getCategoryDisplayName(category.name)} picks
-                </h2>
-                <p className="max-w-2xl text-sm text-neutral-500">
-                  A focused edit from this category, with the full page one click away.
-                </p>
-              </div>
-              <Link
-                href={`/categories/${category.id}`}
-                className="flex items-center gap-2 whitespace-nowrap text-[11px] font-bold uppercase tracking-widest text-neutral-700 transition-all hover:gap-3"
-              >
-                See everything <ArrowRight size={14} />
-              </Link>
-            </div>
-
-            <ProductSpotlightGrid products={categoryProducts} />
+            <SectionHeading
+              eyebrow={getCategoryDisplayName(category.name)}
+              title={`${getCategoryDisplayName(category.name)} picks`}
+              description="A focused edit from this category, with the full page one click away."
+              href={`/categories/${category.id}`}
+              hrefLabel="See all"
+            />
+            <ProductSpotlightGrid
+              products={categoryProducts}
+              pageProps={props}
+              mobileViewAllHref={`/categories/${category.id}`}
+              mobileViewAllLabel="View all"
+            />
           </section>
         ))}
-
-        <section>
-          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <span className="mb-2 inline-flex rounded-full bg-rose-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-rose-700">
-                Spotlight
-              </span>
-              <h2 className="mb-1 text-xl font-semibold text-neutral-900 sm:text-2xl">
-                The week's most wanted
-              </h2>
-              <p className="max-w-2xl text-sm text-neutral-500">
-                A tighter hero edit with fewer distractions and more focus on the products themselves.
-              </p>
-            </div>
-            <Link
-              href="/week-most-wanted"
-              className="flex items-center gap-2 whitespace-nowrap text-[11px] font-bold uppercase tracking-widest text-neutral-700 transition-all hover:gap-3"
-            >
-              View all <ArrowRight size={14} />
-            </Link>
-          </div>
-
-          {weeklyProducts.length > 0 ? (
-            <ProductSpotlightGrid products={weeklyProducts} />
-          ) : (
-            <div className="py-5 text-sm text-neutral-400">No items currently available.</div>
-          )}
-        </section>
       </main>
 
       <Footer />

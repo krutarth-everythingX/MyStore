@@ -18,6 +18,12 @@ class Authenticate
             ]);
         }
 
+        if ($user->account_deletion_scheduled_for && $user->account_deletion_scheduled_for->isFuture()) {
+            throw ValidationException::withMessages([
+                'email' => ['This account is scheduled for deletion and cannot be accessed right now.'],
+            ]);
+        }
+
         return $user;
     }
 }

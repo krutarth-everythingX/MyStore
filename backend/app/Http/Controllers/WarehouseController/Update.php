@@ -2,56 +2,22 @@
 
 namespace App\Http\Controllers\WarehouseController;
 
-use App\Http\Controllers\Controller;
-use App\Models\Warehouse;
-use App\Rules\IndianPostalCode;
-use App\Services\WarehouseService\UpdateForSeller;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
-class Update extends Controller
+class Update
 {
-    public function __construct(private readonly UpdateForSeller $updateForSeller)
-    {
-    }
-
     public function __invoke(Request $request, $id)
     {
-        if ($request->user()->role !== 'seller' || ! seller_setup_complete($request->user())) {
-            return response(['message' => 'Unauthorized. Sellers only.'], 403);
-        }
+        $warehouse = $request->user()->warehouses()->findOrFail($id);
+        
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'code' => 'nullable|string|max:255',
+            'address' => 'nullable|string|max:255',
+        ]);
 
-        $warehouse = Warehouse::where('id', $id)
-            ->where('user_id', $request->user()->id)
-            ->firstOrFail();
+        $warehouse->update($validated);
 
-        $this->updateForSeller->handle(
-            $warehouse,
-            $request->validate([
-                'name' => 'required|string',
-                'code' => [
-                    'required',
-                    'string',
-                    Rule::unique('warehouses')->ignore($warehouse->id),
-                ],
-                'address' => 'nullable|string',
-                'city' => 'nullable|string',
-                'state' => 'nullable|string',
-                'postal_code' => ['nullable', 'string', new IndianPostalCode()],
-                'country' => 'nullable|string|max:80',
-                'type' => 'nullable|string|max:60',
-                'timezone' => 'nullable|string|max:80',
-                'capacity_units' => 'nullable|integer|min:0',
-                'notes' => 'nullable|string|max:1000',
-                'default_carrier' => 'required|string',
-            ]),
-            $request->user(),
-        );
-
-        if ($request->header('X-Inertia')) {
-            return back()->with('success', 'Warehouse updated successfully!');
-        }
-
-        return response($warehouse, 200);
+        return response()->json($warehouse);
     }
 }

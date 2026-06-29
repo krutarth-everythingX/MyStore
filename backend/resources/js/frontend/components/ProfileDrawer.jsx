@@ -1,30 +1,44 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Card } from './Card';
 import { Input } from './Input';
 import { Button } from './Button';
-import { AlertTriangle } from 'lucide-react';
 import { RightDrawer } from './RightDrawer';
-import {
-  codeActionLabel,
-  codeMinutesLeft,
-  codeStatus,
-  verificationActionLabel,
-  verificationCodeStatus,
-  verificationMinutesLeft,
-} from '../utils/emailVerification';
-import '../styles/Profile.css';
-
-export const ProfileDrawer = ({ isOpen, onClose }) => {
+import { DismissibleAlert } from './DismissibleAlert';
+import { codeActionLabel, codeMinutesLeft, codeStatus, verificationActionLabel, verificationCodeStatus, verificationMinutesLeft } from '../utils/emailVerification';
+const alertClassName = {
+  success: 'border border-emerald-200 bg-white text-emerald-800',
+  error: 'border border-rose-200 bg-white text-rose-800'
+};
+const drawerCardClassName = 'rounded-2xl border border-slate-200 shadow-none hover:translate-y-0 hover:border-slate-200 hover:shadow-none';
+const VerifyNotice = ({
+  title,
+  copy,
+  extra
+}) => <div>
+    <AlertTriangle size={24} />
+    <div>
+      <p>{title}</p>
+      <p>{copy}</p>
+      {extra ? <p>{extra}</p> : null}
+    </div>
+  </div>;
+const FormSectionTitle = ({
+  children
+}) => <h4>{children}</h4>;
+export const ProfileDrawer = ({
+  isOpen,
+  onClose
+}) => {
   const {
     user,
     updateProfile,
     verifyEmailCode,
     resendVerificationCode,
     sendPhoneVerification,
-    verifyPhoneCode,
+    verifyPhoneCode
   } = useAuth();
-
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -41,27 +55,19 @@ export const ProfileDrawer = ({ isOpen, onClose }) => {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
   const [verificationCode, setVerificationCode] = useState('');
   const [verifyMsg, setVerifyMsg] = useState('');
   const [verifyError, setVerifyError] = useState('');
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [verificationSentAt, setVerificationSentAt] = useState(user?.verification_code_sent_at || null);
   const [verificationNow, setVerificationNow] = useState(Date.now());
-
   const [phoneVerificationCode, setPhoneVerificationCode] = useState('');
   const [phoneVerifyMsg, setPhoneVerifyMsg] = useState('');
   const [phoneVerifyError, setPhoneVerifyError] = useState('');
   const [phoneVerifyLoading, setPhoneVerifyLoading] = useState(false);
   const [phoneVerificationSentAt, setPhoneVerificationSentAt] = useState(user?.phone_verification_code_sent_at || null);
-
-  const channelOptions = useMemo(() => (
-    fulfillmentChannels
-      .split(',')
-      .map((channel) => channel.trim())
-      .filter(Boolean)
-  ), [fulfillmentChannels]);
-
+  const channelOptions = useMemo(() => fulfillmentChannels.split(',').map(channel => channel.trim()).filter(Boolean), [fulfillmentChannels]);
+  const isIndianSeller = String(country || user?.country || '').trim().toLowerCase() === 'india';
   useEffect(() => {
     if (!user) return;
     setName(user.name || '');
@@ -79,24 +85,20 @@ export const ProfileDrawer = ({ isOpen, onClose }) => {
     setVerificationSentAt(user.verification_code_sent_at || null);
     setPhoneVerificationSentAt(user.phone_verification_code_sent_at || null);
   }, [user?.id]);
-
   useEffect(() => {
     if (user?.verification_code_sent_at !== verificationSentAt) {
       setVerificationSentAt(user?.verification_code_sent_at || null);
     }
-  }, [user?.verification_code_sent_at]);
-
+  }, [user?.verification_code_sent_at, verificationSentAt]);
   useEffect(() => {
     if (user?.phone_verification_code_sent_at !== phoneVerificationSentAt) {
       setPhoneVerificationSentAt(user?.phone_verification_code_sent_at || null);
     }
-  }, [user?.phone_verification_code_sent_at]);
-
+  }, [user?.phone_verification_code_sent_at, phoneVerificationSentAt]);
   useEffect(() => {
     const timer = window.setInterval(() => setVerificationNow(Date.now()), 30000);
     return () => window.clearInterval(timer);
   }, []);
-
   const verificationStatus = verificationCodeStatus(verificationSentAt, verificationNow);
   const verificationSendLabel = verificationActionLabel(verificationSentAt, verificationNow);
   const verificationSendDisabled = verifyLoading || verificationStatus === 'active';
@@ -105,13 +107,11 @@ export const ProfileDrawer = ({ isOpen, onClose }) => {
   const phoneVerificationSendLabel = codeActionLabel(phoneVerificationSentAt, verificationNow);
   const phoneVerificationSendDisabled = phoneVerifyLoading || phoneVerificationStatus === 'active' || !countryCode || !phone;
   const phoneVerificationMinutesRemaining = codeMinutesLeft(phoneVerificationSentAt, verificationNow);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async event => {
+    event.preventDefault();
     setSuccess('');
     setError('');
     setLoading(true);
-
     try {
       const updateData = {
         name,
@@ -121,15 +121,13 @@ export const ProfileDrawer = ({ isOpen, onClose }) => {
         brand_name: brandName,
         address,
         country,
-        gst_number: gstNumber,
+        gst_number: isIndianSeller ? gstNumber : '',
         fulfillment_channels: channelOptions,
         default_fulfillment_channel: defaultFulfillmentChannel,
         shipping_acceptance_time: shippingAcceptanceTime,
-        handling_time_business_days: Number(handlingTimeBusinessDays || 1),
+        handling_time_business_days: Number(handlingTimeBusinessDays || 1)
       };
-
       if (password) updateData.password = password;
-
       await updateProfile(updateData);
       setSuccess('Store profile updated successfully!');
       setPassword('');
@@ -139,9 +137,8 @@ export const ProfileDrawer = ({ isOpen, onClose }) => {
       setLoading(false);
     }
   };
-
-  const handleVerifyEmail = async (e) => {
-    e.preventDefault();
+  const handleVerifyEmail = async event => {
+    event.preventDefault();
     setVerifyError('');
     setVerifyMsg('');
     setVerifyLoading(true);
@@ -156,7 +153,6 @@ export const ProfileDrawer = ({ isOpen, onClose }) => {
       setVerifyLoading(false);
     }
   };
-
   const handleResendCode = async () => {
     setVerifyError('');
     setVerifyMsg('');
@@ -168,12 +164,10 @@ export const ProfileDrawer = ({ isOpen, onClose }) => {
       setVerifyError(err.message || 'Failed to send code');
     }
   };
-
   const handleSendPhoneCode = async () => {
     setPhoneVerifyError('');
     setPhoneVerifyMsg('');
     setPhoneVerifyLoading(true);
-
     try {
       const data = await sendPhoneVerification(countryCode, phone);
       setPhoneVerificationSentAt(data.user?.phone_verification_code_sent_at || new Date().toISOString());
@@ -184,13 +178,11 @@ export const ProfileDrawer = ({ isOpen, onClose }) => {
       setPhoneVerifyLoading(false);
     }
   };
-
-  const handleVerifyPhone = async (event) => {
+  const handleVerifyPhone = async event => {
     event.preventDefault();
     setPhoneVerifyError('');
     setPhoneVerifyMsg('');
     setPhoneVerifyLoading(true);
-
     try {
       await verifyPhoneCode(phoneVerificationCode);
       setPhoneVerifyMsg('Phone number verified successfully!');
@@ -202,113 +194,105 @@ export const ProfileDrawer = ({ isOpen, onClose }) => {
       setPhoneVerifyLoading(false);
     }
   };
-
-  return (
-    <RightDrawer isOpen={isOpen} onClose={onClose} title="Store Profile Settings">
-      <p className="body-md" style={{ color: 'var(--color-outline)', marginBottom: 24 }}>
+  return <RightDrawer isOpen={isOpen} onClose={onClose} title="Store Profile Settings">
+      <p>
         Manage brand, origin country, fulfillment, and login details.
       </p>
 
-      {!user?.email_verified_at && (
-        <Card title="Email Verification Required" className="profile-form-card" style={{ marginBottom: 24, borderColor: 'var(--color-error)' }}>
-          <div className="pv-verify-block" style={{ padding: 0 }}>
-            <div className="pv-verify-row warn" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px', background: 'rgba(255, 152, 0, 0.1)', border: '1px solid var(--color-error)', borderRadius: '4px' }}>
-              <AlertTriangle size={32} style={{ color: 'var(--color-error)' }} />
+      {!user?.email_verified_at && <Card title="Email Verification Required">
+          <div>
+            <VerifyNotice title="Your email is not verified" copy={verificationStatus === 'unsent' ? `Send a 6-digit verification code to ${user?.email}.` : `Enter the 6-digit verification code sent to ${user?.email}.`} extra={verificationStatus === 'active' ? `Code expires in ${verificationMinutesRemaining} minute${verificationMinutesRemaining === 1 ? '' : 's'}.` : ''} />
+
+            {verifyError ? <DismissibleAlert onClose={() => setVerifyError('')} role="alert">
+                {verifyError}
+              </DismissibleAlert> : null}
+            {verifyMsg ? <DismissibleAlert onClose={() => setVerifyMsg('')}>
+                {verifyMsg}
+              </DismissibleAlert> : null}
+
+            <form onSubmit={handleVerifyEmail}>
+              <Input label="6-Digit Verification Code" type="text" placeholder="Enter code" maxLength={6} value={verificationCode} onChange={event => setVerificationCode(event.target.value)} required />
               <div>
-                <p className="pv-verify-title" style={{ fontWeight: 600 }}>Your email is not verified</p>
-                <p className="body-sm" style={{ color: 'var(--color-outline)' }}>
-                  {verificationStatus === 'unsent'
-                    ? `Send a 6-digit verification code to ${user?.email}.`
-                    : `Enter the 6-digit verification code sent to ${user?.email}.`}
-                </p>
-                {verificationStatus === 'active' && (
-                  <p className="body-sm" style={{ color: 'var(--color-outline)', marginTop: 4 }}>
-                    Code expires in {verificationMinutesRemaining} minute{verificationMinutesRemaining === 1 ? '' : 's'}.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {verifyError && <div className="pv-toast error" style={{ marginTop: 12 }}>{verifyError}</div>}
-            {verifyMsg && <div className="pv-toast success" style={{ marginTop: 12 }}>{verifyMsg}</div>}
-
-            <form onSubmit={handleVerifyEmail} style={{ marginTop: 16 }}>
-              <Input label="6-Digit Verification Code" type="text" placeholder="Enter code" maxLength={6} value={verificationCode} onChange={(e) => setVerificationCode(e.target.value)} required />
-              <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-                <Button type="submit" variant="primary" disabled={verifyLoading}>{verifyLoading ? 'Verifying...' : 'Verify Code'}</Button>
-                <Button type="button" variant="outline" onClick={handleResendCode} disabled={verificationSendDisabled}>{verificationSendLabel}</Button>
+                <Button type="submit" variant="primary" disabled={verifyLoading}>
+                  {verifyLoading ? 'Verifying...' : 'Verify Code'}
+                </Button>
+                <Button type="button" variant="outline" onClick={handleResendCode} disabled={verificationSendDisabled}>
+                  {verificationSendLabel}
+                </Button>
               </div>
             </form>
           </div>
-        </Card>
-      )}
+        </Card>}
 
-      {!user?.phone_verified_at && (
-        <Card title="Phone Verification Required" className="profile-form-card" style={{ marginBottom: 24, borderColor: 'var(--color-error)' }}>
-          <div className="pv-verify-block" style={{ padding: 0 }}>
-            <div className="pv-verify-row warn" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px', background: 'rgba(255, 152, 0, 0.1)', border: '1px solid var(--color-error)', borderRadius: '4px' }}>
-              <AlertTriangle size={32} style={{ color: 'var(--color-error)' }} />
+      {!user?.phone_verified_at && <Card title="Phone Verification Required">
+          <div>
+            <VerifyNotice title="Your phone is not verified" copy="Enter your country calling code and phone number, then send an SMS code." extra={phoneVerificationStatus === 'active' ? `SMS code expires in ${phoneVerificationMinutesRemaining} minute${phoneVerificationMinutesRemaining === 1 ? '' : 's'}.` : ''} />
+
+            {phoneVerifyError ? <DismissibleAlert onClose={() => setPhoneVerifyError('')} role="alert">
+                {phoneVerifyError}
+              </DismissibleAlert> : null}
+            {phoneVerifyMsg ? <DismissibleAlert onClose={() => setPhoneVerifyMsg('')}>
+                {phoneVerifyMsg}
+              </DismissibleAlert> : null}
+
+            <form onSubmit={handleVerifyPhone}>
               <div>
-                <p className="pv-verify-title" style={{ fontWeight: 600 }}>Your phone is not verified</p>
-                <p className="body-sm" style={{ color: 'var(--color-outline)' }}>Enter your country calling code and phone number, then send an SMS code.</p>
-                {phoneVerificationStatus === 'active' && (
-                  <p className="body-sm" style={{ color: 'var(--color-outline)', marginTop: 4 }}>
-                    SMS code expires in {phoneVerificationMinutesRemaining} minute{phoneVerificationMinutesRemaining === 1 ? '' : 's'}.
-                  </p>
-                )}
+                <Input label="Country Code" type="text" placeholder="91" value={countryCode} onChange={event => setCountryCode(event.target.value.replace(/[^\d]/g, ''))} required />
+                <Input label="Phone Number" type="tel" placeholder="9876543210" value={phone} onChange={event => setPhone(event.target.value.replace(/[^\d]/g, ''))} required />
               </div>
-            </div>
-
-            {phoneVerifyError && <div className="pv-toast error" style={{ marginTop: 12 }}>{phoneVerifyError}</div>}
-            {phoneVerifyMsg && <div className="pv-toast success" style={{ marginTop: 12 }}>{phoneVerifyMsg}</div>}
-
-            <form onSubmit={handleVerifyPhone} style={{ marginTop: 16 }}>
-              <div style={{ display: 'flex', gap: 12 }}>
-                <Input label="Country Code" type="text" placeholder="91" value={countryCode} onChange={(event) => setCountryCode(event.target.value.replace(/[^\d]/g, ''))} required />
-                <Input label="Phone Number" type="tel" placeholder="9876543210" value={phone} onChange={(event) => setPhone(event.target.value.replace(/[^\d]/g, ''))} required />
-              </div>
-              <Input label="6-Digit SMS Code" type="text" placeholder="Enter SMS code" maxLength={6} value={phoneVerificationCode} onChange={(event) => setPhoneVerificationCode(event.target.value.replace(/[^\d]/g, '').slice(0, 6))} required />
-              <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-                <Button type="submit" variant="primary" disabled={phoneVerifyLoading}>{phoneVerifyLoading ? 'Verifying...' : 'Verify Phone'}</Button>
-                <Button type="button" variant="outline" onClick={handleSendPhoneCode} disabled={phoneVerificationSendDisabled}>{phoneVerificationSendLabel}</Button>
+              <Input label="6-Digit SMS Code" type="text" placeholder="Enter SMS code" maxLength={6} value={phoneVerificationCode} onChange={event => setPhoneVerificationCode(event.target.value.replace(/[^\d]/g, '').slice(0, 6))} required />
+              <div>
+                <Button type="submit" variant="primary" disabled={phoneVerifyLoading}>
+                  {phoneVerifyLoading ? 'Verifying...' : 'Verify Phone'}
+                </Button>
+                <Button type="button" variant="outline" onClick={handleSendPhoneCode} disabled={phoneVerificationSendDisabled}>
+                  {phoneVerificationSendLabel}
+                </Button>
               </div>
             </form>
           </div>
-        </Card>
-      )}
+        </Card>}
 
-      {success && <div className="profile-alert profile-alert-success body-md">{success}</div>}
-      {error && <div className="profile-alert profile-alert-error body-md">{error}</div>}
+      {success ? <DismissibleAlert onClose={() => setSuccess('')}>
+          {success}
+        </DismissibleAlert> : null}
+      {error ? <DismissibleAlert onClose={() => setError('')} role="alert">
+          {error}
+        </DismissibleAlert> : null}
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px', flex: 1 }}>
-        <div className="profile-form-section">
-          <h4 className="profile-section-title title-lg">Basic Information</h4>
-          <Input label="Contact Person Name *" type="text" placeholder="Enter your name" value={name} onChange={(e) => setName(e.target.value)} required />
-          <Input label="Login Email Address *" type="email" placeholder="Enter email address" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          <Input label="Phone Number" type="tel" placeholder="Enter phone number" value={phone} onChange={(e) => setPhone(e.target.value.replace(/[^\d]/g, ''))} />
-          <Input label="Country Code" type="text" placeholder="e.g. 91" value={countryCode} onChange={(e) => setCountryCode(e.target.value.replace(/[^\d]/g, ''))} />
-          <Input label="Change Password" type="password" placeholder="Leave blank to keep current password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        </div>
-
-        <div className="profile-form-section">
-          <h4 className="profile-section-title title-lg">Business & Fulfillment</h4>
-          <Input label="Store / Brand Name *" type="text" placeholder="E.g. Acme Tech" value={brandName} onChange={(e) => setBrandName(e.target.value)} required />
-          <Input label="GSTIN Number *" type="text" placeholder="15-digit GST number" maxLength={15} value={gstNumber} onChange={(e) => setGstNumber(e.target.value)} required />
-          <Input label="Country of Origin *" type="text" placeholder="India" value={country} onChange={(e) => setCountry(e.target.value)} required />
-          <Input label="Fulfillment Channels *" type="text" placeholder="Seller Fulfilled, Local Courier" value={fulfillmentChannels} onChange={(e) => setFulfillmentChannels(e.target.value)} required />
-          <Input label="Default Fulfillment Channel *" type="text" placeholder="Seller Fulfilled" value={defaultFulfillmentChannel} onChange={(e) => setDefaultFulfillmentChannel(e.target.value)} required />
-          <Input label="Order Acceptance Time *" type="text" placeholder="2 hours" value={shippingAcceptanceTime} onChange={(e) => setShippingAcceptanceTime(e.target.value)} required />
-          <Input label="Handling Time (Business Days)" type="number" min="0" max="30" value={handlingTimeBusinessDays} onChange={(e) => setHandlingTimeBusinessDays(e.target.value)} />
-          <div className="input-container">
-            <label className="input-label label-md">Pickup & Business Address *</label>
-            <textarea className="input-field profile-textarea" rows="4" placeholder="Enter warehouse or store street address" value={address} onChange={(e) => setAddress(e.target.value)} required />
+      <form onSubmit={handleSubmit}>
+        <Card title="Basic Information">
+          <div>
+            <FormSectionTitle>Basic Information</FormSectionTitle>
+            <Input label="Contact Person Name *" type="text" placeholder="Enter your name" value={name} onChange={event => setName(event.target.value)} required />
+            <Input label="Login Email Address *" type="email" placeholder="Enter email address" value={email} onChange={event => setEmail(event.target.value)} required />
+            <div>
+              <Input label="Phone Number" type="tel" placeholder="Enter phone number" value={phone} onChange={event => setPhone(event.target.value.replace(/[^\d]/g, ''))} />
+              <Input label="Country Code" type="text" placeholder="e.g. 91" value={countryCode} onChange={event => setCountryCode(event.target.value.replace(/[^\d]/g, ''))} />
+            </div>
+            <Input label="Change Password" type="password" placeholder="Leave blank to keep current password" value={password} onChange={event => setPassword(event.target.value)} />
           </div>
-        </div>
+        </Card>
 
-        <Button type="submit" variant="primary" className="profile-save-btn" disabled={loading} style={{ width: '100%', marginTop: 'auto' }}>
+        <Card title="Business & Fulfillment">
+          <div>
+            <FormSectionTitle>Business & Fulfillment</FormSectionTitle>
+            <Input label="Store / Brand Name *" type="text" placeholder="E.g. Acme Tech" value={brandName} onChange={event => setBrandName(event.target.value)} required />
+            <Input label={isIndianSeller ? 'GSTIN Number *' : 'Tax Registration Number'} type="text" placeholder={isIndianSeller ? '15-digit GST number' : 'Optional tax registration'} maxLength={15} value={gstNumber} onChange={event => setGstNumber(event.target.value)} required={isIndianSeller} />
+            <Input label="Country of Origin *" type="text" placeholder="India" value={country} onChange={event => setCountry(event.target.value)} required />
+            <Input label="Fulfillment Channels *" type="text" placeholder="Seller Fulfilled, Local Courier" value={fulfillmentChannels} onChange={event => setFulfillmentChannels(event.target.value)} required />
+            <Input label="Default Fulfillment Channel *" type="text" placeholder="Seller Fulfilled" value={defaultFulfillmentChannel} onChange={event => setDefaultFulfillmentChannel(event.target.value)} required />
+            <div>
+              <Input label="Order Acceptance Time *" type="text" placeholder="2 hours" value={shippingAcceptanceTime} onChange={event => setShippingAcceptanceTime(event.target.value)} required />
+              <Input label="Handling Time (Business Days)" type="number" min="0" max="30" value={handlingTimeBusinessDays} onChange={event => setHandlingTimeBusinessDays(event.target.value)} />
+            </div>
+            <Input label="Pickup & Business Address *" as="textarea" rows={4} placeholder="Enter warehouse or store street address" value={address} onChange={event => setAddress(event.target.value)} required />
+          </div>
+        </Card>
+
+        <Button type="submit" variant="primary" disabled={loading}>
           {loading ? 'Saving Changes...' : 'Save Settings'}
         </Button>
       </form>
-    </RightDrawer>
-  );
+    </RightDrawer>;
 };

@@ -15,8 +15,10 @@ trait EnsuresRoles
 
         if ($request->user()?->role === 'seller' && ! $request->expectsJson()) {
             $redirectTo = seller_setup_complete($request->user())
-                ? '/seller'
-                : '/seller/setup';
+                ? '/seller/inventory'
+                : (seller_verification_status($request->user()) === 'submitted'
+                    ? '/seller/verification/submitted'
+                    : '/seller/verification');
 
             throw new HttpResponseException(redirect($redirectTo));
         }
@@ -31,8 +33,10 @@ trait EnsuresRoles
         }
 
         $redirectTo = seller_setup_complete($request->user())
-            ? '/seller'
-            : '/seller/setup';
+            ? '/seller/inventory'
+            : (seller_verification_status($request->user()) === 'submitted'
+                ? '/seller/verification/submitted'
+                : '/seller/verification');
 
         throw new HttpResponseException(redirect($redirectTo));
     }
@@ -41,8 +45,15 @@ trait EnsuresRoles
     {
         abort_unless($request->user()?->role === 'seller', 403);
 
-        if (! seller_setup_complete($request->user()) && $request->path() !== 'seller/setup') {
-            throw new HttpResponseException(redirect('/seller/setup'));
+        if (
+            ! seller_setup_complete($request->user())
+            && ! in_array($request->path(), ['seller/verification', 'seller/verification/submitted'], true)
+        ) {
+            $redirectTo = seller_verification_status($request->user()) === 'submitted'
+                ? '/seller/verification/submitted'
+                : '/seller/verification';
+
+            throw new HttpResponseException(redirect($redirectTo));
         }
     }
 }

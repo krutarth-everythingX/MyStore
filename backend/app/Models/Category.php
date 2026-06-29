@@ -3,13 +3,18 @@
 namespace App\Models;
 
 use App\Traits\HasSlug;
+use App\Traits\StoresUtcTimestamps;
 use Illuminate\Database\Eloquent\Model;
 
 class Category extends Model
 {
-    use HasSlug;
+    use HasSlug, StoresUtcTimestamps;
 
-    protected $fillable = ['user_id', 'name', 'slug', 'parent_id'];
+    protected $fillable = ['user_id', 'name', 'slug', 'parent_id', 'type', 'description', 'image', 'is_active'];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
 
     public function user()
     {

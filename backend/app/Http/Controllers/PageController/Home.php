@@ -4,6 +4,7 @@ namespace App\Http\Controllers\PageController;
 
 use App\Http\Controllers\Concerns\EnsuresRoles;
 use App\Http\Controllers\Controller;
+use App\Models\Collection;
 use App\Services\BrandService\ListBrands;
 use App\Services\CategoryService\ListCategories;
 use App\Services\ProductService\SearchStorefrontProducts;
@@ -54,6 +55,20 @@ class Home extends Controller
             'products' => $searchResult['products'],
             'categories' => $this->listCategories->handle(),
             'brands' => $this->listBrands->handle(),
+            'collections' => Collection::query()
+                ->where('active', true)
+                ->latest()
+                ->take(8)
+                ->get()
+                ->map(fn (Collection $collection) => [
+                    'id' => $collection->id,
+                    'title' => $collection->title,
+                    'handle' => $collection->handle,
+                    'description' => $collection->description,
+                    'image' => $collection->image,
+                    'type' => $collection->type,
+                    'product_count' => count($collection->product_ids ?? []),
+                ]),
             'searchMeta' => $searchResult['meta'],
             'searchSuggestion' => [
                 'original_search' => $originalSearch,

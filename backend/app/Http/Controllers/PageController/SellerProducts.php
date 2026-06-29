@@ -4,7 +4,6 @@ namespace App\Http\Controllers\PageController;
 
 use App\Http\Controllers\Concerns\EnsuresRoles;
 use App\Http\Controllers\Controller;
-use App\Services\BrandService\ListBrands;
 use App\Services\CategoryService\ListCategories;
 use App\Services\ProductService\ListSellerProducts;
 use App\Services\WarehouseService\ListForSeller;
@@ -17,7 +16,6 @@ class SellerProducts extends Controller
 
     public function __construct(
         private readonly ListSellerProducts $listSellerProducts,
-        private readonly ListBrands $listBrands,
         private readonly ListCategories $listCategories,
         private readonly ListForSeller $listForSeller,
     ) {
@@ -30,9 +28,10 @@ class SellerProducts extends Controller
         return Inertia::render('App', [
             'sellerProducts' => $this->listSellerProducts->handle($request->user()->id),
             'categories' => $this->listCategories->handle($request->user()->id),
-            'brands' => $this->listBrands->handle(),
+            'brands' => $request->user()->brands()->orderBy('name')->get(),
             'attributes' => $request->user()->attributes()->orderBy('name')->get(),
             'sellerWarehouses' => $this->listForSeller->handle($request->user()->id),
+            'sellerVendors' => $request->user()->vendors()->latest()->get(),
         ]);
     }
 }

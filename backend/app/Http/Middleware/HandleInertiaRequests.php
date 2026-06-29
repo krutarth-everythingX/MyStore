@@ -22,9 +22,24 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user()?->loadMissing('sellerVerification');
+        $resolvedCountry = country_localization($user?->country);
+
         return array_merge(parent::share($request), [
             'auth' => [
-                'user' => fn () => $request->user(),
+                'user' => fn () => $user,
+            ],
+            'localization' => [
+                'base_currency' => config('localization.base_currency', 'USD'),
+                'default_country' => config('localization.default_country', 'India'),
+                'countries' => localization_countries(),
+                'current' => [
+                    'country' => $resolvedCountry['name'] ?? config('localization.default_country', 'India'),
+                    'country_code' => $resolvedCountry['code'] ?? country_code_for($user?->country),
+                    'currency' => $resolvedCountry['currency'] ?? currency_for_country($user?->country),
+                    'locale' => $resolvedCountry['locale'] ?? locale_for_country($user?->country),
+                    'timezone' => $resolvedCountry['timezone'] ?? user_timezone($user),
+                ],
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
@@ -40,6 +55,12 @@ class HandleInertiaRequests extends Middleware
                     ->latest()
                     ->get()
                 : [],
+            'footerCategories' => fn () => \Illuminate\Support\Facades\Cache::remember('footer_categories', 3600, function () {
+                return \App\Models\Category::whereNull('parent_id')
+                    ->select('id', 'name', 'slug', 'parent_id')
+                    ->take(4)
+                    ->get();
+            }),
         ]);
     }
 }

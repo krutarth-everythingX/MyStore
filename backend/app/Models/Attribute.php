@@ -14,6 +14,8 @@ class Attribute extends Model
 
     protected $casts = [
         'options' => 'array',
+        'is_required' => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     public function user(): BelongsTo

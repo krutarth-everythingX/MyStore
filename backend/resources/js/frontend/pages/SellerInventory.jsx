@@ -1,594 +1,414 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { router, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import {
-  Activity,
   AlertTriangle,
-  Archive,
-  BarChart3,
-  Boxes,
-  ClipboardCheck,
-  Layers,
-  LayoutList,
-  MapPin,
+  ArrowUpRight,
+  Box,
+  CheckCircle2,
+  ChevronRight,
+  Cuboid,
   Package,
-  Plus,
   RefreshCw,
-  Save,
-  Search,
   ShieldCheck,
-  Truck,
-  Warehouse,
-  X,
 } from 'lucide-react';
 import { Sidebar } from '../components/Sidebar';
 import { Button } from '../components/Button';
-import { DataTable } from '../components/DataTable';
-import { Input } from '../components/Input';
-import { RightDrawer } from '../components/RightDrawer';
-import { WarehouseDrawer } from '../components/WarehouseDrawer';
 import { StockAdjustmentDrawer } from '../components/StockAdjustmentDrawer';
-import { TraceabilityDrawer } from '../components/TraceabilityDrawer';
-import './SellerInventory.css';
+import { SellerCard, SellerPageHeader, SellerPageShell } from '../components/seller-workspace';
 
-const formatNumber = (value) => new Intl.NumberFormat('en-US').format(Number(value || 0));
+const compactCurrency = (value) =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    notation: 'compact',
+    maximumFractionDigits: 0,
+  }).format(Number(value || 0));
 
-const formatCurrency = (value) => new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-}).format(Number(value || 0));
+const number = (value) => new Intl.NumberFormat('en-US').format(Number(value || 0));
+const titleCase = (value) => String(value || 'unknown').replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-const formatDate = (value) => {
-  if (!value) return 'Not recorded';
-
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value));
+const toneClasses = {
+  blue: 'bg-white',
+  purple: 'bg-orange-50',
+  amber: 'bg-white',
+  green: 'bg-white',
 };
 
-const titleCase = (value) => String(value || 'unknown')
-  .replace(/_/g, ' ')
-  .replace(/\b\w/g, (letter) => letter.toUpperCase());
-
-const firstBinPath = (warehouse) => {
-  const zone = warehouse?.zones?.[0];
-  const aisle = zone?.aisles?.[0];
-  const rack = aisle?.racks?.[0];
-  const shelf = rack?.shelves?.[0];
-  const bin = shelf?.bins?.[0];
-
-  return [zone?.code, aisle?.code, rack?.code, shelf?.code, bin?.code].filter(Boolean).join(' / ') || 'No bin mapped';
-};
-
-const locationTotals = (warehouse) => {
-  const zones = warehouse?.zones || [];
-  const aisles = zones.flatMap((zone) => zone.aisles || []);
-  const racks = aisles.flatMap((aisle) => aisle.racks || []);
-  const shelves = racks.flatMap((rack) => rack.shelves || []);
-  const bins = shelves.flatMap((shelf) => shelf.bins || []);
-
-  return {
-    zones: zones.length,
-    aisles: aisles.length,
-    racks: racks.length,
-    shelves: shelves.length,
-    bins: bins.length,
-  };
-};
-
-const MetricItem = ({ icon: Icon, label, value, tone = 'neutral' }) => (
-  <div className={`inventory-metric inventory-metric-${tone}`}>
-    <span className="inventory-metric-icon"><Icon size={16} /></span>
-    <span className="inventory-metric-copy">
-      <strong>{value}</strong>
-      <small>{label}</small>
+const EmptyPanel = ({ icon: Icon = CheckCircle2, children }) => (
+  <div className="flex items-center gap-3 border border-neutral-200 bg-neutral-100 px-4 py-4 text-sm text-neutral-700">
+    <span className="inline-flex h-10 w-10 items-center justify-center border border-neutral-200 bg-white">
+      <Icon size={18} />
     </span>
+    <span>{children}</span>
   </div>
 );
 
-const EmptyState = ({ icon: Icon = LayoutList, title, copy }) => (
-  <div className="inventory-empty-state">
-    <Icon size={36} className="inventory-empty-icon" />
-    <h4>{title}</h4>
-    <p>{copy}</p>
+const ViewAll = ({ href }) => (
+  <Link href={href} className="inline-flex items-center gap-2 text-sm font-medium text-neutral-950">
+    View All
+    <ChevronRight size={15} />
+  </Link>
+);
+
+const StatCard = ({ label, value, caption, icon: Icon, tone = 'blue' }) => (
+  <SellerCard className={`shadow-none ${toneClasses[tone]}`}>
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">{label}</span>
+        <strong className="mt-3 block text-3xl font-semibold tracking-tight text-neutral-950">{value}</strong>
+        <span className="mt-2 block text-sm text-neutral-600">{caption}</span>
+      </div>
+      <span className="inline-flex h-12 w-12 items-center justify-center border border-neutral-200 bg-white">
+        <Icon size={20} />
+      </span>
+    </div>
+  </SellerCard>
+);
+
+const MiniMetric = ({ label, value }) => (
+  <div className="border border-neutral-200 bg-neutral-50 px-4 py-4">
+    <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">{label}</span>
+    <strong className="mt-2 block text-2xl font-semibold tracking-tight text-neutral-950">{value}</strong>
   </div>
 );
+
+const Panel = ({ title, subtitle, href, children, className = '' }) => (
+  <SellerCard className={`shadow-none ${className}`}>
+    <div className="flex items-start justify-between gap-4 border-b border-neutral-200 pb-4">
+      <div>
+        <h3 className="text-2xl font-semibold tracking-tight text-neutral-950">{title}</h3>
+        {subtitle ? <p className="mt-2 text-sm leading-7 text-neutral-600">{subtitle}</p> : null}
+      </div>
+      {href ? <ViewAll href={href} /> : null}
+    </div>
+    <div className="mt-5">{children}</div>
+  </SellerCard>
+);
+
+const AreaTrendChart = ({ data }) => {
+  const width = 760;
+  const height = 260;
+  const padding = { top: 12, right: 16, bottom: 36, left: 56 };
+  const maxValue = Math.max(1, ...data.flatMap((item) => [item.incoming || 0, item.outgoing || 0]));
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+  const xFor = (index) => padding.left + (data.length <= 1 ? 0 : (index / (data.length - 1)) * chartWidth);
+  const yFor = (value) => padding.top + chartHeight - ((value || 0) / maxValue) * chartHeight;
+  const incomingPoints = data.map((item, index) => [xFor(index), yFor(item.incoming)]);
+  const outgoingPoints = data.map((item, index) => [xFor(index), yFor(item.outgoing)]);
+  const incomingPath = incomingPoints.map(([x, y], index) => `${index === 0 ? 'M' : 'L'} ${x} ${y}`).join(' ');
+  const outgoingPath = outgoingPoints.map(([x, y], index) => `${index === 0 ? 'M' : 'L'} ${x} ${y}`).join(' ');
+  const areaPath = `${incomingPath} L ${xFor(data.length - 1)} ${padding.top + chartHeight} L ${xFor(0)} ${padding.top + chartHeight} Z`;
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((ratio) => Math.round(maxValue * ratio));
+
+  return (
+    <div className="overflow-x-auto">
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Stock movement trend" className="min-w-[760px]">
+        <defs>
+          <linearGradient id="inventoryTrendFill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#0f172a" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="#0f172a" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {ticks.map((tick) => {
+          const y = yFor(tick);
+          return (
+            <g key={tick}>
+              <line x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke="#d4d4d4" strokeWidth="1" />
+              <text x={padding.left - 10} y={y + 4} textAnchor="end" fill="#737373" fontSize="11">
+                {number(tick)}
+              </text>
+            </g>
+          );
+        })}
+        {data.map((item, index) => {
+          const x = xFor(index);
+          return (
+            <g key={item.label}>
+              <line x1={x} x2={x} y1={padding.top} y2={padding.top + chartHeight} stroke="#f1f5f9" />
+              <text x={x} y={height - 8} textAnchor="middle" fill="#737373" fontSize="11">
+                {item.label}
+              </text>
+            </g>
+          );
+        })}
+        <path d={areaPath} fill="url(#inventoryTrendFill)" />
+        <path d={incomingPath} fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" />
+        <path d={outgoingPath} fill="none" stroke="#0f172a" strokeWidth="3" strokeLinecap="round" />
+      </svg>
+    </div>
+  );
+};
+
+const BarChart = ({ data }) => {
+  const maxValue = Math.max(1, ...data.map((item) => item.count || 0));
+  return (
+    <div className="space-y-4">
+      {data.map((item) => (
+        <div key={item.name} className="grid grid-cols-[minmax(0,13rem)_minmax(0,1fr)_3rem] items-center gap-3">
+          <span className="truncate text-sm font-medium text-neutral-950">{item.name}</span>
+          <div className="h-4 border border-neutral-200 bg-neutral-100">
+            <div className="h-full bg-neutral-950" style={{ width: `${(Number(item.count || 0) / maxValue) * 100}%` }} />
+          </div>
+          <small className="text-right text-sm font-semibold text-neutral-700">{item.count}</small>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const DonutChart = ({ data }) => {
+  const total = data.reduce((sum, item) => sum + Number(item.count || 0), 0);
+  const radius = 56;
+  const circumference = 2 * Math.PI * radius;
+  let offset = 0;
+
+  if (!total) {
+    return <EmptyPanel icon={Cuboid}>No stock entry mix yet</EmptyPanel>;
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-6 lg:flex-row">
+      <svg viewBox="0 0 160 160" aria-label="Stock entry mix" className="h-56 w-56 shrink-0">
+        <circle cx="80" cy="80" r={radius} fill="transparent" stroke="#e5e5e5" strokeWidth="20" />
+        {data.map((item, index) => {
+          const length = (Number(item.count || 0) / total) * circumference;
+          const dash = `${length} ${circumference - length}`;
+          const segment = (
+            <circle
+              key={item.type}
+              cx="80"
+              cy="80"
+              r={radius}
+              fill="transparent"
+              stroke={['#0f172a', '#10b981', '#f59e0b', '#ef4444'][index % 4]}
+              strokeWidth="20"
+              strokeDasharray={dash}
+              strokeDashoffset={-offset}
+            />
+          );
+          offset += length;
+          return segment;
+        })}
+      </svg>
+      <div className="grid w-full gap-3">
+        {data.slice(0, 4).map((item, index) => (
+          <div key={item.type} className="flex items-center justify-between border border-neutral-200 bg-neutral-50 px-4 py-3">
+            <span className="inline-flex items-center gap-3 text-sm font-medium text-neutral-950">
+              <span className="h-3 w-3 border border-neutral-950" style={{ backgroundColor: ['#0f172a', '#10b981', '#f59e0b', '#ef4444'][index % 4] }} />
+              {titleCase(item.type)}
+            </span>
+            <strong className="text-sm font-semibold text-neutral-950">{number(item.count)}</strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export const SellerInventory = () => {
   const { props } = usePage();
-  const [warehouses, setWarehouses] = useState(props.sellerWarehouses || []);
-  const [carriers, setCarriers] = useState(props.sellerCarriers || []);
-  const [products, setProducts] = useState(props.sellerProducts || []);
-  const [showWarehouseForm, setShowWarehouseForm] = useState(false);
   const [showAdjustmentForm, setShowAdjustmentForm] = useState(false);
-  const [showTraceabilityForm, setShowTraceabilityForm] = useState(false);
-  const [showLocationDrawer, setShowLocationDrawer] = useState(false);
-  const [selectedMovement, setSelectedMovement] = useState(null);
-  const [selectedAllocation, setSelectedAllocation] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const snapshot = props.sellerInventorySnapshot || {};
   const metrics = snapshot.metrics || {};
-  const locationCounts = snapshot.location_counts || {};
+  const dashboard = snapshot.dashboard || {};
   const allocations = snapshot.allocations || [];
-  const movements = snapshot.recent_movements || [];
-  const adjustments = snapshot.recent_adjustments || [];
-  const traceability = snapshot.traceability || {};
+  const lowStockRows = allocations.filter((row) => Number(row.available_quantity || 0) <= Math.max(1, Number(row.safety_stock || 0))).slice(0, 4);
+  const batches = snapshot.traceability?.batches || [];
+  const movementTrend = useMemo(() => {
+    const fallback = ['2026-01-01', '2026-02-01', '2026-03-01', '2026-04-01', '2026-05-01', '2026-06-01'].map((label) => ({
+      label,
+      incoming: 0,
+      outgoing: 0,
+    }));
+    const rows = dashboard.movement_trend?.length ? dashboard.movement_trend : fallback;
+    return rows.map((row) => ({
+      ...row,
+      label: row.label,
+      incoming: Number(row.incoming || 0),
+      outgoing: Number(row.outgoing || 0),
+    }));
+  }, [dashboard.movement_trend]);
+  const categoryCounts = dashboard.category_counts?.length
+    ? dashboard.category_counts
+    : [{ name: 'Uncategorized', count: Number(metrics.products || 0) }];
+  const movementMix = dashboard.movement_types || [];
+  const stockEntryTotal = Number(metrics.movements || 0) + Number(metrics.adjustments || 0);
 
   useEffect(() => {
-    setWarehouses(props.sellerWarehouses || []);
-    setCarriers(props.sellerCarriers || []);
-    setProducts(props.sellerProducts || []);
     setSuccess(props.flash?.success || '');
     setError(props.flash?.error || '');
-  }, [
-    props.flash,
-    props.sellerCarriers,
-    props.sellerInventorySnapshot,
-    props.sellerProducts,
-    props.sellerWarehouses,
-  ]);
-
-  const productOptions = useMemo(() => (
-    products
-      .filter((product) => product.type !== 'variation')
-      .map((product) => ({
-        id: product.id,
-        label: `${product.name} (${product.sku || product.mystore_product_id || `#${product.id}`})`,
-      }))
-  ), [products]);
-
-  const refreshOnly = [
-    'sellerWarehouses',
-    'sellerCarriers',
-    'sellerProducts',
-    'sellerInventorySnapshot',
-    'flash',
-  ];
-
-  const allocationColumns = [
-    {
-      header: 'Product',
-      render: (row) => (
-        <div className="inventory-table-product">
-          <strong>{row.product_name}</strong>
-          <span>{row.sku || 'No SKU'}</span>
-        </div>
-      ),
-    },
-    {
-      header: 'Location',
-      render: (row) => (
-        <div className="inventory-table-location">
-          <strong>{row.warehouse_name}</strong>
-          <span>{row.warehouse_code} / {row.bin_location || 'Unassigned'}</span>
-        </div>
-      ),
-    },
-    {
-      header: 'On Hand',
-      align: 'right',
-      render: (row) => <strong>{formatNumber(row.quantity)}</strong>,
-    },
-    {
-      header: 'Available',
-      align: 'right',
-      render: (row) => (
-        <span className={row.available_quantity <= row.safety_stock ? 'inventory-number-low' : ''}>
-          {formatNumber(row.available_quantity)}
-        </span>
-      ),
-    },
-    {
-      header: 'Reserved',
-      align: 'right',
-      render: (row) => formatNumber(row.reserved_quantity),
-    },
-    {
-      header: 'Safety',
-      align: 'right',
-      render: (row) => formatNumber(row.safety_stock),
-    },
-    {
-      header: 'Value',
-      align: 'right',
-      render: (row) => formatCurrency(row.valuation),
-    },
-    {
-      header: 'Status',
-      render: (row) => <span className={`inventory-status ${row.stock_status}`}>{titleCase(row.stock_status)}</span>,
-    },
-  ];
+  }, [props.flash]);
 
   return (
-    <div className="seller-dashboard-layout">
+    <div>
       <Sidebar />
 
-      <div className="seller-dashboard-content animate-fade-in">
-        <div className="seller-dashboard-container container inventory-page">
-          <div className="seller-page-header inventory-header">
-            <div className="seller-page-title-block">
-              <span className="inventory-kicker">PIM and WMS control</span>
-              <h2 className="headline-lg">Inventory Operations</h2>
-              <p>
-                Manage product stock, warehouse locations, reservations, cycle counts, batches, serials, and audit movement from one seller workspace.
-              </p>
-            </div>
-            <div className="inventory-header-actions">
-              <Button variant="secondary" onClick={() => router.reload({ only: refreshOnly })}>
+      <SellerPageShell>
+        <SellerPageHeader
+          title="Inventory Dashboard"
+          description="Stock, supply, production, and quality overview."
+          action={
+            <>
+              <Button variant="outline" onClick={() => router.visit('/seller/products')}>
+                <Box size={16} />
+                Add Product
+              </Button>
+              <Button variant="primary" onClick={() => setShowAdjustmentForm(true)}>
                 <RefreshCw size={16} />
-                Refresh
+                Stock Entry
               </Button>
-              <Button variant="secondary" onClick={() => setShowAdjustmentForm(true)}>
-                Adjust Stock
-              </Button>
-              <Button variant="primary" onClick={() => setShowWarehouseForm(true)}>
-                <Plus size={16} />
-                Warehouse
-              </Button>
-            </div>
-          </div>
+            </>
+          }
+        />
 
-          {(error || success) && (
-            <div className={`inventory-alert ${error ? 'inventory-alert-error' : 'inventory-alert-success'}`}>
-              {error || success}
-            </div>
-          )}
+        {error || success ? (
+          <SellerCard className={error ? 'bg-white' : 'bg-white'}>
+            <p className="text-sm font-medium text-neutral-900">{error || success}</p>
+          </SellerCard>
+        ) : null}
 
-          <section className="inventory-metrics-strip" aria-label="Inventory summary">
-            <MetricItem icon={Package} label="Products" value={formatNumber(metrics.products)} />
-            <MetricItem icon={Warehouse} label="Warehouses" value={formatNumber(metrics.warehouses)} />
-            <MetricItem icon={Boxes} label="On hand" value={formatNumber(metrics.on_hand)} />
-            <MetricItem icon={ClipboardCheck} label="Available" value={formatNumber(metrics.available)} tone="success" />
-            <MetricItem icon={Archive} label="Reserved" value={formatNumber(metrics.reserved)} />
-            <MetricItem icon={AlertTriangle} label="Low stock" value={formatNumber(metrics.low_stock)} tone={metrics.low_stock ? 'warning' : 'neutral'} />
-            <MetricItem icon={BarChart3} label="Valuation" value={formatCurrency(metrics.valuation)} />
-            <MetricItem icon={ShieldCheck} label="Batches / Serials" value={`${formatNumber(metrics.batches)} / ${formatNumber(metrics.serials)}`} />
-          </section>
-
-          <section className="inventory-section">
-            <div className="inventory-section-head" style={{ flexWrap: 'wrap', gap: '12px' }}>
-              <div>
-                <span className="inventory-kicker">Sellable inventory</span>
-                <h3>Warehouse allocations</h3>
-              </div>
-              <div className="inventory-allocation-actions">
-                <Button variant="secondary" onClick={() => setShowLocationDrawer(true)} style={{ padding: '8px 14px', fontSize: '12px', minHeight: 'auto', whiteSpace: 'nowrap' }}>
-                  Locations & Bins
-                </Button>
-                <div className="inventory-search-chip" style={{ whiteSpace: 'nowrap' }}>
-                  {formatNumber(metrics.unassigned_bins)} unassigned bins
-                </div>
-              </div>
-            </div>
-
-            <DataTable
-              className="inventory-allocations-table desktop-only"
-              columns={allocationColumns}
-              data={allocations}
-              emptyMessage={(
-                <EmptyState
-                  icon={LayoutList}
-                  title="No stock allocations"
-                  copy="Create a product with warehouse stock or post a manual count to start tracking on-hand, available, reserved, and safety stock."
-                />
-              )}
-            />
-
-            <div className="mobile-only mobile-allocations-list">
-              {allocations.length === 0 ? (
-                <EmptyState icon={LayoutList} title="No stock allocations" />
-              ) : (
-                allocations.map((row) => (
-                  <div key={`${row.product_id}-${row.warehouse_id}`} className="mobile-allocation-card" onClick={() => setSelectedAllocation(row)}>
-                    <div className="mobile-allocation-head" style={{ flexDirection: 'row', marginBottom: 0, paddingBottom: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ flex: 1, minWidth: 0, paddingRight: '12px' }}>
-                        <strong style={{ display: 'block', fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.product_name}</strong>
-                        <span style={{ fontSize: '12px', color: 'var(--inventory-muted)', display: 'block', marginTop: '4px', fontWeight: 500 }}>{row.warehouse_name}</span>
-                      </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <strong style={{ fontSize: '16px', display: 'block', color: 'var(--color-primary)' }}>{formatNumber(row.available_quantity)}</strong>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </section>
-
-          {/* Bottom layout: Grid for Counts & Traceability, then full-width Recent Movements */}
-          <section className="inventory-dashboard-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
-            {adjustments.length > 0 && (
-              <section className="inventory-section">
-                <div className="inventory-section-head">
-                  <div>
-                    <span className="inventory-kicker">Reconciliation</span>
-                    <h3>Posted counts</h3>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <button type="button" onClick={() => setShowAdjustmentForm(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-outline)', display: 'flex', alignItems: 'center' }}>
-                      <Plus size={18} />
-                    </button>
-                    <ClipboardCheck size={18} style={{ color: 'var(--color-outline)' }} />
-                  </div>
-                </div>
-                <div className="inventory-event-list">
-                  {adjustments.map((adjustment) => (
-                    <div className="inventory-event" key={adjustment.id}>
-                      <span className={adjustment.variance_quantity < 0 ? 'inventory-event-type negative' : 'inventory-event-type'}>
-                        Variance {formatNumber(adjustment.variance_quantity)}
-                      </span>
-                      <strong>{adjustment.product?.name || 'Product'}</strong>
-                      <p>{formatNumber(adjustment.system_quantity)} system / {formatNumber(adjustment.counted_quantity)} counted</p>
-                      <small>{adjustment.reason || 'Manual stock count'} / {formatDate(adjustment.created_at)}</small>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            <section className="inventory-section inventory-compact-section">
-              <div className="inventory-section-head" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <span className="inventory-kicker">Traceability</span>
-                  <h3 style={{ whiteSpace: 'nowrap' }}>Batches and serials</h3>
-                </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <Button variant="secondary" onClick={() => setShowTraceabilityForm(true)} style={{ padding: '8px 14px', fontSize: '12px', minHeight: 'auto' }}>
-                    <Plus size={14} style={{ marginRight: 4 }} />
-                    Register<span className="desktop-only">&nbsp;Traceability</span>
-                  </Button>
-                </div>
-              </div>
-              <div className="inventory-traceability">
-                <div>
-                  <strong>Recent batches</strong>
-                  {(traceability.batches || []).length === 0 ? (
-                    <p>No batch or lot records yet.</p>
-                  ) : (
-                    (traceability.batches || []).map((batch) => (
-                      <span key={batch.id}>{batch.batch_no} / {batch.product?.name || 'Product'} / {formatNumber(batch.quantity)}</span>
-                    ))
-                  )}
-                </div>
-                <div>
-                  <strong>Recent serials</strong>
-                  {(traceability.serials || []).length === 0 ? (
-                    <p>No serial records yet.</p>
-                  ) : (
-                    (traceability.serials || []).map((serial) => (
-                      <span key={serial.id}>{serial.serial_no} / {serial.product?.name || 'Product'} / {titleCase(serial.status)}</span>
-                    ))
-                  )}
-                </div>
-              </div>
-            </section>
-          </section>
-
-          <section className="inventory-section">
-            <div className="inventory-section-head" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <span className="inventory-kicker">Audit Trail</span>
-                <h3>Recent movements</h3>
-              </div>
-            </div>
-            <div className="desktop-only">
-              <div className="inventory-movement-list">
-                {movements.length === 0 ? (
-                  <EmptyState
-                    icon={Activity}
-                    title="No movements yet"
-                    copy="Stock movements, adjustments, and receipts will appear here."
-                  />
-                ) : (
-                  movements.map((movement) => (
-                    <div key={movement.id} className="inventory-movement-item">
-                      <div className="inventory-movement-header">
-                        <strong>{movement.product?.name || 'Unknown Product'}</strong>
-                        <span className="inventory-movement-type">{titleCase(movement.type)}</span>
-                      </div>
-                      <div className="inventory-movement-details">
-                        <p>
-                          <span style={{ color: 'var(--color-on-surface)' }}>{movement.warehouse?.name || 'Unknown Location'}</span>
-                          <span style={{ margin: '0 8px', color: 'var(--inventory-line)' }}>|</span>
-                          Qty Change: <strong style={{ color: movement.quantity > 0 ? 'var(--color-success)' : movement.quantity < 0 ? 'var(--color-error)' : 'inherit' }}>{movement.quantity > 0 ? '+' : ''}{formatNumber(movement.quantity)}</strong>
-                        </p>
-                        <p style={{ marginTop: '4px' }}>
-                          Final: <strong>{formatNumber(movement.after_quantity)}</strong>
-                        </p>
-                      </div>
-                      <div className="inventory-movement-footer">
-                        <small>{movement.reason || 'No reason provided'}</small>
-                        <small>{formatDate(movement.created_at)}</small>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-            
-            <div className="mobile-only">
-              <div className="inventory-movement-list">
-                {movements.length === 0 ? (
-                  <EmptyState icon={Activity} title="No movements yet" copy="Stock movements will appear here." />
-                ) : (
-                  movements.slice(0, 3).map((movement) => (
-                    <div key={movement.id} className="inventory-movement-item" style={{ padding: '12px', cursor: 'pointer' }} onClick={() => setSelectedMovement(movement)}>
-                      <div className="inventory-movement-header" style={{ marginBottom: 0 }}>
-                        <strong>{movement.product?.name || 'Unknown Product'}</strong>
-                      </div>
-                      <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--color-outline)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span>
-                          Qty Change: <strong style={{ color: movement.quantity > 0 ? 'var(--color-success)' : movement.quantity < 0 ? 'var(--color-error)' : 'inherit' }}>{movement.quantity > 0 ? '+' : ''}{formatNumber(movement.quantity)}</strong>
-                        </span>
-                        <span className="inventory-movement-type" style={{ fontSize: '10px', padding: '2px 6px' }}>{titleCase(movement.type)}</span>
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </section>
+        <div className="grid gap-4 xl:grid-cols-4">
+          <StatCard
+            label="Total Products"
+            value={number(metrics.products)}
+            caption={`${number(metrics.active_products ?? metrics.products)} active products`}
+            icon={Cuboid}
+            tone="blue"
+          />
+          <StatCard
+            label="Stock Value"
+            value={compactCurrency(metrics.valuation)}
+            caption={`${number(metrics.on_hand)} total quantity`}
+            icon={ArrowUpRight}
+            tone="purple"
+          />
+          <StatCard
+            label="Low Stock"
+            value={number(metrics.low_stock)}
+            caption={`${number(metrics.out_of_stock)} out of stock`}
+            icon={AlertTriangle}
+            tone="amber"
+          />
+          <StatCard
+            label="Traceability"
+            value={number((metrics.batches || 0) + (metrics.serials || 0))}
+            caption={`${number(metrics.serials)} serials tracked`}
+            icon={ShieldCheck}
+            tone="green"
+          />
         </div>
-      </div>
 
-      <WarehouseDrawer isOpen={showWarehouseForm} onClose={() => setShowWarehouseForm(false)} />
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,0.9fr)]">
+          <Panel title="Stock Movement Trend" subtitle="Incoming versus outgoing value, last 6 months" href="/seller/inventory/stock-movements">
+            <AreaTrendChart data={movementTrend} />
+          </Panel>
+
+          <Panel title="Traceability" subtitle="Batches, serials, and expiry risk" href="/seller/inventory/batch-tracking">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <MiniMetric label="Batches" value={number(metrics.batches)} />
+              <MiniMetric label="Serials" value={number(metrics.serials)} />
+              <MiniMetric label="Expired" value={number(metrics.expired_batches)} />
+              <MiniMetric label="Near Expiry" value={number(metrics.near_expiry_batches)} />
+            </div>
+            <p className="mt-4 text-sm leading-7 text-neutral-600">Traceability data appears when batches and serial numbers exist.</p>
+          </Panel>
+        </div>
+
+        <div className="grid gap-5 xl:grid-cols-3">
+          <Panel title="Stock Health">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+              <MiniMetric label="In Stock" value={number(Math.max(0, Number(metrics.products || 0) - Number(metrics.out_of_stock || 0)))} />
+              <MiniMetric label="Low Stock" value={number(metrics.low_stock)} />
+              <MiniMetric label="Out of Stock" value={number(metrics.out_of_stock)} />
+              <MiniMetric label="Stocked %" value={`${number(metrics.stocked_percent)}%`} />
+            </div>
+          </Panel>
+
+          <Panel title="Traceability Status">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+              <MiniMetric label="Batches" value={number(metrics.batches)} />
+              <MiniMetric label="Serials" value={number(metrics.serials)} />
+              <MiniMetric label="Expired Batches" value={number(metrics.expired_batches)} />
+              <MiniMetric label="Near Expiry" value={number(metrics.near_expiry_batches)} />
+            </div>
+          </Panel>
+
+          <Panel title="QC and Delivery">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+              <MiniMetric label="Pending" value="0" />
+              <MiniMetric label="Accepted" value="0" />
+              <MiniMetric label="Rejected" value="0" />
+              <MiniMetric label="Delivery Notes" value={number(metrics.open_reservations)} />
+            </div>
+          </Panel>
+        </div>
+
+        <div className="grid gap-5 xl:grid-cols-2">
+          <Panel title="Product Categories" subtitle="Top categories by product count" href="/seller/categories">
+            <BarChart data={categoryCounts} />
+          </Panel>
+
+          <Panel title="Low Stock Watch" subtitle="Products closest to action" href="/seller/inventory/reconciliation">
+            {lowStockRows.length ? (
+              <div className="space-y-3">
+                {lowStockRows.map((row) => (
+                  <article key={row.id} className="flex items-center justify-between gap-4 border border-neutral-200 bg-neutral-50 px-4 py-4">
+                    <div className="min-w-0">
+                      <strong className="block truncate text-sm font-semibold text-neutral-950">{row.product_name}</strong>
+                      <span className="mt-1 block text-xs uppercase tracking-[0.14em] text-neutral-500">{row.warehouse_name}</span>
+                    </div>
+                    <b className="text-lg font-semibold text-neutral-950">{number(row.available_quantity)}</b>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <EmptyPanel>No low stock products</EmptyPanel>
+            )}
+          </Panel>
+        </div>
+
+        <div className="grid gap-5 xl:grid-cols-2">
+          <Panel title="Recent Batches" subtitle="Latest traceable stock created in the system" href="/seller/inventory/batch-tracking">
+            {batches.length ? (
+              <div className="space-y-3">
+                {batches.slice(0, 4).map((batch) => (
+                  <article key={batch.id} className="flex items-center gap-4 border border-neutral-200 bg-neutral-50 px-4 py-4">
+                    <span className="inline-flex h-12 w-12 items-center justify-center border border-neutral-200 bg-white">
+                      <Package size={18} />
+                    </span>
+                    <div className="min-w-0">
+                      <strong className="block truncate text-base font-semibold text-neutral-950">{batch.batch_no}</strong>
+                      <small className="mt-1 block text-sm text-neutral-600">
+                        {batch.product?.name || 'Product'} / {number(batch.quantity)} units
+                      </small>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <EmptyPanel icon={Package}>No batch records yet</EmptyPanel>
+            )}
+          </Panel>
+
+          <Panel title="Stock Entry Mix" subtitle="Movement types created so far" href="/seller/inventory/stock-entries">
+            <DonutChart data={movementMix} />
+          </Panel>
+        </div>
+
+        <Panel title="Inventory Snapshot" subtitle="Warehouse, supplier, stock entry, and reconciliation pulse">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <MiniMetric label="Warehouses" value={`${number(metrics.warehouses)}/${number(metrics.warehouses)}`} />
+            <MiniMetric label="Vendors" value={number(props.sellerWarehouses?.length || metrics.warehouses)} />
+            <MiniMetric label="Stock Entries" value={`${number(stockEntryTotal)}/${number(Math.max(stockEntryTotal, metrics.products || 0))}`} />
+            <MiniMetric label="Reconciliations" value={number(metrics.adjustments)} />
+          </div>
+        </Panel>
+      </SellerPageShell>
+
       <StockAdjustmentDrawer isOpen={showAdjustmentForm} onClose={() => setShowAdjustmentForm(false)} />
-      <TraceabilityDrawer isOpen={showTraceabilityForm} onClose={() => setShowTraceabilityForm(false)} />
-
-      <RightDrawer isOpen={showLocationDrawer} onClose={() => setShowLocationDrawer(false)} title="Locations and Bin Hierarchy">
-        <div className="inventory-location-counts" style={{ alignSelf: 'flex-start' }}>
-          <span>{formatNumber(locationCounts.zones)} zones</span>
-          <span>{formatNumber(locationCounts.aisles)} aisles</span>
-          <span>{formatNumber(locationCounts.bins)} bins</span>
-        </div>
-        <div className="inventory-warehouse-list">
-          {warehouses.length === 0 ? (
-            <EmptyState
-              icon={Warehouse}
-              title="No warehouses yet"
-              copy="Create a warehouse to seed the first zone, aisle, rack, shelf, and pick bin."
-            />
-          ) : (
-            warehouses.map((warehouse) => {
-              const totals = locationTotals(warehouse);
-
-              return (
-                <article className="inventory-warehouse-row" key={warehouse.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '16px' }}>
-                  <div className="inventory-warehouse-title">
-                    <span className="inventory-warehouse-icon"><Warehouse size={18} /></span>
-                    <div>
-                      <h4>{warehouse.name}</h4>
-                      <p>{warehouse.code} / {titleCase(warehouse.type)} / {titleCase(warehouse.status)}</p>
-                    </div>
-                  </div>
-                  <div className="inventory-warehouse-meta">
-                    <span><MapPin size={14} />{[warehouse.city, warehouse.state, warehouse.country].filter(Boolean).join(', ') || 'No address'}</span>
-                    <span><Truck size={14} />{warehouse.default_carrier || 'No carrier'}</span>
-                    <span><Layers size={14} />{firstBinPath(warehouse)}</span>
-                  </div>
-                  <div className="inventory-location-grid" style={{ width: '100%' }}>
-                    <span>{totals.zones} Zones</span>
-                    <span>{totals.aisles} Aisles</span>
-                    <span>{totals.racks} Racks</span>
-                    <span>{totals.shelves} Shelves</span>
-                    <span>{totals.bins} Bins</span>
-                  </div>
-                </article>
-              );
-            })
-          )}
-        </div>
-      </RightDrawer>
-
-      <div className={`bottom-sheet-overlay ${selectedMovement ? 'is-open' : ''}`} onClick={() => setSelectedMovement(null)}>
-        <div className="bottom-sheet-container" onClick={(e) => e.stopPropagation()}>
-          <div className="bottom-sheet-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--inventory-line)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '750', color: 'var(--color-on-surface)' }}>Movement Details</h4>
-              {selectedMovement && (
-                <span className="inventory-movement-type" style={{ fontSize: '10px', padding: '4px 8px', display: 'inline-flex', background: 'var(--color-surface-variant)', color: 'var(--color-on-surface)', borderRadius: '20px', fontWeight: '700', letterSpacing: '0.05em' }}>
-                  {titleCase(selectedMovement.type)}
-                </span>
-              )}
-            </div>
-            <button className="bottom-sheet-close" onClick={() => setSelectedMovement(null)}>
-              <X size={18} />
-            </button>
-          </div>
-          <div className="bottom-sheet-content" style={{ padding: '12px 20px 20px' }}>
-            {selectedMovement && (
-              <div className="inventory-movement-item" style={{ border: 'none', padding: 0, boxShadow: 'none', background: 'transparent' }}>
-                <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                  <strong style={{ fontSize: '20px', display: 'block', lineHeight: 1.2, color: 'var(--color-on-surface)' }}>
-                    {selectedMovement.product?.name || 'Unknown Product'}
-                  </strong>
-                </div>
-                <div className="inventory-movement-details" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <div style={{ background: 'var(--color-surface-variant)', padding: '12px 16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <small style={{ color: 'var(--color-outline)', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quantity Change</small>
-                      <span style={{ fontSize: '24px', fontWeight: '800', color: selectedMovement.quantity > 0 ? 'var(--color-success)' : selectedMovement.quantity < 0 ? 'var(--color-error)' : 'var(--color-on-surface)' }}>
-                        {selectedMovement.quantity > 0 ? '+' : ''}{formatNumber(selectedMovement.quantity)}
-                      </span>
-                    </div>
-                    <div style={{ background: 'var(--color-surface-variant)', padding: '12px 16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <small style={{ color: 'var(--color-outline)', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Final Quantity</small>
-                      <span style={{ fontSize: '24px', fontWeight: '800', color: 'var(--color-on-surface)' }}>
-                        {formatNumber(selectedMovement.after_quantity)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div style={{ padding: '12px 16px', border: '1px solid var(--inventory-line)', borderRadius: '12px', background: 'var(--color-surface)' }}>
-                    <small style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-outline)', marginBottom: '4px', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      <MapPin size={12} /> Location
-                    </small>
-                    <span style={{ fontSize: '14px', color: 'var(--color-on-surface)', fontWeight: 600 }}>{selectedMovement.warehouse?.name || 'Unknown Location'}</span>
-                  </div>
-
-                  <div style={{ padding: '12px 16px', border: '1px solid var(--inventory-line)', borderRadius: '12px', background: 'var(--color-surface)' }}>
-                    <small style={{ display: 'block', color: 'var(--color-outline)', marginBottom: '4px', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reason</small>
-                    <span style={{ fontSize: '14px', color: 'var(--color-on-surface)', lineHeight: 1.4 }}>{selectedMovement.reason || 'No reason provided'}</span>
-                  </div>
-
-                  <div style={{ padding: '12px 16px', background: 'rgba(26, 28, 26, 0.03)', borderRadius: '12px', textAlign: 'center', marginTop: '4px' }}>
-                    <small style={{ display: 'block', color: 'var(--color-outline)', marginBottom: '2px', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Logged At</small>
-                    <span style={{ fontSize: '13px', color: 'var(--color-on-surface)', fontWeight: 500 }}>{formatDate(selectedMovement.created_at)}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <RightDrawer isOpen={!!selectedAllocation} onClose={() => setSelectedAllocation(null)} title="Allocation Details">
-        {selectedAllocation && (
-          <>
-            <div>
-              <h4 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 750, color: 'var(--color-on-surface)' }}>{selectedAllocation.product_name}</h4>
-              <span style={{ fontSize: '13px', color: 'var(--color-outline)', fontWeight: 650 }}>{selectedAllocation.sku || 'No SKU'}</span>
-            </div>
-
-            <div>
-              <strong style={{ display: 'block', marginBottom: '4px', fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-outline)', letterSpacing: '0.05em' }}>Location</strong>
-              <div style={{ color: 'var(--color-on-surface)', fontSize: '15px', fontWeight: 650 }}>{selectedAllocation.warehouse_name}</div>
-              <div style={{ color: 'var(--color-outline)', fontSize: '13px' }}>{selectedAllocation.warehouse_code} / {selectedAllocation.bin_location || 'Unassigned'}</div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', padding: '20px', borderRadius: '16px', background: 'rgba(26, 28, 26, 0.04)' }}>
-              <div>
-                <span style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-outline)', letterSpacing: '0.05em', marginBottom: '4px' }}>On Hand</span>
-                <strong style={{ fontSize: '18px', color: 'var(--color-on-surface)' }}>{formatNumber(selectedAllocation.quantity)}</strong>
-              </div>
-              <div>
-                <span style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-outline)', letterSpacing: '0.05em', marginBottom: '4px' }}>Available</span>
-                <strong style={{ fontSize: '18px', color: 'var(--color-on-surface)' }}>{formatNumber(selectedAllocation.available_quantity)}</strong>
-              </div>
-              <div>
-                <span style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-outline)', letterSpacing: '0.05em', marginBottom: '4px' }}>Reserved</span>
-                <strong style={{ fontSize: '18px', color: 'var(--color-on-surface)' }}>{formatNumber(selectedAllocation.reserved_quantity)}</strong>
-              </div>
-              <div>
-                <span style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', color: 'var(--color-outline)', letterSpacing: '0.05em', marginBottom: '4px' }}>Safety Stock</span>
-                <strong style={{ fontSize: '18px', color: 'var(--color-on-surface)' }}>{formatNumber(selectedAllocation.safety_stock)}</strong>
-              </div>
-            </div>
-
-            <div style={{ paddingTop: '20px', borderTop: '1px solid var(--inventory-line)', marginTop: 'auto' }}>
-              <span className={`inventory-status ${selectedAllocation.stock_status}`}>{titleCase(selectedAllocation.stock_status)}</span>
-              <div style={{ marginTop: '12px', fontSize: '14px', color: 'var(--color-on-surface)' }}>
-                <strong>Valuation:</strong> {formatCurrency(selectedAllocation.valuation)}
-              </div>
-            </div>
-          </>
-        )}
-      </RightDrawer>
     </div>
   );
 };

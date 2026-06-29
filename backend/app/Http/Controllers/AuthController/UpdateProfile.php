@@ -34,6 +34,7 @@ class UpdateProfile extends Controller
             'default_fulfillment_channel' => 'nullable|string|max:120',
             'shipping_acceptance_time' => 'nullable|string|max:120',
             'handling_time_business_days' => 'nullable|integer|min:0|max:30',
+            'seller_settings' => 'nullable|array',
             'card_number' => 'nullable|string',
             'card_expiry' => 'nullable|string',
             'card_cvv' => 'nullable|string',

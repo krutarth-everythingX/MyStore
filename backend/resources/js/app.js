@@ -1,4 +1,5 @@
 import './bootstrap';
+import '../css/app.css';
 import { StrictMode, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createInertiaApp } from '@inertiajs/react';

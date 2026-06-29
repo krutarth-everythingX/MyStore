@@ -73,6 +73,8 @@ trait ManagesOrderOperations
     {
         $weight = 0.0;
         $orderItems = [];
+        $sourceCurrency = $order->currency ?: base_money_currency();
+        $shippingCurrency = currency_for_country($order->country);
 
         foreach ($order->items as $item) {
             $product = $item->product;
@@ -81,7 +83,7 @@ trait ManagesOrderOperations
                 'name' => $product->name,
                 'sku' => $product->sku ?: 'SKU-' . $product->id,
                 'units' => $item->quantity,
-                'selling_price' => $item->price,
+                'selling_price' => convert_money((float) $item->price, $item->currency ?: $sourceCurrency, $shippingCurrency),
             ];
         }
 
@@ -101,7 +103,7 @@ trait ManagesOrderOperations
             'shipping_is_billing' => true,
             'order_items' => $orderItems,
             'payment_method' => $order->payment_method === 'COD' ? 'COD' : 'Prepaid',
-            'sub_total' => $order->total_amount,
+            'sub_total' => convert_money((float) $order->total_amount, $sourceCurrency, $shippingCurrency),
             'length' => 10,
             'width' => 10,
             'height' => 10,
@@ -109,8 +111,8 @@ trait ManagesOrderOperations
         ];
     }
 
-    protected function formatCurrency(float $amount): string
+    protected function formatCurrency(float $amount, ?string $currency = null, ?string $locale = null): string
     {
-        return '$' . number_format($amount, 2);
+        return format_money($amount, $currency, $locale);
     }
 }

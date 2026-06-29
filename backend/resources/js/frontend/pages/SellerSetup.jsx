@@ -1,143 +1,98 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import { router } from '@inertiajs/react';
+import { ArrowRight, ShieldCheck, Store, UserRoundCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { AlertCircle } from 'lucide-react';
 
 export const SellerSetup = () => {
   const { user } = useAuth();
-  const [brandName, setBrandName] = useState(user?.brand_name || '');
-  const [gstNumber, setGstNumber] = useState(user?.gst_number || '');
-  const [address, setAddress] = useState(user?.address || '');
-  const [country, setCountry] = useState(user?.country || '');
-  const [fulfillmentChannels, setFulfillmentChannels] = useState(
-    Array.isArray(user?.fulfillment_channels) ? user.fulfillment_channels.join(', ') : 'Seller Fulfilled, Local Courier',
-  );
-  const [defaultFulfillmentChannel, setDefaultFulfillmentChannel] = useState(user?.default_fulfillment_channel || 'Seller Fulfilled');
-  const [shippingAcceptanceTime, setShippingAcceptanceTime] = useState(user?.shipping_acceptance_time || '2 hours');
-  const [handlingTimeBusinessDays, setHandlingTimeBusinessDays] = useState(user?.handling_time_business_days ?? 1);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const channelOptions = useMemo(() => (
-    fulfillmentChannels
-      .split(',')
-      .map((channel) => channel.trim())
-      .filter(Boolean)
-  ), [fulfillmentChannels]);
-
-  const inputCls = 'border border-neutral-200 rounded-xl py-3 px-4 text-sm text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900 transition-all bg-white w-full';
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    setError('');
-    setLoading(true);
-
-    router.put('/profile', {
-      name: user?.name,
-      email: user?.email,
-      phone: user?.phone,
-      brand_name: brandName,
-      gst_number: gstNumber,
-      address,
-      country,
-      fulfillment_channels: channelOptions,
-      default_fulfillment_channel: defaultFulfillmentChannel,
-      shipping_acceptance_time: shippingAcceptanceTime,
-      handling_time_business_days: Number(handlingTimeBusinessDays || 1),
-    }, {
-      preserveScroll: true,
-      onSuccess: () => router.visit('/seller', { replace: true }),
-      onError: (errors) => {
-        setError(Object.values(errors)[0] || 'Please complete your seller details.');
-        setLoading(false);
-      },
-      onFinish: () => setLoading(false),
-    });
-  };
 
   return (
-    <div className="min-h-screen flex bg-neutral-50">
-      <div className="hidden lg:flex flex-col justify-between w-[45%] bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 px-14 py-14 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_70%_at_20%_80%,rgba(251,191,36,0.08),transparent)]" />
-        <div className="text-xl font-semibold text-white z-10">MyStore Seller</div>
-        <div className="z-10">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-4 block">Store Setup</span>
-          <h1 className="text-3xl font-semibold text-white leading-snug mb-4">Complete your seller profile.</h1>
-          <p className="text-neutral-400 text-base leading-relaxed">Add storefront, country, tax, pickup, and fulfillment details before entering the seller dashboard.</p>
-        </div>
-        <p className="text-neutral-600 text-xs z-10">Copyright {new Date().getFullYear()} MyStore. All rights reserved.</p>
-      </div>
-
-      <div className="flex-1 flex flex-col justify-center items-center px-6 py-12 lg:px-16 overflow-y-auto">
-        <div className="w-full max-w-md">
-          <div className="mb-8">
-            <span className="lg:hidden text-xl font-semibold text-neutral-900 mb-8 block">MyStore Seller</span>
-            <h2 className="text-2xl font-semibold text-neutral-900 mb-2">Complete Seller Setup</h2>
-            <p className="text-sm text-neutral-500">This step happens after signup, including Google signup, so sellers can finish store details once.</p>
-          </div>
-
-          {error && (
-            <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-100 px-4 py-3.5 rounded-2xl mb-5">
-              <AlertCircle size={15} className="shrink-0" /> {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Store / Brand Name *</label>
-              <input className={inputCls} type="text" placeholder="Enter your store name" value={brandName} onChange={(event) => setBrandName(event.target.value)} required />
+    <div className="min-h-dvh bg-neutral-950 text-white">
+      <div className="mx-auto flex min-h-dvh w-full max-w-6xl items-center px-4 py-10 sm:px-6 lg:px-8">
+        <div className="grid w-full gap-8 lg:grid-cols-[1.05fr_0.95fr]">
+          <section className="flex flex-col justify-between gap-12 border border-white/10 bg-neutral-950 p-8 sm:p-10 lg:min-h-[42rem]">
+            <div className="inline-flex h-11 w-11 items-center justify-center border border-white/10 text-sm font-semibold tracking-[0.3em] text-white">
+              MS
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">GSTIN Number *</label>
-                <input className={inputCls} type="text" placeholder="15-digit GST number" maxLength={15} value={gstNumber} onChange={(event) => setGstNumber(event.target.value)} required />
+            <div className="max-w-xl">
+              <div className="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500">Seller Onboarding</div>
+              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+                Start selling after business verification.
+              </h1>
+              <p className="mt-5 max-w-lg text-sm leading-7 text-neutral-400 sm:text-base">
+                We collect business, payout, tax, and shipping details in one onboarding flow. Once approved, your full seller workspace opens automatically.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              {[
+                { icon: UserRoundCheck, title: 'Identity', copy: 'Confirm the account owner and authorized representative.' },
+                { icon: Store, title: 'Business', copy: 'Share legal registration, address, and fulfillment details.' },
+                { icon: ShieldCheck, title: 'Review', copy: 'Admin reviews and approves before store access opens.' },
+              ].map(item => {
+                const Icon = item.icon;
+                return (
+                  <div key={item.title} className="border border-white/10 bg-white/5 p-4">
+                    <span className="inline-flex h-10 w-10 items-center justify-center border border-white/10 bg-white/5 text-white">
+                      <Icon size={18} />
+                    </span>
+                    <strong className="mt-4 block text-sm font-semibold text-white">{item.title}</strong>
+                    <p className="mt-2 text-sm leading-6 text-neutral-400">{item.copy}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="flex items-center justify-center bg-neutral-50 p-4 sm:p-6">
+            <div className="w-full max-w-xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
+              <div className="inline-flex items-center gap-3 text-sm font-semibold text-neutral-900">
+                <span className="inline-flex h-10 w-10 items-center justify-center border border-neutral-200 bg-neutral-950 text-xs font-bold tracking-[0.3em] text-white">
+                  MS
+                </span>
+                MyStore Seller
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Country *</label>
-                <input className={inputCls} type="text" placeholder="India" value={country} onChange={(event) => setCountry(event.target.value)} required />
+
+              <h2 className="mt-6 text-3xl font-semibold tracking-tight text-neutral-950">Welcome{user?.name ? `, ${user.name}` : ''}</h2>
+              <p className="mt-3 text-sm leading-7 text-neutral-600">
+                We no longer ask for business verification details during signup. Continue to the onboarding page to submit your seller information.
+              </p>
+
+              <div className="mt-6 space-y-3 border border-neutral-200 bg-neutral-50 p-4">
+                <div className="flex items-start gap-3">
+                  <span className="mt-1 inline-flex h-7 w-7 items-center justify-center border border-neutral-200 bg-white text-xs font-semibold text-neutral-950">1</span>
+                  <div>
+                    <strong className="block text-sm font-semibold text-neutral-950">Submit business details</strong>
+                    <p className="mt-1 text-sm leading-6 text-neutral-600">Country-based tax, payout, legal, and address details.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="mt-1 inline-flex h-7 w-7 items-center justify-center border border-neutral-200 bg-white text-xs font-semibold text-neutral-950">2</span>
+                  <div>
+                    <strong className="block text-sm font-semibold text-neutral-950">Wait for approval</strong>
+                    <p className="mt-1 text-sm leading-6 text-neutral-600">Regular verification follows the normal review queue. Urgent cases can contact admin from onboarding.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="mt-1 inline-flex h-7 w-7 items-center justify-center border border-neutral-200 bg-white text-xs font-semibold text-neutral-950">3</span>
+                  <div>
+                    <strong className="block text-sm font-semibold text-neutral-950">Enter seller workspace</strong>
+                    <p className="mt-1 text-sm leading-6 text-neutral-600">Approved sellers get product, order, and business tools inside the full dashboard.</p>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Pickup & Business Address *</label>
-              <textarea className={`${inputCls} resize-none`} rows={4} placeholder="Enter warehouse or store street address" value={address} onChange={(event) => setAddress(event.target.value)} required />
+              <button
+                type="button"
+                onClick={() => router.visit('/seller/verification', { replace: true, preserveScroll: true })}
+                className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 border border-neutral-950 bg-neutral-950 px-4 text-sm font-semibold text-white transition hover:bg-neutral-800"
+              >
+                Start Seller Onboarding
+                <ArrowRight size={16} />
+              </button>
             </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Fulfillment Channels *</label>
-              <input className={inputCls} type="text" placeholder="Seller Fulfilled, Local Courier" value={fulfillmentChannels} onChange={(event) => setFulfillmentChannels(event.target.value)} required />
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Default Channel *</label>
-                <select className={inputCls} value={defaultFulfillmentChannel} onChange={(event) => setDefaultFulfillmentChannel(event.target.value)} required>
-                  <option value="">Choose channel</option>
-                  {channelOptions.map((channel) => (
-                    <option key={channel} value={channel}>{channel}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Accept Orders Within *</label>
-                <input className={inputCls} type="text" placeholder="2 hours" value={shippingAcceptanceTime} onChange={(event) => setShippingAcceptanceTime(event.target.value)} required />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Handling Time (Business Days)</label>
-              <input className={inputCls} type="number" min="0" max="30" value={handlingTimeBusinessDays} onChange={(event) => setHandlingTimeBusinessDays(event.target.value)} />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 bg-neutral-950 text-white text-xs font-bold uppercase tracking-widest rounded-full hover:bg-neutral-900 disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:-translate-y-0.5 shadow-sm mt-2"
-            >
-              {loading ? 'Saving setup...' : 'Enter Seller Dashboard'}
-            </button>
-          </form>
+          </section>
         </div>
       </div>
     </div>

@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\StoresUtcTimestamps;
 use Illuminate\Database\Eloquent\Model;
 
 class InventoryTransaction extends Model
 {
+    use StoresUtcTimestamps;
+
     protected $fillable = [
         'product_id',
         'warehouse_id',
@@ -34,5 +37,15 @@ class InventoryTransaction extends Model
     public function warehouse()
     {
         return $this->belongsTo(Warehouse::class);
+    }
+
+    public function fromWarehouse()
+    {
+        return $this->belongsTo(Warehouse::class, 'from_warehouse_id');
+    }
+
+    public function toWarehouse()
+    {
+        return $this->belongsTo(Warehouse::class, 'to_warehouse_id');
     }
 }

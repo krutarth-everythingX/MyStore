@@ -18,6 +18,10 @@ class CreateForSeller
             'user_id' => $seller->id,
             'name' => $fields['name'],
             'parent_id' => $fields['parent_id'] ?? null,
+            'type' => $fields['type'] ?? 'product',
+            'description' => $fields['description'] ?? null,
+            'image' => $fields['image'] ?? null,
+            'is_active' => (bool) ($fields['is_active'] ?? true),
         ]);
 
         Cache::forget('categories.storefront.all');

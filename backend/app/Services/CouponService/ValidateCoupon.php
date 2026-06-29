@@ -10,6 +10,7 @@ class ValidateCoupon
     public function handle(string $code, float $subtotal): array
     {
         $coupon = Coupon::where('code', strtoupper($code))->first();
+        $defaultCountry = config('localization.default_country', 'India');
 
         if (! $coupon) {
             throw ServiceException::notFound('Invalid discount code.');
@@ -25,7 +26,7 @@ class ValidateCoupon
 
         if ($subtotal < (float) $coupon->min_spend) {
             throw ServiceException::badRequest(
-                'Minimum spend of $' . number_format((float) $coupon->min_spend, 2) . ' required to use this code.',
+                'Minimum spend of ' . format_money((float) $coupon->min_spend, currency_for_country($defaultCountry), locale_for_country($defaultCountry)) . ' required to use this code.',
             );
         }
 

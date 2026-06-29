@@ -6,6 +6,27 @@ use App\Services\SellerDashboardService\ListOrdersForSeller;
 
 class BuildOrderExportRows
 {
+    public function headings(): array
+    {
+        return [
+            'Order ID',
+            'Buyer Name',
+            'Buyer Email',
+            'Order Date',
+            'Status',
+            'Refund Status',
+            'Payment Method',
+            'Shipping Carrier',
+            'Tracking Number',
+            'Shipping Address',
+            'Product SKU',
+            'Product Name',
+            'Quantity',
+            'Item Price',
+            'Subtotal',
+        ];
+    }
+
     public function __construct(private readonly ListOrdersForSeller $listOrdersForSeller)
     {
     }

@@ -13,12 +13,12 @@ class CancelOrder
     {
     }
 
-    public function handle(Order $order): Order
+    public function handle(Order $order, ?string $reason = null, ?string $note = null): Order
     {
         if (! in_array($order->status?->value, OrderStatus::cancellableValues(), true)) {
             throw ServiceException::badRequest('Order cannot be cancelled at this stage.');
         }
 
-        return $this->cancelOrderAction->handle($order);
+        return $this->cancelOrderAction->handle($order, $reason, $note);
     }
 }

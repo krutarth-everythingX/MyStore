@@ -1,59 +1,58 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useToast } from '../context/ToastContext';
-import { Link, router, usePage } from '@inertiajs/react';
 import { Navbar } from '../components/Navbar';
-import { Sidebar } from '../components/Sidebar';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { Footer } from '../components/Footer';
 import { Breadcrumbs } from '../components/Breadcrumbs';
-import {
-  codeActionLabel,
-  codeMinutesLeft,
-  codeStatus,
-  verificationActionLabel,
-  verificationCodeStatus,
-  verificationMinutesLeft,
-} from '../utils/emailVerification';
-import {
-  User, ShoppingBag, Heart, MailCheck, Phone, Clock, Settings, MapPin,
-  MessageSquare, HelpCircle, LogOut, Package, Calendar,
-  CreditCard, Truck, CheckCircle2, Star, AlertTriangle,
-  Edit3, ChevronDown, ChevronUp
-} from 'lucide-react';
-import './Profile.css';
+import { DismissibleAlert } from '../components/DismissibleAlert';
+import SellerProfile from './SellerProfile';
+import { formatDateTime, formatMoney, formatProductMoney, formatStoredMoney } from '../utils/localization';
+import { codeActionLabel, codeMinutesLeft, codeStatus, verificationActionLabel, verificationCodeStatus, verificationMinutesLeft } from '../utils/emailVerification';
+import { AlertTriangle, Calendar, CheckCircle2, Clock, CreditCard, Edit3, Heart, HelpCircle, LogOut, MailCheck, MapPin, MessageSquare, Package, Phone, Settings, ShoppingBag, Star, Truck } from 'lucide-react';
+import { cn } from '../utils/cn';
 
-/* ──────────────────────────────────────────────────────────── */
-/* Buyer Profile Page — Vertical single-column layout           */
-/* ──────────────────────────────────────────────────────────── */
+const BUYER_SECTIONS = [
+  { id: 'orders', label: 'My Orders', icon: ShoppingBag },
+  { id: 'wishlist', label: 'Wishlist', icon: Heart },
+  { id: 'verify-email', label: 'Verify Email', icon: MailCheck },
+  { id: 'verify-phone', label: 'Verify Phone', icon: Phone },
+  { id: 'recently-viewed', label: 'Recently Viewed', icon: Clock },
+  { id: 'account-settings', label: 'Account Settings', icon: Settings },
+  { id: 'my-activity', label: 'My Activity', icon: Star },
+];
+
+const CANCEL_REASONS = [
+  'Ordered by mistake',
+  'Found a better price elsewhere',
+  'Need to change shipping address',
+  'Delivery is taking too long',
+  'Want to change product or quantity',
+  'Other',
+];
+
+const ORDER_STATUS_CLASS = {
+  pending: 'border-amber-200 bg-amber-50 text-amber-700',
+  processing: 'border-sky-200 bg-sky-50 text-sky-700',
+  shipped: 'border-sky-200 bg-sky-50 text-sky-700',
+  completed: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  cancelled: 'border-rose-200 bg-rose-50 text-rose-700',
+};
+
+const getOrderSellerCount = (order) => new Set((order?.items || []).map((item) => item.product?.user?.id).filter(Boolean)).size;
+
 export const Profile = () => {
-  const { props } = usePage();
-  const {
-    user,
-    logout,
-    updateProfile,
-    verifyEmailCode,
-    resendVerificationCode,
-    sendPhoneVerification,
-    verifyPhoneCode,
-  } = useAuth();
+  const { props, url } = usePage();
+  const { user, logout, updateProfile, verifyEmailCode, resendVerificationCode, sendPhoneVerification, verifyPhoneCode } = useAuth();
   const { wishlist } = useWishlist();
   const { showToast } = useToast();
 
-  // Which accordion section is open
-  const [openSection, setOpenSection] = useState('orders');
-
-  // ── Orders ──
+  const [activeSection, setActiveSection] = useState('orders');
   const [orders, setOrders] = useState(props.buyerOrders || []);
-  const [ordersLoading, setOrdersLoading] = useState(false);
-
-  // ── Recently Viewed ──
   const [recentlyViewed, setRecentlyViewed] = useState(props.recentlyViewed || []);
-  const [rvLoading, setRvLoading] = useState(false);
-
-  // ── Edit Profile ──
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -61,22 +60,17 @@ export const Profile = () => {
   const [profileSuccess, setProfileSuccess] = useState('');
   const [profileError, setProfileError] = useState('');
   const [profileLoading, setProfileLoading] = useState(false);
-
-  // ── Email Verification ──
   const [verificationCode, setVerificationCode] = useState('');
+  const [verifyMsg, setVerifyMsg] = useState('');
   const [verifyError, setVerifyError] = useState('');
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [verificationSentAt, setVerificationSentAt] = useState(user?.verification_code_sent_at || null);
   const [verificationNow, setVerificationNow] = useState(Date.now());
-
-  // Phone Verification
   const [phoneVerificationCode, setPhoneVerificationCode] = useState('');
   const [phoneVerifyMsg, setPhoneVerifyMsg] = useState('');
   const [phoneVerifyError, setPhoneVerifyError] = useState('');
   const [phoneVerifyLoading, setPhoneVerifyLoading] = useState(false);
   const [phoneVerificationSentAt, setPhoneVerificationSentAt] = useState(user?.phone_verification_code_sent_at || null);
-
-  // ── Address Details ──
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [stateName, setStateName] = useState('');
@@ -85,44 +79,50 @@ export const Profile = () => {
   const [countryCode, setCountryCode] = useState('');
   const [addrSuccess, setAddrSuccess] = useState('');
   const [addrLoading, setAddrLoading] = useState(false);
-
-  // ── Verify Email ──
-  const [verifyMsg, setVerifyMsg] = useState('');
-
-  // ── Logout confirm ──
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      setName(user.name || '');
-      setEmail(user.email || '');
-      setPhone(user.phone || '');
-      setAddress(user.address || '');
-      setCity(user.city || '');
-      setStateName(user.state || '');
-      setCountry(user.country || '');
-      setPincode(user.pincode || '');
-      setCountryCode(user.country_code || '');
-      setVerificationSentAt(user.verification_code_sent_at || null);
-      setPhoneVerificationSentAt(user.phone_verification_code_sent_at || null);
-    }
+    if (!user) return;
+    setName(user.name || '');
+    setEmail(user.email || '');
+    setPhone(user.phone || '');
+    setAddress(user.address || '');
+    setCity(user.city || '');
+    setStateName(user.state || '');
+    setCountry(user.country || '');
+    setPincode(user.pincode || '');
+    setCountryCode(user.country_code || '');
+    setVerificationSentAt(user.verification_code_sent_at || null);
+    setPhoneVerificationSentAt(user.phone_verification_code_sent_at || null);
   }, [user?.id]);
+
+  useEffect(() => {
+    const params = new URL(url || window.location.href, window.location.origin).searchParams;
+    const tab = params.get('tab');
+    if (tab && BUYER_SECTIONS.some((section) => section.id === tab)) {
+      setActiveSection(tab);
+    }
+  }, [url]);
+
+  useEffect(() => {
+    setOrders(Array.isArray(props.buyerOrders) ? props.buyerOrders : []);
+    setRecentlyViewed(Array.isArray(props.recentlyViewed) ? props.recentlyViewed : []);
+  }, [props.buyerOrders, props.recentlyViewed]);
 
   useEffect(() => {
     if (user?.verification_code_sent_at !== verificationSentAt) {
       setVerificationSentAt(user?.verification_code_sent_at || null);
     }
-  }, [user?.verification_code_sent_at]);
+  }, [user?.verification_code_sent_at, verificationSentAt]);
 
   useEffect(() => {
     if (user?.phone_verification_code_sent_at !== phoneVerificationSentAt) {
       setPhoneVerificationSentAt(user?.phone_verification_code_sent_at || null);
     }
-  }, [user?.phone_verification_code_sent_at]);
+  }, [user?.phone_verification_code_sent_at, phoneVerificationSentAt]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setVerificationNow(Date.now()), 30000);
-
     return () => window.clearInterval(timer);
   }, []);
 
@@ -134,84 +134,52 @@ export const Profile = () => {
   const phoneVerificationSendLabel = codeActionLabel(phoneVerificationSentAt, verificationNow);
   const phoneVerificationSendDisabled = phoneVerifyLoading || phoneVerificationStatus === 'active' || !countryCode || !phone;
   const phoneVerificationMinutesRemaining = codeMinutesLeft(phoneVerificationSentAt, verificationNow);
+  const completionCount = [user?.email_verified_at, user?.phone_verified_at, phone, address, city, stateName, country, pincode].filter(Boolean).length;
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tab = params.get('tab');
-    if (tab) {
-      setOpenSection(tab);
-      // Scroll to verify email section if that's the tab
-      setTimeout(() => {
-        const element = document.getElementById(tab);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 100);
-    }
-  }, []);
+  const setSection = (sectionId) => {
+    setActiveSection(sectionId);
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.set('tab', sectionId);
+    window.history.replaceState({}, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+  };
 
-  useEffect(() => {
-    setOrders(Array.isArray(props.buyerOrders) ? props.buyerOrders : []);
-    setRecentlyViewed(Array.isArray(props.recentlyViewed) ? props.recentlyViewed : []);
-    setOrdersLoading(false);
-    setRvLoading(false);
-  }, [props.buyerOrders, props.recentlyViewed]);
-
-  const toggleSection = (id) => setOpenSection((prev) => (prev === id ? '' : id));
-
-  const handleSaveProfile = async (e) => {
-    e.preventDefault();
-    setProfileSuccess(''); setProfileError(''); setProfileLoading(true);
+  const handleSaveProfile = async (event) => {
+    event.preventDefault();
+    setProfileSuccess('');
+    setProfileError('');
+    setProfileLoading(true);
     try {
-      const data = {
-        name,
-        email,
-        phone,
-        country_code: countryCode,
-        address,
-        city,
-        state: stateName,
-        country,
-        pincode
-      };
+      const data = { name, email, phone, country_code: countryCode, address, city, state: stateName, country, pincode };
       if (password) data.password = password;
       await updateProfile(data);
-      setProfileSuccess('Profile updated successfully!');
+      setProfileSuccess('Profile updated successfully.');
       showToast('Profile settings updated successfully!', 'success');
       setPassword('');
-    } catch (err) {
-      setProfileError(err.message || 'Failed to update profile');
-      showToast(err.message || 'Failed to update profile', 'error');
+    } catch (error) {
+      setProfileError(error.message || 'Failed to update profile');
+      showToast(error.message || 'Failed to update profile', 'error');
     } finally {
       setProfileLoading(false);
     }
   };
 
-  const handleSaveAddress = async (e) => {
-    e.preventDefault();
-    setAddrSuccess(''); setAddrLoading(true);
+  const handleSaveAddress = async (event) => {
+    event.preventDefault();
+    setAddrSuccess('');
+    setAddrLoading(true);
     try {
-      await updateProfile({
-        name,
-        email,
-        phone,
-        country_code: countryCode,
-        address,
-        city,
-        state: stateName,
-        country,
-        pincode
-      });
-      setAddrSuccess('Address saved!');
+      await updateProfile({ name, email, phone, country_code: countryCode, address, city, state: stateName, country, pincode });
+      setAddrSuccess('Address saved successfully.');
       showToast('Delivery address updated successfully!', 'success');
-    } catch (err) {
-      showToast(err.message || 'Failed to save address', 'error');
+    } catch (error) {
+      showToast(error.message || 'Failed to save address', 'error');
+    } finally {
+      setAddrLoading(false);
     }
-    finally { setAddrLoading(false); }
   };
 
-  const handleVerifyEmail = async (e) => {
-    e.preventDefault();
+  const handleVerifyEmail = async (event) => {
+    event.preventDefault();
     setVerifyError('');
     setVerifyMsg('');
     setVerifyLoading(true);
@@ -221,9 +189,9 @@ export const Profile = () => {
       showToast('Email verified successfully! Welcome to MyStore.', 'success');
       setVerificationCode('');
       setVerificationSentAt(null);
-    } catch (err) {
-      setVerifyError(err.message || 'Verification failed');
-      showToast(err.message || 'Verification failed', 'error');
+    } catch (error) {
+      setVerifyError(error.message || 'Verification failed');
+      showToast(error.message || 'Verification failed', 'error');
     } finally {
       setVerifyLoading(false);
     }
@@ -237,9 +205,9 @@ export const Profile = () => {
       setVerificationSentAt(data.user?.verification_code_sent_at || new Date().toISOString());
       setVerifyMsg(data.message || 'Verification code sent successfully!');
       showToast(data.message || 'Verification code sent successfully.', 'success');
-    } catch (err) {
-      setVerifyError(err.message || 'Failed to send code');
-      showToast(err.message || 'Failed to send code', 'error');
+    } catch (error) {
+      setVerifyError(error.message || 'Failed to send code');
+      showToast(error.message || 'Failed to send code', 'error');
     }
   };
 
@@ -247,15 +215,14 @@ export const Profile = () => {
     setPhoneVerifyError('');
     setPhoneVerifyMsg('');
     setPhoneVerifyLoading(true);
-
     try {
       const data = await sendPhoneVerification(countryCode, phone);
       setPhoneVerificationSentAt(data.user?.phone_verification_code_sent_at || new Date().toISOString());
       setPhoneVerifyMsg(data.message || 'Phone verification code sent successfully!');
       showToast(data.message || 'Phone verification code sent successfully.', 'success');
-    } catch (err) {
-      setPhoneVerifyError(err.message || 'Failed to send phone verification code');
-      showToast(err.message || 'Failed to send phone verification code', 'error');
+    } catch (error) {
+      setPhoneVerifyError(error.message || 'Failed to send phone verification code');
+      showToast(error.message || 'Failed to send phone verification code', 'error');
     } finally {
       setPhoneVerifyLoading(false);
     }
@@ -266,16 +233,15 @@ export const Profile = () => {
     setPhoneVerifyError('');
     setPhoneVerifyMsg('');
     setPhoneVerifyLoading(true);
-
     try {
       await verifyPhoneCode(phoneVerificationCode);
       setPhoneVerifyMsg('Phone number verified successfully!');
       showToast('Phone number verified successfully!', 'success');
       setPhoneVerificationCode('');
       setPhoneVerificationSentAt(null);
-    } catch (err) {
-      setPhoneVerifyError(err.message || 'Phone verification failed');
-      showToast(err.message || 'Phone verification failed', 'error');
+    } catch (error) {
+      setPhoneVerifyError(error.message || 'Phone verification failed');
+      showToast(error.message || 'Phone verification failed', 'error');
     } finally {
       setPhoneVerifyLoading(false);
     }
@@ -286,571 +252,610 @@ export const Profile = () => {
     router.visit('/');
   };
 
-  const getStatusClass = (status) => {
-    switch ((status || '').toLowerCase()) {
-      case 'pending': return 'status-pending';
-      case 'processing': return 'status-processing';
-      case 'completed': return 'status-completed';
-      case 'cancelled': return 'status-cancelled';
-      default: return '';
-    }
-  };
-
-  // ─── Seller stays unchanged ───
   if (user?.role === 'seller') {
-    return (
-      <div className="seller-dashboard-layout">
-        <Sidebar />
-        <div className="seller-dashboard-content">
-          <div className="seller-dashboard-container container">
-            <div className="seller-page-header"><h2 className="headline-lg">Settings</h2></div>
-            <SellerSettingsForm user={user} updateProfile={updateProfile} />
-          </div>
-        </div>
-      </div>
-    );
+    return <SellerProfile />;
   }
 
   return (
-    <div className="buyer-layout">
-      <Navbar />
+    <div className="min-h-dvh bg-neutral-50 text-neutral-950">
+      <Navbar opaque />
 
-      <main className="pv-main">
-        <div className="pv-container container">
+      <main>
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <Breadcrumbs items={[{ label: 'My Account' }]} />
 
-          {/* ── User Info Card ── */}
-          <div className="pv-user-card">
-            <div className="pv-avatar">
-              <span className="pv-avatar-letter">{user?.name?.charAt(0)?.toUpperCase()}</span>
-            </div>
-            <div className="pv-user-details">
-              <p className="pv-user-name">{user?.name}</p>
-              <p className="pv-user-email body-sm">{user?.email}</p>
-              <span className="pv-user-role label-md">Buyer Account</span>
-            </div>
-          </div>
-
-          {/* ── Accordion Sections ── */}
-          <div className="pv-sections">
-
-            {/* ORDERS */}
-            <Section id="orders" icon={ShoppingBag} label="My Orders" badge={orders.length} openSection={openSection} toggleSection={toggleSection}>
-              {ordersLoading ? (
-                <div className="pv-loading">Loading orders...</div>
-              ) : orders.length === 0 ? (
-                <div className="pv-empty-state">
-                  <Package size={40} className="pv-empty-icon" />
-                  <p>No orders placed yet.</p>
-                  <Link href="/categories" className="btn btn-primary" style={{ textDecoration: 'none' }}>Browse Categories</Link>
-                </div>
-              ) : (
-                <div className="pv-orders-list">
-                  {orders.map((order) => (
-                    <div key={order.id} className="pv-order-card">
-                      <div className="pv-oc-header">
-                        <span className="pv-oc-id label-md">Order #{order.id}</span>
-                        <span className={`order-status-badge label-md ${getStatusClass(order.status)}`}>{order.status}</span>
-                      </div>
-                      <div className="pv-oc-meta body-sm">
-                        <span><Calendar size={12} /> {new Date(order.created_at).toLocaleDateString()}</span>
-                        <span><CreditCard size={12} /> {order.payment_method}</span>
-                        {order.shipping_carrier && (
-                          <span><Truck size={12} /> {order.shipping_carrier} — {order.tracking_number || 'Awaiting'}</span>
-                        )}
-                      </div>
-                      <div className="pv-oc-items">
-                        {order.items?.map((item) => (
-                          <div key={item.id} className="pv-oc-item body-sm">
-                            <span className="pv-oci-name">{item.product?.name || 'Product removed'}</span>
-                            <span className="pv-oci-qty">×{item.quantity}</span>
-                            <span className="pv-oci-price">${parseFloat(item.price * item.quantity).toFixed(2)}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="pv-oc-footer">
-                        <span className="label-md" style={{ color: 'var(--color-outline)' }}>Total</span>
-                        <span className="title-lg" style={{ color: 'var(--color-primary)', fontWeight: 700 }}>
-                          ${parseFloat(order.total_amount).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Section>
-
-            {/* WISHLIST */}
-            <Section id="wishlist" icon={Heart} label="Wishlist" badge={wishlist.length} openSection={openSection} toggleSection={toggleSection}>
-              {wishlist.length === 0 ? (
-                <div className="pv-empty-state">
-                  <Heart size={40} className="pv-empty-icon" />
-                  <p>Your wishlist is empty.</p>
-                  <Link href="/" className="btn btn-primary" style={{ textDecoration: 'none' }}>Browse Products</Link>
-                </div>
-              ) : (
-                <div className="pv-product-grid">
-                  {wishlist.map((item) => {
-                    const prod = item.product;
-                    if (!prod) return null;
-                    const price = prod.sale_price ?? prod.regular_price;
-                    return (
-                      <Link href={`/products/${prod.id}`} key={item.id} className="pv-product-tile">
-                        <div className="pv-pt-image flex-center">
-                          <span className="pv-pt-letter">{prod.name?.charAt(0)}</span>
-                        </div>
-                        <div className="pv-pt-info">
-                          <p className="pv-pt-name body-sm">{prod.name}</p>
-                          <span className="pv-pt-price">${parseFloat(price).toFixed(2)}</span>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </Section>
-
-            {/* VERIFY EMAIL */}
-            <Section id="verify-email" icon={MailCheck} label="Verify Email" openSection={openSection} toggleSection={toggleSection}>
-              <div className="pv-verify-block">
-                {user?.email_verified_at ? (
-                  <div className="pv-verify-row success">
-                    <CheckCircle2 size={32} />
-                    <div>
-                      <p className="pv-verify-title">Email Verified</p>
-                      <p className="body-sm" style={{ color: 'var(--color-outline)' }}>{user.email}</p>
-                    </div>
+          <section className="mt-6 space-y-6">
+            <div className="border-2 border-neutral-950 bg-white p-5 shadow-[8px_8px_0_#171717] sm:p-6 lg:p-8">
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                  <div className="inline-flex h-20 w-20 items-center justify-center border-2 border-neutral-950 bg-neutral-950 text-3xl font-semibold uppercase text-white sm:h-24 sm:w-24">
+                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                   </div>
-                ) : (
-                  <>
-                    <div className="pv-verify-row warn">
-                      <AlertTriangle size={32} />
-                      <div>
-                        <p className="pv-verify-title">Email not verified</p>
-                        <p className="body-sm" style={{ color: 'var(--color-outline)' }}>
-                          {verificationStatus === 'unsent'
-                            ? `Send a 6-digit verification code to ${user?.email}.`
-                            : `Enter the 6-digit code sent to ${user?.email}.`}
-                        </p>
-                        {verificationStatus === 'active' && (
-                          <p className="body-sm" style={{ color: 'var(--color-outline)', marginTop: 4 }}>
-                            Code expires in {verificationMinutesRemaining} minute{verificationMinutesRemaining === 1 ? '' : 's'}.
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {verifyError && <div className="pv-toast error" style={{ marginTop: 12 }}>{verifyError}</div>}
-                    
-                    <form onSubmit={handleVerifyEmail} style={{ marginTop: 16 }}>
-                      <Input
-                        label="6-Digit Verification Code"
-                        type="text"
-                        placeholder="Enter code"
-                        maxLength={6}
-                        value={verificationCode}
-                        onChange={(e) => setVerificationCode(e.target.value)}
-                        required
-                      />
-                      <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-                        <Button type="submit" variant="primary" disabled={verifyLoading}>
-                          {verifyLoading ? 'Verifying...' : 'Verify Code'}
-                        </Button>
-                        <Button type="button" variant="outline" onClick={handleResendCode} disabled={verificationSendDisabled}>
-                          {verificationSendLabel}
-                        </Button>
-                      </div>
-                    </form>
-                  </>
-                )}
-                {verifyMsg && <div className="pv-toast success" style={{ marginTop: 12 }}>{verifyMsg}</div>}
-              </div>
-            </Section>
-
-            {/* VERIFY PHONE */}
-            <Section id="verify-phone" icon={Phone} label="Verify Phone" openSection={openSection} toggleSection={toggleSection}>
-              <div className="pv-verify-block">
-                {user?.phone_verified_at ? (
-                  <div className="pv-verify-row success">
-                    <CheckCircle2 size={32} />
-                    <div>
-                      <p className="pv-verify-title">Phone Verified</p>
-                      <p className="body-sm" style={{ color: 'var(--color-outline)' }}>+{user.country_code} {user.phone}</p>
-                    </div>
+                  <div className="min-w-0">
+                    <h1 className="max-w-4xl text-2xl font-semibold tracking-tight text-neutral-950 sm:text-3xl">
+                      {user?.name || 'My Account'}
+                    </h1>
+                    <p className="mt-2 max-w-7xl break-all text-sm text-neutral-600 sm:text-base">{user?.email}</p>
+                    <button
+                      type="button"
+                      onClick={() => setShowLogoutConfirm(true)}
+                      className="mt-4 inline-flex items-center gap-2 border-2 border-neutral-950 bg-white px-4 py-3 text-sm font-medium text-neutral-950 transition hover:-translate-y-0.5"
+                    >
+                      <LogOut size={16} />
+                      <span>Log Out</span>
+                    </button>
                   </div>
-                ) : (
-                  <>
-                    <div className="pv-verify-row warn">
-                      <AlertTriangle size={32} />
-                      <div>
-                        <p className="pv-verify-title">Phone not verified</p>
-                        <p className="body-sm" style={{ color: 'var(--color-outline)' }}>
-                          Enter your country calling code and phone number, then send an SMS code.
-                        </p>
-                        {phoneVerificationStatus === 'active' && (
-                          <p className="body-sm" style={{ color: 'var(--color-outline)', marginTop: 4 }}>
-                            SMS code expires in {phoneVerificationMinutesRemaining} minute{phoneVerificationMinutesRemaining === 1 ? '' : 's'}.
-                          </p>
-                        )}
-                      </div>
-                    </div>
+                </div>
 
-                    {phoneVerifyError && <div className="pv-toast error" style={{ marginTop: 12 }}>{phoneVerifyError}</div>}
-
-                    <form onSubmit={handleVerifyPhone} style={{ marginTop: 16 }}>
-                      <div style={{ display: 'flex', gap: 12 }}>
-                        <Input
-                          label="Country Code"
-                          type="text"
-                          placeholder="91"
-                          value={countryCode}
-                          onChange={(event) => setCountryCode(event.target.value.replace(/[^\d]/g, ''))}
-                          required
-                        />
-                        <Input
-                          label="Phone Number"
-                          type="tel"
-                          placeholder="9876543210"
-                          value={phone}
-                          onChange={(event) => setPhone(event.target.value.replace(/[^\d]/g, ''))}
-                          required
-                        />
-                      </div>
-                      <Input
-                        label="6-Digit SMS Code"
-                        type="text"
-                        placeholder="Enter SMS code"
-                        maxLength={6}
-                        value={phoneVerificationCode}
-                        onChange={(event) => setPhoneVerificationCode(event.target.value.replace(/[^\d]/g, '').slice(0, 6))}
-                        required
-                      />
-                      <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-                        <Button type="submit" variant="primary" disabled={phoneVerifyLoading}>
-                          {phoneVerifyLoading ? 'Verifying...' : 'Verify Phone'}
-                        </Button>
-                        <Button type="button" variant="outline" onClick={handleSendPhoneCode} disabled={phoneVerificationSendDisabled}>
-                          {phoneVerificationSendLabel}
-                        </Button>
-                      </div>
-                    </form>
-                  </>
-                )}
-                {phoneVerifyMsg && <div className="pv-toast success" style={{ marginTop: 12 }}>{phoneVerifyMsg}</div>}
+                <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[24rem]">
+                  <ProfileMetric label="Orders" value={orders.length} />
+                  <ProfileMetric label="Wishlist" value={wishlist.length} />
+                  <ProfileMetric label="Profile Ready" value={`${completionCount}/8`} />
+                </div>
               </div>
-            </Section>
-
-            {/* RECENTLY VIEWED */}
-            <Section id="recently-viewed" icon={Clock} label="Recently Viewed" openSection={openSection} toggleSection={toggleSection}>
-              {rvLoading ? (
-                <div className="pv-loading">Loading...</div>
-              ) : recentlyViewed.length === 0 ? (
-                <div className="pv-empty-state">
-                  <Clock size={40} className="pv-empty-icon" />
-                  <p>No recently viewed products.</p>
-                  <Link href="/categories" className="btn btn-primary" style={{ textDecoration: 'none' }}>Browse Categories</Link>
-                </div>
-              ) : (
-                <div className="pv-product-grid">
-                  {recentlyViewed.map((item) => {
-                    const prod = item.product;
-                    if (!prod) return null;
-                    const price = prod.sale_price ?? prod.regular_price;
-                    return (
-                      <Link href={`/products/${prod.id}`} key={item.id} className="pv-product-tile">
-                        <div className="pv-pt-image flex-center">
-                          <span className="pv-pt-letter">{prod.name?.charAt(0)}</span>
-                        </div>
-                        <div className="pv-pt-info">
-                          <p className="pv-pt-name body-sm">{prod.name}</p>
-                          <span className="pv-pt-price">${parseFloat(price).toFixed(2)}</span>
-                          <span className="pv-pt-viewed body-sm">
-                            {new Date(item.viewed_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </Section>
-
-            {/* ACCOUNT SETTINGS */}
-            <Section id="account-settings" icon={Settings} label="Account Settings" openSection={openSection} toggleSection={toggleSection}>
-              {/* Sub-tab row inside section */}
-              <AccountSettings
-                name={name} setName={setName}
-                email={email} setEmail={setEmail}
-                phone={phone} setPhone={setPhone}
-                countryCode={countryCode} setCountryCode={setCountryCode}
-                password={password} setPassword={setPassword}
-                profileSuccess={profileSuccess} profileError={profileError}
-                profileLoading={profileLoading} handleSaveProfile={handleSaveProfile}
-                address={address} setAddress={setAddress}
-                city={city} setCity={setCity}
-                stateName={stateName} setStateName={setStateName}
-                country={country} setCountry={setCountry}
-                pincode={pincode} setPincode={setPincode}
-                addrSuccess={addrSuccess} addrLoading={addrLoading}
-                handleSaveAddress={handleSaveAddress}
-              />
-            </Section>
-
-            {/* MY ACTIVITY */}
-            <Section id="my-activity" icon={Star} label="My Activity" openSection={openSection} toggleSection={toggleSection}>
-              <ActivitySection />
-            </Section>
-
-            {/* LOGOUT */}
-            <div className="pv-section">
-              <button
-                className="pv-section-header danger"
-                onClick={() => setShowLogoutConfirm(true)}
-              >
-                <span className="pv-section-icon"><LogOut size={18} /></span>
-                <span className="pv-section-label">Log Out</span>
-              </button>
             </div>
 
-          </div>{/* end pv-sections */}
-        </div>{/* end pv-container */}
-
-        {/* ── Logout Confirm Modal ── */}
-        {showLogoutConfirm && (
-          <div className="pv-modal-overlay" onClick={() => setShowLogoutConfirm(false)}>
-            <div className="pv-modal" onClick={(e) => e.stopPropagation()}>
-              <LogOut size={28} style={{ color: '#d32f2f' }} />
-              <h4 className="pv-modal-title">Log out of MyStore?</h4>
-              <p className="body-md pv-modal-sub">You will need to sign in again to access your account.</p>
-              <div className="pv-modal-actions">
-                <Button variant="secondary" onClick={() => setShowLogoutConfirm(false)}>Cancel</Button>
-                <Button
-                  variant="primary"
-                  onClick={handleLogout}
-                  style={{ background: '#d32f2f', borderColor: '#d32f2f' }}
+            <div className="flex flex-wrap justify-center gap-3 md:overflow-visible overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {BUYER_SECTIONS.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setSection(id)}
+                  className={cn(
+                    'inline-flex shrink-0 items-center gap-3 border-2 px-4 py-3 text-sm font-medium shadow-[6px_6px_0_#171717] transition md:shrink',
+                    activeSection === id
+                      ? 'border-neutral-950 bg-neutral-950 text-white'
+                      : 'border-neutral-950 bg-white text-neutral-950 hover:-translate-y-0.5',
+                  )}
                 >
-                  Yes, Log Out
-                </Button>
+                  <Icon size={16} />
+                  <span>{label}</span>
+                  {id === 'orders' && orders.length > 0 ? <NavBadge active={activeSection === id}>{orders.length}</NavBadge> : null}
+                  {id === 'wishlist' && wishlist.length > 0 ? <NavBadge active={activeSection === id}>{wishlist.length}</NavBadge> : null}
+                </button>
+              ))}
+            </div>
+
+            <section className="min-w-0">
+              {activeSection === 'orders' && <OrdersPanel orders={orders} props={props} />}
+
+              {activeSection === 'wishlist' && (
+                <ContentPanel title="Wishlist" subtitle="Products you saved for later.">
+                  <ProductGrid items={wishlist} props={props} empty={<EmptyState icon={Heart} text="Your wishlist is empty." href="/" action="Browse Products" />} />
+                </ContentPanel>
+              )}
+
+              {activeSection === 'verify-email' && (
+                <ContentPanel title="Verify Email" subtitle="Secure your account and unlock full checkout confidence.">
+                  <div className="space-y-5">
+                    {user?.email_verified_at ? (
+                      <StatusCard icon={CheckCircle2} tone="success" title="Email Verified" copy={user.email} />
+                    ) : (
+                      <>
+                        <StatusCard
+                          icon={AlertTriangle}
+                          tone="warn"
+                          title="Email not verified"
+                          copy={verificationStatus === 'unsent' ? `Send a 6-digit verification code to ${user?.email}.` : `Enter the 6-digit code sent to ${user?.email}.`}
+                          extra={verificationStatus === 'active' ? `Code expires in ${verificationMinutesRemaining} minute${verificationMinutesRemaining === 1 ? '' : 's'}.` : ''}
+                        />
+
+                        {verifyError ? <DismissibleAlert onClose={() => setVerifyError('')} role="alert">{verifyError}</DismissibleAlert> : null}
+
+                        <form onSubmit={handleVerifyEmail} className="space-y-4">
+                          <Input label="6-Digit Verification Code" type="text" placeholder="Enter code" maxLength={6} value={verificationCode} onChange={(event) => setVerificationCode(event.target.value)} required />
+                          <div className="flex flex-wrap gap-3">
+                            <Button type="submit" variant="primary" disabled={verifyLoading}>{verifyLoading ? 'Verifying...' : 'Verify Code'}</Button>
+                            <Button type="button" variant="outline" onClick={handleResendCode} disabled={verificationSendDisabled}>{verificationSendLabel}</Button>
+                          </div>
+                        </form>
+                      </>
+                    )}
+
+                    {verifyMsg ? <DismissibleAlert onClose={() => setVerifyMsg('')}>{verifyMsg}</DismissibleAlert> : null}
+                  </div>
+                </ContentPanel>
+              )}
+
+              {activeSection === 'verify-phone' && (
+                <ContentPanel title="Verify Phone" subtitle="Use a verified phone number for updates and checkout recovery.">
+                  <div className="space-y-5">
+                    {user?.phone_verified_at ? (
+                      <StatusCard icon={CheckCircle2} tone="success" title="Phone Verified" copy={`+${user.country_code} ${user.phone}`} />
+                    ) : (
+                      <>
+                        <StatusCard
+                          icon={AlertTriangle}
+                          tone="warn"
+                          title="Phone not verified"
+                          copy="Enter your country calling code and phone number, then send an SMS code."
+                          extra={phoneVerificationStatus === 'active' ? `SMS code expires in ${phoneVerificationMinutesRemaining} minute${phoneVerificationMinutesRemaining === 1 ? '' : 's'}.` : ''}
+                        />
+
+                        {phoneVerifyError ? <DismissibleAlert onClose={() => setPhoneVerifyError('')} role="alert">{phoneVerifyError}</DismissibleAlert> : null}
+
+                        <form onSubmit={handleVerifyPhone} className="space-y-4">
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <Input label="Country Code" type="text" placeholder="91" value={countryCode} onChange={(event) => setCountryCode(event.target.value.replace(/[^\d]/g, ''))} required />
+                            <Input label="Phone Number" type="tel" placeholder="9876543210" value={phone} onChange={(event) => setPhone(event.target.value.replace(/[^\d]/g, ''))} required />
+                          </div>
+                          <Input label="6-Digit SMS Code" type="text" placeholder="Enter SMS code" maxLength={6} value={phoneVerificationCode} onChange={(event) => setPhoneVerificationCode(event.target.value.replace(/[^\d]/g, '').slice(0, 6))} required />
+                          <div className="flex flex-wrap gap-3">
+                            <Button type="submit" variant="primary" disabled={phoneVerifyLoading}>{phoneVerifyLoading ? 'Verifying...' : 'Verify Phone'}</Button>
+                            <Button type="button" variant="outline" onClick={handleSendPhoneCode} disabled={phoneVerificationSendDisabled}>{phoneVerificationSendLabel}</Button>
+                          </div>
+                        </form>
+                      </>
+                    )}
+
+                    {phoneVerifyMsg ? <DismissibleAlert onClose={() => setPhoneVerifyMsg('')}>{phoneVerifyMsg}</DismissibleAlert> : null}
+                  </div>
+                </ContentPanel>
+              )}
+
+              {activeSection === 'recently-viewed' && (
+                <ContentPanel title="Recently Viewed" subtitle="Jump back into products you explored recently.">
+                  <ProductGrid items={recentlyViewed} props={props} showViewedAt empty={<EmptyState icon={Clock} text="No recently viewed products." href="/categories" action="Browse Categories" />} />
+                </ContentPanel>
+              )}
+
+              {activeSection === 'account-settings' && (
+                <ContentPanel title="Account Settings" subtitle="Manage profile details, password, and saved address information.">
+                  <AccountSettings
+                    name={name}
+                    setName={setName}
+                    email={email}
+                    setEmail={setEmail}
+                    phone={phone}
+                    setPhone={setPhone}
+                    countryCode={countryCode}
+                    setCountryCode={setCountryCode}
+                    password={password}
+                    setPassword={setPassword}
+                    profileSuccess={profileSuccess}
+                    setProfileSuccess={setProfileSuccess}
+                    profileError={profileError}
+                    setProfileError={setProfileError}
+                    profileLoading={profileLoading}
+                    handleSaveProfile={handleSaveProfile}
+                    address={address}
+                    setAddress={setAddress}
+                    city={city}
+                    setCity={setCity}
+                    stateName={stateName}
+                    setStateName={setStateName}
+                    country={country}
+                    setCountry={setCountry}
+                    pincode={pincode}
+                    setPincode={setPincode}
+                    addrSuccess={addrSuccess}
+                    setAddrSuccess={setAddrSuccess}
+                    addrLoading={addrLoading}
+                    handleSaveAddress={handleSaveAddress}
+                  />
+                </ContentPanel>
+              )}
+
+              {activeSection === 'my-activity' && (
+                <ContentPanel title="My Activity" subtitle="Track product reviews and community activity from one place.">
+                  <ActivitySection />
+                </ContentPanel>
+              )}
+            </section>
+          </section>
+        </div>
+
+        {showLogoutConfirm ? (
+          <div className="fixed inset-0 z-[70] bg-neutral-950/35 px-4 py-6" onClick={() => setShowLogoutConfirm(false)}>
+            <div className="mx-auto max-w-md border-2 border-neutral-950 bg-neutral-50 p-6 shadow-[10px_10px_0_#171717]" onClick={(event) => event.stopPropagation()}>
+              <div className="inline-flex h-14 w-14 items-center justify-center border-2 border-neutral-950 bg-neutral-950 text-white">
+                <LogOut size={24} />
+              </div>
+              <h4 className="mt-4 text-2xl font-semibold tracking-tight text-neutral-950">Log out of MyStore?</h4>
+              <p className="mt-2 text-sm leading-7 text-neutral-600">You will need to sign in again to access your account.</p>
+              <div className="mt-6 flex gap-3">
+                <Button variant="secondary" onClick={() => setShowLogoutConfirm(false)}>Cancel</Button>
+                <Button variant="primary" onClick={handleLogout}>Yes, Log Out</Button>
               </div>
             </div>
           </div>
-        )}
+        ) : null}
       </main>
+
       <Footer />
     </div>
   );
 };
 
-/* ─── Accordion Section Component ─── */
-const Section = ({ id, icon: Icon, label, badge, openSection, toggleSection, children }) => {
-  const open = openSection === id;
+const ProfileMetric = ({ label, value }) => (
+  <div className="border-2 border-neutral-950 bg-neutral-50 p-4">
+    <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">{label}</span>
+    <strong className="mt-2 block text-2xl font-semibold tracking-tight text-neutral-950">{value}</strong>
+  </div>
+);
+
+const NavBadge = ({ active, children }) => (
+  <span className={cn('inline-flex min-w-6 items-center justify-center px-2 py-1 text-[10px] font-semibold', active ? 'border border-white/20 bg-white/10 text-white' : 'border border-neutral-950 bg-neutral-950 text-white')}>
+    {children}
+  </span>
+);
+
+const ContentPanel = ({ title, subtitle, action = null, children }) => (
+  <div className="border-2 border-neutral-950 bg-white p-5 shadow-[8px_8px_0_#171717] sm:p-6">
+    <div className="border-b-2 border-neutral-950 pb-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-3xl font-semibold tracking-tight text-neutral-950">{title}</h2>
+          <p className="mt-2 text-sm leading-7 text-neutral-600">{subtitle}</p>
+        </div>
+        {action ? <div className="shrink-0 sm:pt-1">{action}</div> : null}
+      </div>
+    </div>
+    <div className="mt-5">{children}</div>
+  </div>
+);
+
+const EmptyState = ({ icon: Icon, text, href, action }) => (
+  <div className="border-2 border-neutral-950 bg-neutral-100 p-8 text-center shadow-[6px_6px_0_#171717]">
+    <div className="mx-auto inline-flex h-16 w-16 items-center justify-center border-2 border-neutral-950 bg-white">
+      <Icon size={38} />
+    </div>
+    <p className="mt-4 text-sm text-neutral-700">{text}</p>
+    <Link href={href} className="mt-5 inline-flex border-2 border-neutral-950 bg-neutral-950 px-4 py-3 text-sm font-medium text-white">
+      {action}
+    </Link>
+  </div>
+);
+
+const StatusCard = ({ icon: Icon, tone, title, copy, extra = '' }) => (
+  <div className={cn('border-2 p-5 shadow-[6px_6px_0_#171717]', tone === 'success' ? 'border-emerald-950 bg-[#ecfdf5]' : tone === 'warn' ? 'border-neutral-950 bg-[#fff7ed]' : 'border-neutral-950 bg-white')}>
+    <div className="flex items-start gap-4">
+      <div className="inline-flex h-12 w-12 items-center justify-center border-2 border-neutral-950 bg-white">
+        <Icon size={24} />
+      </div>
+      <div>
+        <p className="text-lg font-semibold text-neutral-950">{title}</p>
+        <p className="mt-2 text-sm leading-7 text-neutral-700">{copy}</p>
+        {extra ? <p className="mt-2 text-xs font-medium uppercase tracking-[0.14em] text-neutral-500">{extra}</p> : null}
+      </div>
+    </div>
+  </div>
+);
+
+const ProductGrid = ({ items, props, empty, showViewedAt = false }) => {
+  if (!items.length) return empty;
+
   return (
-    <div className={`pv-section ${open ? 'open' : ''}`}>
-      <button className="pv-section-header" onClick={() => toggleSection(id)}>
-        <span className="pv-section-icon"><Icon size={18} /></span>
-        <span className="pv-section-label">{label}</span>
-        {badge != null && badge > 0 && (
-          <span className="pv-section-badge">{badge}</span>
-        )}
-        <span className="pv-section-chevron">
-          {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        </span>
-      </button>
-      {open && <div className="pv-section-body">{children}</div>}
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {items.map((item) => {
+        const product = item.product;
+        if (!product) return null;
+        const price = product.sale_price ?? product.regular_price;
+
+        return (
+          <Link href={`/products/${product.id}`} key={item.id} className="border-2 border-neutral-950 bg-white p-4 shadow-[6px_6px_0_#171717] transition hover:-translate-y-1">
+            <div className="flex aspect-square items-center justify-center border-2 border-neutral-950 bg-neutral-100 text-3xl font-semibold uppercase text-neutral-300">
+              {product.name?.charAt(0)}
+            </div>
+            <div className="mt-4 space-y-2">
+              <p className="line-clamp-2 text-base font-semibold leading-5 text-neutral-950">{product.name}</p>
+              <span className="block text-sm font-medium text-neutral-950">{formatProductMoney(product, parseFloat(price), props)}</span>
+              {showViewedAt ? (
+                <span className="block text-xs text-neutral-500">
+                  {formatDateTime(item.viewed_at, { includeTime: false }, props)}
+                </span>
+              ) : null}
+            </div>
+          </Link>
+        );
+      })}
     </div>
   );
 };
 
-/* ── Account Settings inner component with sub-tabs ── */
+const OrdersPanel = ({ orders, props }) => {
+  const [cancelTarget, setCancelTarget] = useState(null);
+  const [cancelReason, setCancelReason] = useState(CANCEL_REASONS[0]);
+  const [cancelOtherReason, setCancelOtherReason] = useState('');
+  const [cancelLoading, setCancelLoading] = useState(false);
+
+  const closeCancelModal = () => {
+    setCancelTarget(null);
+    setCancelReason(CANCEL_REASONS[0]);
+    setCancelOtherReason('');
+    setCancelLoading(false);
+  };
+
+  const submitCancelOrder = () => {
+    if (!cancelTarget) return;
+    const reasonNote = cancelReason === 'Other' ? cancelOtherReason.trim() : '';
+    if (cancelReason === 'Other' && !reasonNote) return;
+
+    setCancelLoading(true);
+    router.post(`/orders/${cancelTarget.id}/cancel`, {
+      reason: cancelReason,
+      reason_note: reasonNote || null,
+    }, {
+      preserveScroll: true,
+      preserveState: false,
+      onFinish: () => setCancelLoading(false),
+      onSuccess: () => closeCancelModal(),
+    });
+  };
+
+  return (
+    <ContentPanel
+      title="My Orders"
+      subtitle="Review your purchases, track shipment progress, and open a dedicated order details page."
+      action={(
+        <Button
+          type="button"
+          variant="primary"
+          onClick={() => router.visit('/profile/orders/my-orders')}
+        >
+          My Orders
+        </Button>
+      )}
+    >
+      {orders.length === 0 ? (
+        <EmptyState icon={Package} text="No orders placed yet." href="/categories" action="Browse Categories" />
+      ) : (
+        <div className="space-y-4">
+          {orders.map((order) => {
+            const sellerCount = getOrderSellerCount(order);
+            const statusKey = String(order.status || '').toLowerCase();
+            const canCancel = statusKey === 'pending' || statusKey === 'processing';
+
+            return (
+              <div key={order.id} className="border-2 border-neutral-950 bg-white p-5 shadow-[6px_6px_0_#171717]">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h3 className="text-xl font-semibold tracking-tight text-neutral-950">Order #{order.id}</h3>
+                      <StatusBadge status={order.status} />
+                    </div>
+                    <div className="flex flex-wrap gap-3 text-xs text-neutral-500">
+                      <span className="inline-flex items-center gap-2"><Calendar size={12} />{formatDateTime(order.created_at, { includeTime: false }, props)}</span>
+                      <span className="inline-flex items-center gap-2"><CreditCard size={12} />{order.payment_method || 'Payment unavailable'}</span>
+                      <span className="inline-flex items-center gap-2"><Truck size={12} />{order.shipping_carrier || order.fulfillment_channel || 'Awaiting shipment'}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-start gap-3 lg:items-end">
+                    <div className="text-xl font-semibold text-neutral-950">
+                      {formatStoredMoney(parseFloat(order.total_amount), order.currency, props)}
+                    </div>
+                    <div className="flex flex-wrap gap-3 lg:justify-end">
+                      {canCancel ? (
+                        <button
+                          type="button"
+                          onClick={() => setCancelTarget(order)}
+                          className="inline-flex items-center gap-2 border-2 border-rose-700 bg-rose-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-rose-700"
+                        >
+                          Cancel Order
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <InfoCard icon={Package} title="Items" lines={[`${order.items?.length || 0} item${order.items?.length === 1 ? '' : 's'}`, `${sellerCount} seller${sellerCount === 1 ? '' : 's'} involved`]} />
+                  <InfoCard icon={Truck} title="Shipping" iconClassName="scale-[0.84]" lines={[order.tracking_number || 'Tracking number pending', order.shipping_address || 'Address unavailable']} />
+                  <InfoCard icon={CreditCard} title="Payment" lines={[order.payment_status || 'Status not available', `Settles from ${order.currency || 'N/A'}`]} />
+                  <InfoCard icon={MapPin} title="Destination" lines={[order.city || 'City unavailable', [order.state, order.country].filter(Boolean).join(', ') || 'Location unavailable']} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {cancelTarget ? (
+        <CancelOrderModal
+          reason={cancelReason}
+          otherReason={cancelOtherReason}
+          loading={cancelLoading}
+          onReasonChange={setCancelReason}
+          onOtherReasonChange={setCancelOtherReason}
+          onClose={closeCancelModal}
+          onSubmit={submitCancelOrder}
+        />
+      ) : null}
+    </ContentPanel>
+  );
+};
+
+const StatusBadge = ({ status }) => (
+  <span className={cn('inline-flex border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]', ORDER_STATUS_CLASS[status] || 'border-neutral-950 bg-white text-neutral-700')}>
+    {status}
+  </span>
+);
+
+const InfoCard = ({ icon: Icon, title, lines, iconClassName = '' }) => (
+  <div className="border-2 border-neutral-950 bg-neutral-50 p-4">
+    <div className="flex items-start gap-3">
+      <div className="inline-flex h-12 w-12 items-center justify-center border-2 border-neutral-950 bg-white p-2">
+        <Icon size={18} className={iconClassName} />
+      </div>
+      <div className="min-w-0">
+        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500">{title}</div>
+        {lines.map((line) => <div key={line} className="mt-2 break-words text-sm text-neutral-700">{line}</div>)}
+      </div>
+    </div>
+  </div>
+);
+
+const CancelOrderModal = ({ reason, otherReason, loading, onReasonChange, onOtherReasonChange, onClose, onSubmit }) => {
+  const needsOtherReason = reason === 'Other';
+  const disableSubmit = loading || (needsOtherReason && !otherReason.trim());
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-neutral-950/40 px-4 py-6" onClick={onClose}>
+      <div className="w-full max-w-lg border-2 border-neutral-950 bg-neutral-50 p-6 shadow-[10px_10px_0_#171717]" onClick={(event) => event.stopPropagation()}>
+        <h3 className="text-2xl font-semibold tracking-tight text-neutral-950">Cancel this order?</h3>
+        <p className="mt-2 text-sm leading-7 text-neutral-600">Select a reason so the seller understands why this order was cancelled.</p>
+
+        <div className="mt-5 space-y-3">
+          {CANCEL_REASONS.map((option) => (
+            <label key={option} className="flex cursor-pointer items-center gap-3 border-2 border-neutral-950 bg-white px-4 py-3">
+              <input
+                type="radio"
+                name="cancel-reason"
+                value={option}
+                checked={reason === option}
+                onChange={(event) => onReasonChange(event.target.value)}
+                className="h-4 w-4 accent-neutral-950"
+              />
+              <span className="text-sm font-medium text-neutral-950">{option}</span>
+            </label>
+          ))}
+        </div>
+
+        {needsOtherReason ? (
+          <div className="mt-4">
+            <Input
+              label="Your Reason"
+              as="textarea"
+              rows={4}
+              placeholder="Tell the seller why you are cancelling this order"
+              value={otherReason}
+              onChange={(event) => onOtherReasonChange(event.target.value)}
+              required
+            />
+          </div>
+        ) : null}
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Button type="button" variant="secondary" onClick={onClose}>Keep Order</Button>
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={disableSubmit}
+            className="inline-flex min-h-9 items-center justify-center gap-2 border border-rose-700 bg-rose-600 px-3.5 text-[13px] font-medium text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading ? 'Cancelling...' : 'Confirm Cancel'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AccountSettings = ({
-  name, setName, email, setEmail, phone, setPhone, countryCode, setCountryCode,
-  password, setPassword, profileSuccess, profileError, profileLoading, handleSaveProfile,
-  address, setAddress, city, setCity, stateName, setStateName, country, setCountry,
-  pincode, setPincode, addrSuccess, addrLoading, handleSaveAddress,
+  name,
+  setName,
+  email,
+  setEmail,
+  phone,
+  setPhone,
+  countryCode,
+  setCountryCode,
+  password,
+  setPassword,
+  profileSuccess,
+  setProfileSuccess,
+  profileError,
+  setProfileError,
+  profileLoading,
+  handleSaveProfile,
+  address,
+  setAddress,
+  city,
+  setCity,
+  stateName,
+  setStateName,
+  country,
+  setCountry,
+  pincode,
+  setPincode,
+  addrSuccess,
+  setAddrSuccess,
+  addrLoading,
+  handleSaveAddress,
 }) => {
   const [sub, setSub] = useState('edit-profile');
   const isProfileIncomplete = !phone || !address || !city || !stateName || !country || !pincode;
 
   return (
-    <div>
-      {isProfileIncomplete && (
-        <div className="pv-toast info" style={{ marginBottom: 16, borderLeft: '4px solid var(--color-primary)' }}>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <AlertTriangle size={18} style={{ color: 'var(--color-primary)' }} />
-            <strong className="body-md">Complete your profile details (Phone, Address, City, State/Region, Country, Pincode) to enable faster one-click checkout.</strong>
-          </div>
-        </div>
-      )}
+    <div className="space-y-5">
+      {isProfileIncomplete ? (
+        <DismissibleAlert>
+          <span>
+            <AlertTriangle size={18} className="mr-2 inline-block" />
+            <strong>Complete your phone and address details for a faster checkout experience.</strong>
+          </span>
+        </DismissibleAlert>
+      ) : null}
 
-      <div className="pv-subtab-bar">
-        <button className={`pv-subtab-btn ${sub === 'edit-profile' ? 'active' : ''}`} onClick={() => setSub('edit-profile')}>
-          <Edit3 size={13} /> Edit Profile
-        </button>
-        <button className={`pv-subtab-btn ${sub === 'saved-addresses' ? 'active' : ''}`} onClick={() => setSub('saved-addresses')}>
-          <MapPin size={13} /> Saved Addresses
-        </button>
+      <div className="flex flex-wrap gap-3">
+        <Button type="button" variant={sub === 'edit-profile' ? 'primary' : 'outline'} onClick={() => setSub('edit-profile')}>
+          <Edit3 size={13} />
+          Edit Profile
+        </Button>
+        <Button type="button" variant={sub === 'saved-addresses' ? 'primary' : 'outline'} onClick={() => setSub('saved-addresses')}>
+          <MapPin size={13} />
+          Saved Address
+        </Button>
       </div>
 
-      {sub === 'edit-profile' && (
-        <div className="pv-form-block">
-          {profileSuccess && <div className="pv-toast success">{profileSuccess}</div>}
-          {profileError && <div className="pv-toast error">{profileError}</div>}
-          <form onSubmit={handleSaveProfile} className="pv-form">
-            <Input label="Full Name" type="text" value={name} onChange={(e) => setName(e.target.value)} required />
-            <Input label="Email Address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            
-            <div style={{ display: 'flex', gap: 12 }}>
-              <div style={{ flex: 2 }}>
-                <Input label="Phone Number" type="tel" placeholder="e.g. 9876543210" value={phone} onChange={(e) => setPhone(e.target.value)} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <Input label="Country Code" type="text" placeholder="e.g. 91" value={countryCode} onChange={(e) => setCountryCode(e.target.value.replace(/[^\d]/g, ''))} />
-              </div>
+      {sub === 'edit-profile' ? (
+        <div className="space-y-4">
+          {profileSuccess ? <DismissibleAlert onClose={() => setProfileSuccess('')}>{profileSuccess}</DismissibleAlert> : null}
+          {profileError ? <DismissibleAlert onClose={() => setProfileError('')} role="alert">{profileError}</DismissibleAlert> : null}
+          <form onSubmit={handleSaveProfile} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input label="Full Name" type="text" value={name} onChange={(event) => setName(event.target.value)} required />
+              <Input label="Email Address" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
             </div>
-
-            <Input label="New Password (leave blank to keep current)" type="password" placeholder="New password" value={password} onChange={(e) => setPassword(e.target.value)} />
-            <Button type="submit" variant="primary" disabled={profileLoading}>
-              {profileLoading ? 'Saving...' : 'Save Changes'}
-            </Button>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input label="Phone Number" type="tel" placeholder="9876543210" value={phone} onChange={(event) => setPhone(event.target.value)} />
+              <Input label="Country Code" type="text" placeholder="91" value={countryCode} onChange={(event) => setCountryCode(event.target.value.replace(/[^\d]/g, ''))} />
+            </div>
+            <Input label="New Password" type="password" placeholder="Leave blank to keep current password" value={password} onChange={(event) => setPassword(event.target.value)} />
+            <Button type="submit" variant="primary" disabled={profileLoading}>{profileLoading ? 'Saving...' : 'Save Changes'}</Button>
           </form>
         </div>
-      )}
+      ) : null}
 
-      {sub === 'saved-addresses' && (
-        <div className="pv-form-block">
-          {addrSuccess && <div className="pv-toast success">{addrSuccess}</div>}
-          <form onSubmit={handleSaveAddress} className="pv-form">
-            <div className="input-container">
-              <label className="input-label label-md">Street Address</label>
-              <textarea
-                className="input-field pv-textarea"
-                rows={2}
-                placeholder="Enter street name, building number, and area"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                required
-              />
+      {sub === 'saved-addresses' ? (
+        <div className="space-y-4">
+          {addrSuccess ? <DismissibleAlert onClose={() => setAddrSuccess('')}>{addrSuccess}</DismissibleAlert> : null}
+          <form onSubmit={handleSaveAddress} className="space-y-4">
+            <Input label="Street Address" as="textarea" rows={3} placeholder="Enter street name, building number, and area" value={address} onChange={(event) => setAddress(event.target.value)} required />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input label="City" type="text" value={city} onChange={(event) => setCity(event.target.value)} required />
+              <Input label="State / Region" type="text" value={stateName} onChange={(event) => setStateName(event.target.value)} required />
             </div>
-            
-            <div style={{ display: 'flex', gap: 12 }}>
-              <Input label="City" type="text" placeholder="e.g. Mumbai" value={city} onChange={(e) => setCity(e.target.value)} required />
-              <Input label="State / Region" type="text" placeholder="e.g. Maharashtra" value={stateName} onChange={(e) => setStateName(e.target.value)} required />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input label="Country" type="text" value={country} onChange={(event) => setCountry(event.target.value)} required />
+              <Input label="Pincode" type="text" value={pincode} onChange={(event) => setPincode(event.target.value)} required />
             </div>
-
-            <div style={{ display: 'flex', gap: 12 }}>
-              <Input label="Country" type="text" placeholder="e.g. India" value={country} onChange={(e) => setCountry(e.target.value)} required />
-              <Input label="Pincode" type="text" placeholder="e.g. 400001" value={pincode} onChange={(e) => setPincode(e.target.value)} required />
-            </div>
-
-            <Button type="submit" variant="primary" disabled={addrLoading}>
-              {addrLoading ? 'Saving...' : 'Save Address'}
-            </Button>
+            <Button type="submit" variant="primary" disabled={addrLoading}>{addrLoading ? 'Saving...' : 'Save Address'}</Button>
           </form>
         </div>
-      )}
+      ) : null}
     </div>
   );
 };
 
-/* ── My Activity inner component ── */
 const ActivitySection = () => {
   const [sub, setSub] = useState('reviews');
-  return (
-    <div>
-      <div className="pv-subtab-bar">
-        <button className={`pv-subtab-btn ${sub === 'reviews' ? 'active' : ''}`} onClick={() => setSub('reviews')}>
-          <MessageSquare size={13} /> My Reviews
-        </button>
-        <button className={`pv-subtab-btn ${sub === 'qna' ? 'active' : ''}`} onClick={() => setSub('qna')}>
-          <HelpCircle size={13} /> Q&amp;A
-        </button>
-      </div>
-      <div className="pv-form-block">
-        {sub === 'reviews' && (
-          <div className="pv-empty-state">
-            <Star size={36} className="pv-empty-icon" />
-            <p>You haven't reviewed any products yet.</p>
-          </div>
-        )}
-        {sub === 'qna' && (
-          <div className="pv-empty-state">
-            <HelpCircle size={36} className="pv-empty-icon" />
-            <p>You haven't asked any questions yet.</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-/* ── Seller Settings Form (unchanged) ── */
-const SellerSettingsForm = ({ user, updateProfile }) => {
-  const [name, setName] = useState(user?.name || '');
-  const [email, setEmail] = useState(user?.email || '');
-  const [phone, setPhone] = useState(user?.phone || '');
-  const [password, setPassword] = useState('');
-  const [brandName, setBrandName] = useState(user?.brand_name || '');
-  const [address, setAddress] = useState(user?.address || '');
-  const [gstNumber, setGstNumber] = useState(user?.gst_number || '');
-  const [country, setCountry] = useState(user?.country || '');
-  const [fulfillmentChannels, setFulfillmentChannels] = useState(Array.isArray(user?.fulfillment_channels) ? user.fulfillment_channels.join(', ') : '');
-  const [defaultFulfillmentChannel, setDefaultFulfillmentChannel] = useState(user?.default_fulfillment_channel || '');
-  const [shippingAcceptanceTime, setShippingAcceptanceTime] = useState(user?.shipping_acceptance_time || '');
-  const [handlingTimeBusinessDays, setHandlingTimeBusinessDays] = useState(user?.handling_time_business_days ?? 1);
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSuccess(''); setError(''); setLoading(true);
-    try {
-      const data = { 
-        name, 
-        email, 
-        phone, 
-        brand_name: brandName, 
-        address,
-        gst_number: gstNumber,
-        country,
-        fulfillment_channels: fulfillmentChannels.split(',').map((item) => item.trim()).filter(Boolean),
-        default_fulfillment_channel: defaultFulfillmentChannel,
-        shipping_acceptance_time: shippingAcceptanceTime,
-        handling_time_business_days: Number(handlingTimeBusinessDays || 1)
-      };
-      if (password) data.password = password;
-      await updateProfile(data);
-      setSuccess('Settings saved!');
-      setPassword('');
-    } catch (err) {
-      setError(err.message || 'Failed to save');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
-    <div className="pv-form-card card" style={{ maxWidth: 560, padding: 24 }}>
-      {success && <div className="pv-toast success">{success}</div>}
-      {error && <div className="pv-toast error">{error}</div>}
-      <form onSubmit={handleSubmit} className="pv-form">
-        <Input label="Full Name" type="text" value={name} onChange={(e) => setName(e.target.value)} required />
-        <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <Input label="Phone Number" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        <Input label="New Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        <Input label="Store / Brand Name" type="text" value={brandName} onChange={(e) => setBrandName(e.target.value)} />
-        <Input label="GSTIN Number *" type="text" maxLength={15} value={gstNumber} onChange={(e) => setGstNumber(e.target.value)} required />
-        <Input label="Country" type="text" value={country} onChange={(e) => setCountry(e.target.value)} />
-        <Input label="Fulfillment Channels" type="text" value={fulfillmentChannels} onChange={(e) => setFulfillmentChannels(e.target.value)} />
-        <Input label="Default Fulfillment Channel" type="text" value={defaultFulfillmentChannel} onChange={(e) => setDefaultFulfillmentChannel(e.target.value)} />
-        <Input label="Shipping Acceptance Time" type="text" value={shippingAcceptanceTime} onChange={(e) => setShippingAcceptanceTime(e.target.value)} />
-        <Input label="Handling Time (Business Days)" type="number" min="0" max="30" value={handlingTimeBusinessDays} onChange={(e) => setHandlingTimeBusinessDays(e.target.value)} />
-        <div className="input-container">
-          <label className="input-label label-md">Business Address</label>
-          <textarea className="input-field pv-textarea" rows={3} value={address} onChange={(e) => setAddress(e.target.value)} />
-        </div>
-        <Button type="submit" variant="primary" disabled={loading}>{loading ? 'Saving...' : 'Save Settings'}</Button>
-      </form>
+    <div className="space-y-5">
+      <div className="flex flex-wrap gap-3">
+        <Button type="button" variant={sub === 'reviews' ? 'primary' : 'outline'} onClick={() => setSub('reviews')}>
+          <MessageSquare size={13} />
+          My Reviews
+        </Button>
+        <Button type="button" variant={sub === 'qna' ? 'primary' : 'outline'} onClick={() => setSub('qna')}>
+          <HelpCircle size={13} />
+          Q&amp;A
+        </Button>
+      </div>
+      {sub === 'reviews' ? <EmptyState icon={Star} text="You haven't reviewed any products yet." href="/categories" action="Browse Products" /> : null}
+      {sub === 'qna' ? <EmptyState icon={HelpCircle} text="You haven't asked any questions yet." href="/categories" action="Browse Products" /> : null}
     </div>
   );
 };

@@ -10,6 +10,9 @@ final class ShippingRateRequestData
     public function __construct(
         public readonly array $items,
         public readonly string $shippingAddress,
+        public readonly string $country,
+        public readonly string $postalCode,
+        public readonly array $allowedChannels = [],
     ) {
     }
 
@@ -21,6 +24,9 @@ final class ShippingRateRequestData
                 $data['items']
             ),
             shippingAddress: $data['shipping_address'],
+            country: $data['country'],
+            postalCode: $data['postal_code'],
+            allowedChannels: array_values(array_filter($data['allowed_channels'] ?? [])),
         );
     }
 }

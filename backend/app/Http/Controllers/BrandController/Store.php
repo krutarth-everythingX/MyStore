@@ -22,6 +22,7 @@ class Store extends Controller
             $request->validate([
                 'name' => 'required|string',
                 'logo' => 'nullable|string',
+                'website_url' => 'nullable|string',
             ]),
             $request->user(),
         );

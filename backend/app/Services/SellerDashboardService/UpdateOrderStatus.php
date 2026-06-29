@@ -38,7 +38,7 @@ class UpdateOrderStatus
 
         return $order->load([
             'buyer',
-            'items' => function (Builder $query) use ($sellerId) {
+            'items' => function ($query) use ($sellerId) {
                 $query->where('seller_id', $sellerId)->with('product');
             },
         ]);

@@ -1,39 +1,34 @@
 import React from 'react';
-import './DataTable.css';
-
-export const DataTable = ({ columns, data, keyField = 'id', emptyMessage = 'No data available', className = '', ...props }) => {
-  return (
-    <div className={`table-wrapper ${className}`} {...props}>
-      <table className="data-table">
+import { cn } from '../utils/cn';
+export const DataTable = ({
+  columns,
+  data,
+  keyField = 'id',
+  emptyMessage = 'No data available',
+  className = '',
+  striped = false,
+  ...props
+}) => {
+  return <div {...props}>
+      <table>
         <thead>
           <tr>
-            {columns.map((col, index) => (
-              <th key={index} style={{ width: col.width || 'auto', textAlign: col.align || 'left' }}>
+            {columns.map((col, index) => <th key={index}>
                 {col.header}
-              </th>
-            ))}
+              </th>)}
           </tr>
         </thead>
         <tbody>
-          {data.length === 0 ? (
-            <tr>
-              <td colSpan={columns.length} className="table-empty">
+          {data.length === 0 ? <tr>
+              <td colSpan={columns.length}>
                 {emptyMessage}
               </td>
-            </tr>
-          ) : (
-            data.map((row) => (
-              <tr key={row[keyField]}>
-                {columns.map((col, colIdx) => (
-                  <td key={colIdx} style={{ textAlign: col.align || 'left' }}>
+            </tr> : data.map((row, rowIndex) => <tr key={row[keyField]}>
+                {columns.map((col, colIdx) => <td key={colIdx}>
                     {col.render ? col.render(row) : row[col.field]}
-                  </td>
-                ))}
-              </tr>
-            ))
-          )}
+                  </td>)}
+              </tr>)}
         </tbody>
       </table>
-    </div>
-  );
+    </div>;
 };

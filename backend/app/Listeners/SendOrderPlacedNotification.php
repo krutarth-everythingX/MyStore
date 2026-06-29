@@ -9,6 +9,6 @@ class SendOrderPlacedNotification
 {
     public function handle(OrderPlaced $event): void
     {
-        SendOrderPlacedNotificationJob::dispatch($event->order->id);
+        SendOrderPlacedNotificationJob::dispatchSync($event->order->id);
     }
 }

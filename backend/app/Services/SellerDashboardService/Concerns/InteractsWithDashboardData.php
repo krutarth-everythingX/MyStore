@@ -14,7 +14,7 @@ trait InteractsWithDashboardData
     {
         return Order::with([
             'buyer',
-            'items' => function (Builder $query) use ($sellerId) {
+            'items' => function ($query) use ($sellerId) {
                 $query->where('seller_id', $sellerId)->with('product');
             },
         ])->whereHas('items', function (Builder $query) use ($sellerId) {
@@ -41,7 +41,10 @@ trait InteractsWithDashboardData
         foreach ($orderItems as $item) {
             $date = $item->created_at->format('Y-m-d');
             if (isset($velocityData[$date])) {
-                $velocityData[$date] += (float) ($item->price * $item->quantity);
+                $velocityData[$date] += money_to_base(
+                    (float) ($item->price * $item->quantity),
+                    $item->currency ?: $item->order?->currency ?: base_money_currency(),
+                );
             }
         }
 
@@ -73,7 +76,10 @@ trait InteractsWithDashboardData
 
             foreach ($item->product->categories as $category) {
                 $categoryTotals[$category->name] = ($categoryTotals[$category->name] ?? 0.0)
-                    + (float) ($item->price * $item->quantity);
+                    + money_to_base(
+                        (float) ($item->price * $item->quantity),
+                        $item->currency ?: $item->order?->currency ?: base_money_currency(),
+                    );
             }
         }
 

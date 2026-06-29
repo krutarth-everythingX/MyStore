@@ -8,6 +8,7 @@ use App\Models\InventoryBatch;
 use App\Models\InventorySerialNumber;
 use App\Models\InventoryTransaction;
 use App\Models\Product;
+use App\Models\SellerVerification;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Models\WarehouseAisle;
@@ -85,6 +86,9 @@ class SellerDemoSeeder extends Seeder
         Category::whereIn('user_id', $sellerIds)->delete();
         Warehouse::whereIn('user_id', $sellerIds)->delete();
         Brand::whereIn('user_id', $sellerIds)->delete();
+        $this->deleteFromTable('seller_verifications', 'user_id', $sellerIds);
+        $this->deleteFromTable('attributes', 'user_id', $sellerIds);
+        $this->deleteFromTable('collections', 'user_id', $sellerIds);
         DB::table('users')->whereIn('id', $sellerIds)->delete();
     }
 
@@ -149,7 +153,41 @@ class SellerDemoSeeder extends Seeder
                 'default_fulfillment_channel' => $sellerData['default_fulfillment_channel'],
                 'shipping_acceptance_time' => $sellerData['shipping_acceptance_time'],
                 'handling_time_business_days' => $sellerData['handling_days'],
+                'seller_settings' => SeederSupport::defaultSellerSettings([
+                    'secondaryPhone' => $sellerData['phone'],
+                    'storeDescription' => $sellerData['business_type'] . ' storefront for ' . $sellerData['primary_category'] . ' buyers across India.',
+                    'businessType' => 'Sole Proprietorship',
+                    'panNumber' => $sellerData['pan_number'] ?? ('PAN' . str_pad((string) ($sellerIndex + 1), 6, '0', STR_PAD_LEFT)),
+                    'registrationNumber' => $sellerData['registration_number'] ?? ('REG-' . str_pad((string) ($sellerIndex + 1), 5, '0', STR_PAD_LEFT)),
+                    'addressLine1' => $sellerData['address'],
+                    'addressLine2' => $sellerData['warehouse_address'],
+                    'city' => $sellerData['city'],
+                    'state' => $sellerData['state'],
+                    'pickupCountry' => 'India',
+                    'pincode' => $sellerData['pincode'],
+                    'accountHolderName' => $sellerData['owner'],
+                    'bankName' => $sellerData['bank_name'] ?? 'State Bank of India',
+                    'accountNumber' => $sellerData['account_number'] ?? ('1002003004' . str_pad((string) ($sellerIndex + 1), 3, '0', STR_PAD_LEFT)),
+                    'ifscCode' => $sellerData['ifsc_code'] ?? ('SBIN000' . str_pad((string) ($sellerIndex + 1), 4, '0', STR_PAD_LEFT)),
+                    'upiId' => $sellerData['upi_id'] ?? ('seller' . ($sellerIndex + 1) . '@okaxis'),
+                    'gstRegistered' => true,
+                    'freeShippingAbove' => (string) ($sellerData['free_shipping_above'] ?? 1499),
+                    'packageWeight' => (string) ($sellerData['default_package_weight'] ?? 0.5),
+                    'packageLength' => (string) ($sellerData['default_package_length'] ?? 20),
+                    'packageWidth' => (string) ($sellerData['default_package_width'] ?? 15),
+                    'packageHeight' => (string) ($sellerData['default_package_height'] ?? 10),
+                    'weightUnit' => 'Kg',
+                    'returnWindow' => $sellerData['return_window'] ?? '15 Days',
+                    'acceptReturns' => $sellerData['accept_returns'] ?? true,
+                    'orderEmail' => true,
+                    'orderSms' => true,
+                    'orderWhatsapp' => true,
+                    'promotionalEmails' => false,
+                    'storeStatus' => 'Active',
+                ]),
             ]);
+
+            $this->createSellerVerification($seller, $sellerData, $sellerIndex);
 
             $brand = Brand::create([
                 'user_id' => $seller->id,
@@ -202,6 +240,52 @@ class SellerDemoSeeder extends Seeder
         }
     }
 
+    private function createSellerVerification(User $seller, array $sellerData, int $sellerIndex): void
+    {
+        $status = $sellerData['verification_status'] ?? 'approved';
+        $taxId = $sellerData['gst_number'] ?? null;
+        $panNumber = $sellerData['pan_number'] ?? ('PAN' . str_pad((string) ($sellerIndex + 1), 6, '0', STR_PAD_LEFT));
+        $registrationNumber = $sellerData['registration_number'] ?? ('REG-' . str_pad((string) ($sellerIndex + 1), 5, '0', STR_PAD_LEFT));
+        $defaultDocsBase = '/demo-documents/' . Str::slug($sellerData['store'] ?? $sellerData['owner']) . '-' . ($sellerIndex + 1);
+
+        SellerVerification::create([
+            'user_id' => $seller->id,
+            'status' => $status,
+            'business_type' => 'Sole Proprietorship',
+            'legal_name' => $sellerData['store'],
+            'tax_id' => $taxId,
+            'pan_number' => $panNumber,
+            'registration_number' => $registrationNumber,
+            'contact_person_name' => $sellerData['owner'],
+            'contact_person_id_type' => 'Passport',
+            'contact_person_id_number' => 'ID' . str_pad((string) ($sellerIndex + 1), 8, '0', STR_PAD_LEFT),
+            'bank_account_holder_name' => $sellerData['owner'],
+            'bank_name' => $sellerData['bank_name'] ?? 'State Bank of India',
+            'bank_account_number' => $sellerData['account_number'] ?? ('1002003004' . str_pad((string) ($sellerIndex + 1), 3, '0', STR_PAD_LEFT)),
+            'bank_ifsc_code' => $sellerData['ifsc_code'] ?? ('SBIN000' . str_pad((string) ($sellerIndex + 1), 4, '0', STR_PAD_LEFT)),
+            'business_address' => $sellerData['address'],
+            'business_city' => $sellerData['city'],
+            'business_state' => $sellerData['state'],
+            'business_country' => 'India',
+            'business_postal_code' => $sellerData['pincode'],
+            'gst_certificate_url' => $defaultDocsBase . '-gst.pdf',
+            'pan_card_url' => $defaultDocsBase . '-pan.pdf',
+            'business_registration_url' => $defaultDocsBase . '-registration.pdf',
+            'address_proof_url' => $defaultDocsBase . '-address.pdf',
+            'bank_proof_url' => $defaultDocsBase . '-bank.pdf',
+            'identity_document_url' => $defaultDocsBase . '-identity.pdf',
+            'risk_flags' => [],
+            'submission_note' => $status === 'approved'
+                ? 'Approved demo seller for workspace access.'
+                : 'Pending demo seller for onboarding-only access.',
+            'review_note' => $status === 'approved'
+                ? 'Approved for demo workspace access.'
+                : null,
+            'submitted_at' => now()->subDay(),
+            'reviewed_at' => $status === 'approved' ? now()->subHours(12) : null,
+        ]);
+    }
+
     private function createWarehousePath(Warehouse $warehouse, int $index): WarehouseBin
     {
         $zone = WarehouseZone::create([
@@ -251,6 +335,10 @@ class SellerDemoSeeder extends Seeder
             'name' => $name,
             'slug' => $this->uniqueSlug($name, $seller->id . '-' . ($parent?->id ?: 'root')),
             'parent_id' => $parent?->id,
+            'type' => 'product',
+            'description' => $name . ' catalog grouping for ' . ($seller->brand_name ?: $seller->name) . '.',
+            'image' => '/demo-products/' . Str::slug($name) . '.svg',
+            'is_active' => true,
         ]);
     }
 
@@ -289,6 +377,7 @@ class SellerDemoSeeder extends Seeder
             'fulfillment_channel' => $seller->default_fulfillment_channel,
             'regular_price' => $productData['regular_price'],
             'sale_price' => $productData['sale_price'],
+            'price_currency' => 'INR',
             'sku' => $productData['sku'],
             'manage_stock' => true,
             'stock_quantity' => $quantity,
@@ -380,391 +469,13 @@ class SellerDemoSeeder extends Seeder
 
     private function sellerCatalog(): array
     {
-        return array_merge([
-            [
-                'business_type' => 'Private label electronics',
-                'primary_category' => 'Electronics',
-                'owner' => 'Rohan Mehta',
-                'email' => 'seller.electronics@mystore.test',
-                'phone' => '9876500101',
-                'store' => 'GadgetNest India',
-                'brand' => 'GadgetNest',
-                'gst_number' => '29AADCG1234A1Z5',
-                'address' => '42 Tech Park Road, Whitefield',
-                'city' => 'Bengaluru',
-                'state' => 'Karnataka',
-                'pincode' => '560066',
-                'warehouse_name' => 'GadgetNest Bengaluru Fulfillment',
-                'warehouse_code' => 'WH-GNI-BLR-01',
-                'warehouse_type' => 'fulfillment',
-                'warehouse_address' => 'Plot 18, Export Promotion Industrial Park',
-                'warehouse_capacity' => 12000,
-                'fulfillment_channels' => ['Seller Fulfilled', 'Bluedart Express', 'Marketplace Managed'],
-                'default_fulfillment_channel' => 'Bluedart Express',
-                'shipping_acceptance_time' => '2 hours',
-                'handling_days' => 1,
-                'categories' => [
-                    'Mobile Phones' => [
-                        $this->product('GadgetNest Nova X5 5G', 'GN-NOVA-X5', 'Mobile Phone', 26999, 24999, 42, 0.42, [16, 8, 2], [20, 12, 6], ['5g phone', 'android mobile', 'dual sim'], 'serial', 'GNX5-2026'),
-                    ],
-                    'Headphones' => [
-                        $this->product('GadgetNest AirBeat ANC Headphones', 'GN-AIR-ANC', 'Wireless Headphones', 5999, 4999, 78, 0.32, [19, 17, 8], [24, 22, 11], ['headphones', 'noise cancelling', 'bluetooth']),
-                    ],
-                    'Laptops' => [
-                        $this->product('GadgetNest WorkBook 14 Pro', 'GN-WB14-PRO', 'Business Laptop', 84999, 79999, 16, 1.45, [32, 22, 2], [40, 30, 8], ['laptop', 'business laptop', 'ssd'], 'serial', 'GNB14-7788'),
-                    ],
-                ],
-            ],
-            [
-                'business_type' => 'D2C fashion brand',
-                'primary_category' => 'Fashion & Apparel',
-                'owner' => 'Anika Shah',
-                'email' => 'seller.fashion@mystore.test',
-                'phone' => '9876500102',
-                'store' => 'Urban Loom Studio',
-                'brand' => 'Urban Loom',
-                'gst_number' => '24AAFCU4567K1Z8',
-                'address' => '19 Ring Road Textile Market',
-                'city' => 'Surat',
-                'state' => 'Gujarat',
-                'pincode' => '395002',
-                'warehouse_name' => 'Urban Loom Surat Dispatch',
-                'warehouse_code' => 'WH-ULS-SRT-01',
-                'warehouse_type' => 'fulfillment',
-                'warehouse_address' => 'Block C, Textile Logistics Hub',
-                'warehouse_capacity' => 9000,
-                'fulfillment_channels' => ['Seller Fulfilled', 'Delhivery Surface', 'Marketplace Managed'],
-                'default_fulfillment_channel' => 'Delhivery Surface',
-                'shipping_acceptance_time' => '4 hours',
-                'handling_days' => 2,
-                'categories' => [
-                    'T-Shirts' => [
-                        $this->product('Urban Loom Supima Crew Tee', 'UL-TEE-SUPIMA', 'Cotton T-Shirt', 1299, 999, 160, 0.22, [28, 22, 2], [30, 24, 4], ['supima cotton', 'men tshirt', 'crew neck'], null, null, 'Unisex'),
-                    ],
-                    'Footwear' => [
-                        $this->product('Urban Loom Everyday Canvas Sneakers', 'UL-SNK-CANVAS', 'Canvas Sneakers', 2499, 2199, 85, 0.72, [30, 11, 10], [34, 22, 13], ['canvas shoes', 'sneakers', 'casual footwear']),
-                    ],
-                    'Outerwear' => [
-                        $this->product('Urban Loom Lightweight Bomber Jacket', 'UL-BOMBER-LT', 'Bomber Jacket', 3499, 2999, 48, 0.65, [35, 28, 5], [38, 31, 8], ['bomber jacket', 'outerwear', 'streetwear']),
-                    ],
-                ],
-            ],
-            [
-                'business_type' => 'Home and kitchen wholesaler',
-                'primary_category' => 'Home & Kitchen',
-                'owner' => 'Dev Patel',
-                'email' => 'seller.home@mystore.test',
-                'phone' => '9876500103',
-                'store' => 'HomeCraft Living',
-                'brand' => 'HomeCraft',
-                'gst_number' => '27AAHCH8912P1Z3',
-                'address' => '88 Andheri Kurla Road',
-                'city' => 'Mumbai',
-                'state' => 'Maharashtra',
-                'pincode' => '400059',
-                'warehouse_name' => 'HomeCraft Mumbai DC',
-                'warehouse_code' => 'WH-HCL-MUM-01',
-                'warehouse_type' => 'fulfillment',
-                'warehouse_address' => 'Unit 9, Saki Naka Logistics Estate',
-                'warehouse_capacity' => 16000,
-                'fulfillment_channels' => ['Seller Fulfilled', 'DTDC Heavy Parcel', 'Marketplace Managed'],
-                'default_fulfillment_channel' => 'DTDC Heavy Parcel',
-                'shipping_acceptance_time' => '1 business day',
-                'handling_days' => 2,
-                'categories' => [
-                    'Cookware' => [
-                        $this->product('HomeCraft Tri-Ply Stainless Steel Pan', 'HC-PAN-TRIPLY', 'Cookware', 3299, 2799, 64, 1.12, [46, 26, 7], [50, 30, 11], ['tri ply pan', 'stainless steel cookware', 'kitchen']),
-                    ],
-                    'Decor' => [
-                        $this->product('HomeCraft Handwoven Cotton Throw', 'HC-THROW-COT', 'Home Decor', 1899, 1599, 52, 0.8, [35, 28, 6], [38, 31, 8], ['cotton throw', 'sofa decor', 'home textile']),
-                    ],
-                    'Storage' => [
-                        $this->product('HomeCraft Modular Pantry Containers Set', 'HC-STOR-SET12', 'Kitchen Storage', 2299, 1999, 95, 1.35, [34, 24, 18], [38, 28, 22], ['storage containers', 'pantry organizer', 'airtight']),
-                    ],
-                ],
-            ],
-            [
-                'business_type' => 'Beauty and personal care distributor',
-                'primary_category' => 'Beauty & Personal Care',
-                'owner' => 'Sara Khan',
-                'email' => 'seller.beauty@mystore.test',
-                'phone' => '9876500104',
-                'store' => 'Glow Theory Beauty',
-                'brand' => 'Glow Theory',
-                'gst_number' => '07AAGCG6789L1Z2',
-                'address' => '23 Lajpat Nagar Central Market',
-                'city' => 'New Delhi',
-                'state' => 'Delhi',
-                'pincode' => '110024',
-                'warehouse_name' => 'Glow Theory Delhi Hub',
-                'warehouse_code' => 'WH-GTB-DEL-01',
-                'warehouse_type' => 'fulfillment',
-                'warehouse_address' => 'Khasra 27, Okhla Industrial Area',
-                'warehouse_capacity' => 7000,
-                'fulfillment_channels' => ['Seller Fulfilled', 'Ecom Express', 'Marketplace Managed'],
-                'default_fulfillment_channel' => 'Ecom Express',
-                'shipping_acceptance_time' => '3 hours',
-                'handling_days' => 1,
-                'categories' => [
-                    'Skincare' => [
-                        $this->product('Glow Theory Vitamin C Serum', 'GT-SERUM-VC', 'Face Serum', 1199, 899, 210, 0.12, [11, 4, 4], [16, 8, 8], ['vitamin c serum', 'skincare', 'glow'], 'batch', null, 'Unisex', '16 years and up'),
-                    ],
-                    'Haircare' => [
-                        $this->product('Glow Theory Argan Repair Shampoo', 'GT-SHAM-ARGAN', 'Shampoo', 799, 649, 140, 0.55, [18, 7, 7], [22, 10, 10], ['argan shampoo', 'hair repair', 'haircare'], 'batch'),
-                    ],
-                    'Fragrance' => [
-                        $this->product('Glow Theory Citrus Mist Eau De Parfum', 'GT-EDP-CITRUS', 'Fragrance', 1499, 1299, 88, 0.3, [13, 5, 5], [18, 10, 8], ['citrus perfume', 'eau de parfum', 'fragrance']),
-                    ],
-                ],
-            ],
-            [
-                'business_type' => 'Organic grocery and food seller',
-                'primary_category' => 'Grocery & Gourmet Food',
-                'owner' => 'Mehul Arora',
-                'email' => 'seller.grocery@mystore.test',
-                'phone' => '9876500105',
-                'store' => 'GreenBasket Foods',
-                'brand' => 'GreenBasket',
-                'gst_number' => '08AAGCB3456Q1Z1',
-                'address' => '11 Tonk Road Wholesale Market',
-                'city' => 'Jaipur',
-                'state' => 'Rajasthan',
-                'pincode' => '302015',
-                'warehouse_name' => 'GreenBasket Jaipur Fresh DC',
-                'warehouse_code' => 'WH-GBF-JAI-01',
-                'warehouse_type' => 'dark_store',
-                'warehouse_address' => 'Fresh Food Park, Sitapura',
-                'warehouse_capacity' => 11000,
-                'fulfillment_channels' => ['Seller Fulfilled', 'Local Fresh Courier', 'Marketplace Managed'],
-                'default_fulfillment_channel' => 'Local Fresh Courier',
-                'shipping_acceptance_time' => '90 minutes',
-                'handling_days' => 0,
-                'categories' => [
-                    'Healthy Snacks' => [
-                        $this->product('GreenBasket Roasted Almond Trail Mix', 'GB-TRAIL-ALM', 'Healthy Snack', 599, 499, 240, 0.32, [18, 12, 5], [22, 16, 8], ['trail mix', 'almonds', 'healthy snack'], 'batch'),
-                    ],
-                    'Beverages' => [
-                        $this->product('GreenBasket Cold Brew Coffee Concentrate', 'GB-COLD-BREW', 'Coffee Beverage', 449, 399, 130, 0.8, [21, 7, 7], [25, 11, 11], ['cold brew', 'coffee concentrate', 'beverage'], 'batch'),
-                    ],
-                    'Staples' => [
-                        $this->product('GreenBasket Organic Basmati Rice 5kg', 'GB-RICE-BAS5', 'Rice', 899, 799, 75, 5.1, [45, 30, 8], [48, 34, 11], ['basmati rice', 'organic rice', 'staples'], 'batch'),
-                    ],
-                ],
-            ],
-            [
-                'business_type' => 'B2B tools and industrial supplier',
-                'primary_category' => 'Industrial & Tools',
-                'owner' => 'Vikram Rao',
-                'email' => 'seller.tools@mystore.test',
-                'phone' => '9876500106',
-                'store' => 'ProAxis Tools Depot',
-                'brand' => 'ProAxis',
-                'gst_number' => '33AAPCP7890R1Z9',
-                'address' => '72 Ambattur Industrial Estate',
-                'city' => 'Chennai',
-                'state' => 'Tamil Nadu',
-                'pincode' => '600058',
-                'warehouse_name' => 'ProAxis Chennai Industrial Warehouse',
-                'warehouse_code' => 'WH-PAX-CHE-01',
-                'warehouse_type' => 'fulfillment',
-                'warehouse_address' => 'Shed 14, Ambattur Logistics Park',
-                'warehouse_capacity' => 18000,
-                'fulfillment_channels' => ['Seller Fulfilled', 'TCI Express', 'Marketplace Managed'],
-                'default_fulfillment_channel' => 'TCI Express',
-                'shipping_acceptance_time' => '1 business day',
-                'handling_days' => 2,
-                'categories' => [
-                    'Power Tools' => [
-                        $this->product('ProAxis 20V Cordless Drill Kit', 'PAX-DRILL-20V', 'Cordless Drill', 4999, 4299, 38, 2.1, [28, 24, 9], [34, 30, 14], ['cordless drill', 'power tool', '20v'], 'serial', 'PAX20V-DK'),
-                    ],
-                    'Safety Gear' => [
-                        $this->product('ProAxis Anti-Fog Safety Goggles Pack', 'PAX-GOG-AF10', 'Safety Goggles', 999, 849, 112, 0.28, [18, 8, 7], [22, 12, 10], ['safety goggles', 'ppe', 'industrial safety']),
-                    ],
-                    'Measuring Tools' => [
-                        $this->product('ProAxis Digital Laser Distance Meter', 'PAX-LDM-60', 'Laser Measure', 2799, 2399, 54, 0.22, [12, 5, 3], [18, 10, 6], ['laser distance meter', 'measuring tool', 'industrial'], 'serial', 'PAX-LDM60'),
-                    ],
-                ],
-            ],
-            [
-                'business_type' => 'Books and stationery retailer',
-                'primary_category' => 'Books & Stationery',
-                'owner' => 'Naina Iyer',
-                'email' => 'seller.books@mystore.test',
-                'phone' => '9876500107',
-                'store' => 'PaperTrail Books & Stationery',
-                'brand' => 'PaperTrail',
-                'gst_number' => '32AAICP4321T1Z4',
-                'address' => '54 MG Road Book Market',
-                'city' => 'Kochi',
-                'state' => 'Kerala',
-                'pincode' => '682016',
-                'warehouse_name' => 'PaperTrail Kochi Dispatch',
-                'warehouse_code' => 'WH-PTB-KOC-01',
-                'warehouse_type' => 'fulfillment',
-                'warehouse_address' => 'Bay 6, Kalamassery Logistics Center',
-                'warehouse_capacity' => 8000,
-                'fulfillment_channels' => ['Seller Fulfilled', 'India Post Business', 'Marketplace Managed'],
-                'default_fulfillment_channel' => 'India Post Business',
-                'shipping_acceptance_time' => '6 hours',
-                'handling_days' => 1,
-                'categories' => [
-                    'Notebooks' => [
-                        $this->product('PaperTrail Dotted Journal A5', 'PT-JRNL-A5DOT', 'Notebook', 499, 399, 180, 0.42, [21, 15, 2], [24, 18, 4], ['dotted journal', 'a5 notebook', 'stationery']),
-                    ],
-                    'Art Supplies' => [
-                        $this->product('PaperTrail Dual Tip Brush Pens 24 Pack', 'PT-PEN-BR24', 'Brush Pens', 899, 749, 95, 0.35, [19, 15, 3], [23, 18, 6], ['brush pens', 'art supplies', 'markers']),
-                    ],
-                    'Business Books' => [
-                        $this->product('PaperTrail Startup Operations Handbook', 'PT-BOOK-OPS', 'Business Book', 699, 599, 70, 0.55, [23, 16, 3], [26, 19, 5], ['business book', 'startup operations', 'handbook']),
-                    ],
-                ],
-            ],
-        ], $this->extraSellerCatalog());
-    }
-
-    private function extraSellerCatalog(): array
-    {
         return [
-            [
-                'business_type' => 'Sports and outdoor equipment retailer',
-                'primary_category' => 'Sports & Outdoors',
-                'owner' => 'Kabir Malhotra',
-                'email' => 'seller.sports@mystore.test',
-                'phone' => '9876500108',
-                'store' => 'PeakMotion Sports',
-                'brand' => 'PeakMotion',
-                'gst_number' => '06AAPCP9012S1Z6',
-                'address' => '16 Sector 22 Sports Market',
-                'city' => 'Chandigarh',
-                'state' => 'Chandigarh',
-                'pincode' => '160022',
-                'warehouse_name' => 'PeakMotion North Sports DC',
-                'warehouse_code' => 'WH-PMS-CHD-01',
-                'warehouse_type' => 'fulfillment',
-                'warehouse_address' => 'Plot 44, Industrial Area Phase II',
-                'warehouse_capacity' => 13000,
-                'fulfillment_channels' => ['Seller Fulfilled', 'Delhivery Surface', 'Marketplace Managed'],
-                'default_fulfillment_channel' => 'Delhivery Surface',
-                'shipping_acceptance_time' => '4 hours',
-                'handling_days' => 1,
-                'categories' => [
-                    'Fitness Equipment' => [
-                        $this->product('PeakMotion 6mm Yoga Mat', 'PM-YOGA-MAT6', 'Yoga Mat', 899, 699, 180, 0.9, [61, 12, 12], [64, 15, 15], ['yoga mat', 'fitness', 'exercise']),
-                        $this->product('PeakMotion Resistance Bands Set', 'PM-BAND-SET5', 'Resistance Bands', 799, 599, 220, 0.35, [18, 12, 5], [22, 16, 8], ['resistance bands', 'home workout', 'fitness']),
-                        $this->product('PeakMotion Hex Dumbbell 5kg Pair', 'PM-DB-5KG', 'Dumbbells', 2199, 1899, 70, 10.2, [28, 12, 12], [32, 18, 16], ['dumbbell', 'strength training', 'fitness']),
-                    ],
-                    'Outdoor Recreation' => [
-                        $this->product('PeakMotion 45L Trekking Backpack', 'PM-BAG-45L', 'Trekking Backpack', 3299, 2799, 62, 1.1, [58, 34, 22], [62, 38, 25], ['trekking backpack', 'camping', 'outdoor']),
-                        $this->product('PeakMotion Rechargeable Camping Lantern', 'PM-LANTERN-RC', 'Camping Lantern', 1499, 1199, 96, 0.48, [16, 10, 10], [20, 14, 14], ['camping lantern', 'outdoor light', 'rechargeable'], 'serial', 'PML-2026'),
-                        $this->product('PeakMotion Steel Trail Bottle 1L', 'PM-BTL-1L', 'Sports Bottle', 999, 799, 145, 0.42, [28, 8, 8], [32, 11, 11], ['steel bottle', 'hiking bottle', 'outdoor']),
-                    ],
-                    'Cycling' => [
-                        $this->product('PeakMotion Aero Cycling Helmet', 'PM-CYCLE-HELM', 'Cycling Helmet', 2499, 2099, 54, 0.38, [28, 22, 16], [32, 26, 20], ['cycling helmet', 'bike safety', 'helmet']),
-                        $this->product('PeakMotion Steel Bike Lock', 'PM-BIKE-LOCK', 'Bike Lock', 899, 699, 130, 0.75, [22, 15, 4], [25, 18, 6], ['bike lock', 'cycle accessory', 'security']),
-                        $this->product('PeakMotion Comfort Gel Seat Cover', 'PM-GEL-SEAT', 'Cycle Seat Cover', 599, 449, 115, 0.24, [26, 20, 6], [29, 23, 8], ['cycle seat', 'gel cover', 'cycling']),
-                    ],
-                    'Team Sports' => [
-                        $this->product('PeakMotion Match Football Size 5', 'PM-FOOTBALL-S5', 'Football', 1299, 999, 90, 0.46, [22, 22, 22], [25, 25, 25], ['football', 'team sports', 'match ball']),
-                        $this->product('PeakMotion English Willow Cricket Bat', 'PM-BAT-EW', 'Cricket Bat', 4499, 3999, 42, 1.25, [86, 12, 7], [91, 18, 10], ['cricket bat', 'willow bat', 'sports']),
-                        $this->product('PeakMotion Carbon Badminton Racket', 'PM-BADM-RKT', 'Badminton Racket', 1799, 1499, 85, 0.22, [67, 22, 3], [72, 26, 6], ['badminton racket', 'sports racket', 'carbon']),
-                    ],
-                ],
-            ],
-            [
-                'business_type' => 'Pet supplies marketplace seller',
-                'primary_category' => 'Pet Supplies',
-                'owner' => 'Tanya Bose',
-                'email' => 'seller.pets@mystore.test',
-                'phone' => '9876500109',
-                'store' => 'PawPal Pantry',
-                'brand' => 'PawPal',
-                'gst_number' => '19AAGCP5612F1Z7',
-                'address' => '35 Salt Lake Pet Market',
-                'city' => 'Kolkata',
-                'state' => 'West Bengal',
-                'pincode' => '700091',
-                'warehouse_name' => 'PawPal Kolkata Pet Hub',
-                'warehouse_code' => 'WH-PPP-KOL-01',
-                'warehouse_type' => 'fulfillment',
-                'warehouse_address' => 'Warehouse 5, New Town Logistics Park',
-                'warehouse_capacity' => 9000,
-                'fulfillment_channels' => ['Seller Fulfilled', 'XpressBees', 'Marketplace Managed'],
-                'default_fulfillment_channel' => 'XpressBees',
-                'shipping_acceptance_time' => '3 hours',
-                'handling_days' => 1,
-                'categories' => [
-                    'Dog Food' => [
-                        $this->product('PawPal Chicken & Rice Dog Food 3kg', 'PP-DOG-FOOD3', 'Dog Food', 1499, 1299, 120, 3.2, [38, 24, 10], [42, 28, 13], ['dog food', 'pet food', 'chicken rice'], 'batch'),
-                        $this->product('PawPal Puppy Nutrition Bites', 'PP-PUP-BITES', 'Puppy Treats', 499, 399, 180, 0.45, [20, 14, 7], [23, 17, 9], ['puppy treats', 'dog snack', 'pet food'], 'batch'),
-                        $this->product('PawPal Dental Chew Sticks 20 Pack', 'PP-DENT-CHEW20', 'Dog Dental Chews', 699, 549, 150, 0.55, [22, 15, 8], [26, 18, 10], ['dental chew', 'dog care', 'pet treats'], 'batch'),
-                    ],
-                    'Cat Care' => [
-                        $this->product('PawPal Clumping Cat Litter 5kg', 'PP-CAT-LIT5', 'Cat Litter', 899, 749, 96, 5.1, [40, 28, 8], [44, 32, 11], ['cat litter', 'cat care', 'pet supplies']),
-                        $this->product('PawPal Tuna Cat Wet Food Pack', 'PP-CAT-TUNA12', 'Cat Food', 999, 849, 130, 1.4, [24, 18, 12], [28, 22, 15], ['cat food', 'wet food', 'tuna'], 'batch'),
-                        $this->product('PawPal Cat Scratcher Board', 'PP-CAT-SCRATCH', 'Cat Scratcher', 699, 599, 76, 0.8, [42, 18, 5], [46, 22, 7], ['cat scratcher', 'cat toy', 'pet supplies']),
-                    ],
-                    'Grooming' => [
-                        $this->product('PawPal Gentle Pet Shampoo', 'PP-SHAM-GENTLE', 'Pet Shampoo', 449, 349, 160, 0.55, [18, 7, 7], [22, 10, 10], ['pet shampoo', 'grooming', 'dog wash'], 'batch'),
-                        $this->product('PawPal Slicker Grooming Brush', 'PP-BRUSH-SLICK', 'Pet Brush', 399, 299, 140, 0.2, [18, 11, 5], [22, 14, 7], ['pet brush', 'grooming brush', 'dog grooming']),
-                        $this->product('PawPal Nail Trimmer Pro', 'PP-NAIL-TRIM', 'Pet Nail Trimmer', 549, 449, 118, 0.18, [14, 8, 3], [18, 12, 5], ['pet nail trimmer', 'grooming', 'pet care']),
-                    ],
-                    'Pet Toys' => [
-                        $this->product('PawPal Squeaky Rope Toy', 'PP-TOY-ROPE', 'Dog Toy', 349, 249, 190, 0.25, [24, 8, 8], [27, 11, 11], ['dog toy', 'rope toy', 'pet toys']),
-                        $this->product('PawPal Feather Wand Cat Toy', 'PP-TOY-WAND', 'Cat Toy', 299, 229, 160, 0.1, [42, 5, 5], [45, 8, 8], ['cat toy', 'feather wand', 'pet toys']),
-                        $this->product('PawPal Puzzle Treat Feeder', 'PP-FEED-PUZZLE', 'Pet Feeder Toy', 899, 749, 82, 0.7, [28, 28, 7], [32, 32, 10], ['puzzle feeder', 'pet toy', 'dog enrichment']),
-                    ],
-                ],
-            ],
-            [
-                'business_type' => 'Baby care and nursery D2C seller',
-                'primary_category' => 'Baby & Kids',
-                'owner' => 'Ishita Kapoor',
-                'email' => 'seller.baby@mystore.test',
-                'phone' => '9876500110',
-                'store' => 'BabyBloom Care',
-                'brand' => 'BabyBloom',
-                'gst_number' => '09AAGCB8901M1Z5',
-                'address' => '17 Gomti Nagar Retail Plaza',
-                'city' => 'Lucknow',
-                'state' => 'Uttar Pradesh',
-                'pincode' => '226010',
-                'warehouse_name' => 'BabyBloom Lucknow DC',
-                'warehouse_code' => 'WH-BBC-LKO-01',
-                'warehouse_type' => 'fulfillment',
-                'warehouse_address' => 'Unit 3, Amausi Logistics Estate',
-                'warehouse_capacity' => 10000,
-                'fulfillment_channels' => ['Seller Fulfilled', 'Ecom Express', 'Marketplace Managed'],
-                'default_fulfillment_channel' => 'Ecom Express',
-                'shipping_acceptance_time' => '4 hours',
-                'handling_days' => 1,
-                'categories' => [
-                    'Diapers & Wipes' => [
-                        $this->product('BabyBloom DryComfort Diapers M 72 Pack', 'BB-DIAPER-M72', 'Baby Diapers', 1099, 949, 180, 1.8, [36, 24, 18], [40, 28, 22], ['baby diapers', 'dry comfort', 'baby care'], 'batch', null, 'Unisex', '3 months and up'),
-                        $this->product('BabyBloom Aloe Baby Wipes 6 Pack', 'BB-WIPES-ALOE6', 'Baby Wipes', 699, 599, 210, 1.4, [22, 16, 12], [26, 20, 15], ['baby wipes', 'aloe wipes', 'baby care'], 'batch', null, 'Unisex', '0 months and up'),
-                        $this->product('BabyBloom Diaper Rash Cream', 'BB-RASH-CREAM', 'Baby Cream', 349, 299, 140, 0.12, [11, 4, 4], [15, 8, 7], ['rash cream', 'baby skincare', 'diaper care'], 'batch', null, 'Unisex', '0 months and up'),
-                    ],
-                    'Baby Gear' => [
-                        $this->product('BabyBloom Foldable Feeding Chair', 'BB-FEED-CHAIR', 'Feeding Chair', 3499, 2999, 38, 4.8, [62, 42, 20], [66, 46, 24], ['feeding chair', 'baby gear', 'foldable'], null, null, 'Unisex', '6 months and up'),
-                        $this->product('BabyBloom Cotton Baby Carrier', 'BB-CARRIER-COT', 'Baby Carrier', 2299, 1899, 62, 0.8, [34, 26, 8], [38, 30, 11], ['baby carrier', 'cotton carrier', 'baby gear'], null, null, 'Unisex', '3 months and up'),
-                        $this->product('BabyBloom Spill Proof Sippy Cup', 'BB-SIPPY-CUP', 'Sippy Cup', 449, 349, 150, 0.16, [13, 9, 9], [17, 12, 12], ['sippy cup', 'baby bottle', 'spill proof'], 'batch', null, 'Unisex', '6 months and up'),
-                    ],
-                    'Nursery' => [
-                        $this->product('BabyBloom Muslin Swaddle 3 Pack', 'BB-SWADDLE-3', 'Baby Swaddle', 999, 799, 90, 0.45, [28, 22, 4], [31, 25, 6], ['muslin swaddle', 'baby blanket', 'nursery'], null, null, 'Unisex', '0 months and up'),
-                        $this->product('BabyBloom Cloud Night Lamp', 'BB-LAMP-CLOUD', 'Nursery Lamp', 1299, 999, 75, 0.55, [18, 14, 12], [22, 18, 15], ['night lamp', 'nursery lamp', 'baby room'], 'serial', 'BBCL-01', 'Unisex', '0 months and up'),
-                        $this->product('BabyBloom Waterproof Crib Sheet', 'BB-CRIB-SHEET', 'Crib Sheet', 799, 649, 88, 0.52, [30, 22, 5], [34, 26, 7], ['crib sheet', 'nursery bedding', 'waterproof'], null, null, 'Unisex', '0 months and up'),
-                    ],
-                    'Learning Toys' => [
-                        $this->product('BabyBloom Wooden Shape Sorter', 'BB-TOY-SHAPE', 'Learning Toy', 899, 749, 64, 0.9, [22, 18, 12], [26, 22, 15], ['shape sorter', 'learning toy', 'wooden toy'], null, null, 'Unisex', '12 months and up'),
-                        $this->product('BabyBloom Soft Cloth Book', 'BB-BOOK-CLOTH', 'Baby Book', 499, 399, 120, 0.18, [18, 16, 4], [21, 19, 6], ['cloth book', 'baby book', 'sensory toy'], null, null, 'Unisex', '3 months and up'),
-                        $this->product('BabyBloom Stacking Ring Set', 'BB-RING-STACK', 'Stacking Toy', 599, 499, 96, 0.42, [18, 18, 20], [22, 22, 23], ['stacking rings', 'baby toy', 'learning toy'], null, null, 'Unisex', '9 months and up'),
-                    ],
-                ],
-            ],
             [
                 'business_type' => 'Automotive accessories supplier',
                 'primary_category' => 'Automotive',
                 'owner' => 'Arjun Nair',
                 'email' => 'seller.auto@mystore.test',
+                'verification_status' => 'approved',
                 'phone' => '9876500111',
                 'store' => 'AutoPulse Garage',
                 'brand' => 'AutoPulse',
@@ -810,6 +521,7 @@ class SellerDemoSeeder extends Seeder
                 'primary_category' => 'Gaming & Entertainment',
                 'owner' => 'Neil Dsouza',
                 'email' => 'seller.gaming@mystore.test',
+                'verification_status' => 'submitted',
                 'phone' => '9876500112',
                 'store' => 'GameForge Arena',
                 'brand' => 'GameForge',
@@ -855,6 +567,7 @@ class SellerDemoSeeder extends Seeder
                 'primary_category' => 'Jewelry & Accessories',
                 'owner' => 'Mira Sethi',
                 'email' => 'seller.jewelry@mystore.test',
+                'verification_status' => 'submitted',
                 'phone' => '9876500113',
                 'store' => 'JewelMint Studio',
                 'brand' => 'JewelMint',

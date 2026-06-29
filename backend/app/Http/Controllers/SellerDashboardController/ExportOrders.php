@@ -4,6 +4,7 @@ namespace App\Http\Controllers\SellerDashboardController;
 
 use App\Http\Controllers\Controller;
 use App\Services\SellerDashboardService\BuildOrderExportRows;
+use App\Support\SpreadsheetMlExport;
 use Illuminate\Http\Request;
 
 class ExportOrders extends Controller
@@ -19,6 +20,26 @@ class ExportOrders extends Controller
         }
 
         $rows = $this->buildOrderExportRows->handle($request->user()->id);
+        $headings = $this->buildOrderExportRows->headings();
+        $format = strtolower((string) $request->query('format', 'csv'));
+
+        if ($format === 'excel' || $format === 'xlsx') {
+            $headers = [
+                'Content-type' => 'application/vnd.ms-excel; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename=orders_export_' . date('Ymd_His') . '.xls',
+                'Pragma' => 'no-cache',
+                'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+                'Expires' => '0',
+            ];
+
+            $callback = function () use ($headings, $rows) {
+                echo "\xEF\xBB\xBF";
+                echo SpreadsheetMlExport::build($headings, $rows, 'Orders');
+            };
+
+            return response()->stream($callback, 200, $headers);
+        }
+
         $headers = [
             'Content-type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename=orders_export_' . date('Ymd_His') . '.csv',
@@ -27,13 +48,9 @@ class ExportOrders extends Controller
             'Expires' => '0',
         ];
 
-        $callback = function () use ($rows) {
+        $callback = function () use ($headings, $rows) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, [
-                'Order ID', 'Buyer Name', 'Buyer Email', 'Order Date', 'Status',
-                'Refund Status', 'Payment Method', 'Shipping Carrier', 'Tracking Number',
-                'Shipping Address', 'Product SKU', 'Product Name', 'Quantity', 'Item Price', 'Subtotal',
-            ]);
+            fputcsv($file, $headings);
 
             foreach ($rows as $row) {
                 fputcsv($file, $row);

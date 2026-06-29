@@ -16,11 +16,18 @@ class StatsForSeller
 
     public function handle(int $sellerId): array
     {
-        $revenue = OrderItem::where('seller_id', $sellerId)
+        $revenue = OrderItem::with('order:id,currency')
+            ->where('seller_id', $sellerId)
             ->whereHas('order', function (Builder $query) {
                 $query->where('status', '!=', OrderStatus::Cancelled->value);
             })
-            ->sum(DB::raw('price * quantity'));
+            ->get()
+            ->sum(function (OrderItem $item) {
+                return money_to_base(
+                    (float) $item->price * (int) $item->quantity,
+                    $item->currency ?: $item->order?->currency ?: base_money_currency(),
+                );
+            });
 
         $productsCount = Product::where('user_id', $sellerId)->count();
 
@@ -32,6 +39,11 @@ class StatsForSeller
         $ordersCount = Order::whereHas('items', function (Builder $query) use ($sellerId) {
             $query->where('seller_id', $sellerId);
         })->count();
+
+        $completedOrdersCount = Order::where('status', OrderStatus::Completed->value)
+            ->whereHas('items', function (Builder $query) use ($sellerId) {
+                $query->where('seller_id', $sellerId);
+            })->count();
 
         $recentSales = OrderItem::with(['product', 'order.buyer'])
             ->where('seller_id', $sellerId)
@@ -53,6 +65,7 @@ class StatsForSeller
             'products_count' => $productsCount,
             'low_stock_count' => $lowStockCount,
             'orders_count' => $ordersCount,
+            'completed_orders_count' => $completedOrdersCount,
             'recent_sales' => $recentSales,
             'sales_velocity' => $salesVelocity,
             'category_split' => $categorySplit,

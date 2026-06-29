@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\StoresUtcTimestamps;
 use Illuminate\Database\Eloquent\Model;
 
 class InventorySerialNumber extends Model
 {
+    use StoresUtcTimestamps;
+
     protected $fillable = [
         'product_id',
         'warehouse_id',

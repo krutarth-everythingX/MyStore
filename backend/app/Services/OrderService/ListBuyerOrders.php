@@ -9,7 +9,7 @@ class ListBuyerOrders
 {
     public function handle(int $buyerId): Collection
     {
-        return Order::with(['items.product.brand', 'items.product.user'])
+        return Order::with(['buyer', 'items.product.brand', 'items.product.user'])
             ->where('buyer_id', $buyerId)
             ->latest()
             ->get();

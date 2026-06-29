@@ -20,7 +20,7 @@ class SendOrderPlacedNotificationJob implements ShouldQueue
 
     public function handle(): void
     {
-        $order = Order::with('buyer')->find($this->orderId);
+        $order = Order::with(['buyer', 'items.product'])->find($this->orderId);
 
         if (!$order || !$order->buyer) {
             return;

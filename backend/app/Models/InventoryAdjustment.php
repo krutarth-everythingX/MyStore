@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\StoresUtcTimestamps;
 use Illuminate\Database\Eloquent\Model;
 
 class InventoryAdjustment extends Model
 {
+    use StoresUtcTimestamps;
+
     protected $fillable = [
         'adjustment_no',
         'product_id',

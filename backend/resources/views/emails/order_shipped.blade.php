@@ -1,18 +1,29 @@
 @component('mail::message')
-# Hi {{ $name }},
+# Your Order Has Shipped
 
-Great news! Your order **#{{ $orderId }}** has been handed over to our shipping carrier and is on its way to you.
+Hi {{ $name }},
+
+Good news. Your order **#{{ $orderId }}** has been shipped by the seller.
 
 @component('mail::panel')
-🚚 **Carrier:** {{ $carrier }}  
-📦 **Tracking Number:** {{ $trackingNumber }}
+**Carrier:** {{ $carrier }}  
+**Tracking ID:** {{ $trackingNumber }}  
+**Acceptance Time:** {{ $acceptanceTime }}  
+**Shipping Address:** {{ $shippingAddress }}
 @endcomponent
+
+## Items In This Shipment
+
+@foreach ($items as $item)
+- **{{ $item['name'] }}**
+  SKU: {{ $item['sku'] }} | Qty: {{ $item['quantity'] }} | Value: {{ $item['subtotal'] }}
+@endforeach
 
 @component('mail::button', ['url' => $url])
-Track Shipment
+Track My Order
 @endcomponent
 
-You can monitor updates and trace the delivery progress directly from your account page.
+Your order page will also show the same tracking details inside MyStore.
 
 Thanks,<br>
 {{ config('app.name') }}

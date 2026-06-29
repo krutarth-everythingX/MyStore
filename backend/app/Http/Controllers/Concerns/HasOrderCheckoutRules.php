@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Concerns;
 
-use App\Rules\IndianPostalCode;
+use App\Rules\FlexiblePostalCode;
 
 trait HasOrderCheckoutRules
 {
@@ -18,7 +18,7 @@ trait HasOrderCheckoutRules
             'country' => 'required|string',
             'city' => 'required|string',
             'state' => 'required|string',
-            'postal_code' => ['required', 'string', new IndianPostalCode()],
+            'postal_code' => ['required', 'string', new FlexiblePostalCode()],
             'company_name' => 'nullable|string',
             'buyer_gstin' => 'nullable|string|max:15',
             'payment_method' => 'required|string',

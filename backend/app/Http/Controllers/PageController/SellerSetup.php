@@ -15,10 +15,8 @@ class SellerSetup extends Controller
     {
         $this->ensureSeller($request);
 
-        if (seller_setup_complete($request->user())) {
-            return redirect('/seller');
-        }
-
-        return Inertia::render('App');
+        return seller_setup_complete($request->user())
+            ? redirect('/seller/inventory')
+            : redirect('/seller/verification');
     }
 }

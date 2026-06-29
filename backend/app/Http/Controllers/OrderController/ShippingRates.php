@@ -20,6 +20,10 @@ class ShippingRates extends Controller
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|integer|min:1',
             'shipping_address' => 'required|string',
+            'country' => 'required|string|max:120',
+            'postal_code' => 'required|string|max:20',
+            'allowed_channels' => 'nullable|array',
+            'allowed_channels.*' => 'nullable|string|max:120',
         ]);
 
         $rates = $this->calculateShippingRates->handle(

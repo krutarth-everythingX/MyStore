@@ -22,7 +22,7 @@ class Invoice extends Controller
         }
 
         return response(
-            $this->generateInvoiceHtml->handle($order),
+            $this->generateInvoiceHtml->handle($order, $request->user()),
             200,
         )->header('Content-Type', 'text/html');
     }

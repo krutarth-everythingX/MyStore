@@ -19,6 +19,11 @@ class Cancel extends Controller
 
     public function __invoke(Request $request, int $id)
     {
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'max:255'],
+            'reason_note' => ['nullable', 'string', 'max:2000'],
+        ]);
+
         $order = Order::with('items.product')->find($id);
 
         if (! $order) {
@@ -28,7 +33,11 @@ class Cancel extends Controller
         $this->authorize('cancel', $order);
 
         try {
-            $cancelledOrder = $this->cancelOrder->handle($order);
+            $cancelledOrder = $this->cancelOrder->handle(
+                $order,
+                $data['reason'] ?? null,
+                $data['reason_note'] ?? null,
+            );
         } catch (ServiceException $exception) {
             return $this->serviceErrorResponse($request, $exception);
         }

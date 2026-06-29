@@ -15,6 +15,7 @@ use App\Http\Controllers\CategoryController\Index as CategoryIndex;
 use App\Http\Controllers\CategoryController\Store as CategoryStore;
 use App\Http\Controllers\CouponController\ValidateCoupon;
 use App\Http\Controllers\InventoryController\AdjustStock;
+use App\Http\Controllers\InventoryController\StoreStockMovement;
 use App\Http\Controllers\InventoryController\StoreTraceabilityRecord;
 use App\Http\Controllers\MediaController\Upload as MediaUpload;
 use App\Http\Controllers\OrderController\Cancel;
@@ -26,6 +27,7 @@ use App\Http\Controllers\OrderController\Ship;
 use App\Http\Controllers\OrderController\ShippingRates;
 use App\Http\Controllers\OrderController\StripeWebhook;
 use App\Http\Controllers\OrderController\SyncOrders;
+use App\Http\Controllers\ProductController\BulkAction;
 use App\Http\Controllers\ProductController\Destroy;
 use App\Http\Controllers\ProductController\Index;
 use App\Http\Controllers\ProductController\Recommendations;
@@ -42,8 +44,14 @@ use App\Http\Controllers\SellerDashboardController\ExportOrders;
 use App\Http\Controllers\SellerDashboardController\Orders;
 use App\Http\Controllers\SellerDashboardController\Stats;
 use App\Http\Controllers\SellerDashboardController\UpdateOrderStatus;
+use App\Http\Controllers\VendorController\Index as VendorIndex;
+use App\Http\Controllers\VendorController\Store as VendorStore;
+use App\Http\Controllers\VendorController\Update as VendorUpdate;
+use App\Http\Controllers\VendorController\Destroy as VendorDestroy;
 use App\Http\Controllers\WarehouseController\Index as WarehouseIndex;
 use App\Http\Controllers\WarehouseController\Store as WarehouseStore;
+use App\Http\Controllers\WarehouseController\Update as WarehouseUpdate;
+use App\Http\Controllers\WarehouseController\Destroy as WarehouseDestroy;
 use App\Http\Controllers\WarehouseController\GetCarriers as WarehouseGetCarriers;
 use App\Http\Controllers\WishlistController\Index as WishlistIndex;
 use App\Http\Controllers\WishlistController\Toggle as WishlistToggle;
@@ -72,6 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/verify-phone', VerifyPhone::class);
 
     Route::post('/products', Store::class);
+    Route::post('/products/bulk-action', BulkAction::class);
     Route::put('/products/{id}', Update::class);
     Route::delete('/products/{id}', Destroy::class);
 
@@ -80,7 +89,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/warehouses', WarehouseIndex::class);
     Route::post('/warehouses', WarehouseStore::class);
+    Route::put('/warehouses/{id}', WarehouseUpdate::class);
+    Route::delete('/warehouses/{id}', WarehouseDestroy::class);
+    Route::get('/vendors', VendorIndex::class);
+    Route::post('/vendors', VendorStore::class);
+    Route::put('/vendors/{id}', VendorUpdate::class);
+    Route::delete('/vendors/{id}', VendorDestroy::class);
     Route::post('/inventory/adjustments', AdjustStock::class);
+    Route::post('/inventory/stock-movements', StoreStockMovement::class);
     Route::post('/inventory/traceability', StoreTraceabilityRecord::class);
     Route::get('/shipping-carriers', WarehouseGetCarriers::class);
 

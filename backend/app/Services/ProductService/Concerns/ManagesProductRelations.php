@@ -17,9 +17,22 @@ trait ManagesProductRelations
         $fields['country_of_origin'] = filled($fields['country_of_origin'] ?? null)
             ? $fields['country_of_origin']
             : $seller->country;
+        $fields['price_currency'] = currency_for_country($seller->country);
         $fields['fulfillment_channel'] = filled($fields['fulfillment_channel'] ?? null)
             ? $fields['fulfillment_channel']
             : $seller->default_fulfillment_channel;
+        $fields['fulfillment_channels'] = array_values(array_filter(
+            array_map('trim', $fields['fulfillment_channels'] ?? []),
+            fn (?string $channel): bool => filled($channel)
+        ));
+
+        if ($fields['fulfillment_channels'] === [] && filled($fields['fulfillment_channel'] ?? null)) {
+            $fields['fulfillment_channels'] = [$fields['fulfillment_channel']];
+        }
+
+        if (filled($fields['fulfillment_channel'] ?? null) && ! in_array($fields['fulfillment_channel'], $fields['fulfillment_channels'], true)) {
+            array_unshift($fields['fulfillment_channels'], $fields['fulfillment_channel']);
+        }
 
         foreach (['gallery_images', 'bullet_points', 'seo_search_terms', 'whats_inside_box', 'tags'] as $key) {
             if (array_key_exists($key, $fields) && is_array($fields[$key])) {
@@ -241,6 +254,7 @@ trait ManagesProductRelations
             'description' => $product->description,
             'regular_price' => $variationInput['regular_price'] ?? $product->regular_price,
             'sale_price' => $variationInput['sale_price'] ?? null,
+            'price_currency' => $product->price_currency,
             'sku' => $variationInput['sku'] ?? null,
             'parent_sku_id' => $product->parent_sku_id ?: ($product->sku ?: $product->mystore_product_id),
             'manage_stock' => $variationInput['manage_stock'] ?? false,

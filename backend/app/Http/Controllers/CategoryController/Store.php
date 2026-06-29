@@ -22,6 +22,10 @@ class Store extends Controller
             $request->validate([
                 'name' => 'required|string|max:120',
                 'parent_id' => 'nullable|integer|exists:categories,id',
+                'type' => 'nullable|string|in:product,service',
+                'description' => 'nullable|string|max:1000',
+                'image' => 'nullable|string|max:2048',
+                'is_active' => 'nullable|boolean',
             ]),
             $request->user(),
         );

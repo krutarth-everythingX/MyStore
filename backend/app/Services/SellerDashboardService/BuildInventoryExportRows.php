@@ -6,6 +6,24 @@ use App\Models\Product;
 
 class BuildInventoryExportRows
 {
+    public function headings(): array
+    {
+        return [
+            'Product ID',
+            'SKU',
+            'Product Name',
+            'Brand',
+            'Categories',
+            'Regular Price',
+            'Sale Price',
+            'Manage Stock',
+            'Stock Quantity',
+            'Stock Status',
+            'Low Stock Amount',
+            'Warehouse Allocations',
+        ];
+    }
+
     public function handle(int $sellerId): array
     {
         $products = Product::with(['brand', 'categories', 'warehouses'])

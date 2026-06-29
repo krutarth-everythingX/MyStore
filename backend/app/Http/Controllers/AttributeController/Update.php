@@ -18,9 +18,18 @@ class Update extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:100',
+            'applies_to' => 'nullable|string|in:product,service,both',
+            'input_type' => 'nullable|string|in:dropdown,free_text,number,color,material,custom',
             'options' => 'nullable|array',
             'options.*' => 'string|max:100',
+            'is_required' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
         ]);
+
+        $validated['applies_to'] ??= $attribute->applies_to ?: 'product';
+        $validated['input_type'] ??= $attribute->input_type ?: 'dropdown';
+        $validated['is_required'] = (bool) ($validated['is_required'] ?? false);
+        $validated['is_active'] = (bool) ($validated['is_active'] ?? true);
 
         $attribute->update($validated);
 

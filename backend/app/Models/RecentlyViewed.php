@@ -12,6 +12,10 @@ class RecentlyViewed extends Model
 
     protected $fillable = ['user_id', 'product_id', 'viewed_at'];
 
+    protected $casts = [
+        'viewed_at' => 'datetime',
+    ];
+
     public function product()
     {
         return $this->belongsTo(Product::class)->with(['brand', 'user']);

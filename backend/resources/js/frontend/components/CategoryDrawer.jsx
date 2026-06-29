@@ -1,240 +1,209 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { router, usePage } from '@inertiajs/react';
-import { FolderTree, Tag, Plus, Layers, Sparkles, Edit2, Trash } from 'lucide-react';
-import { RightDrawer } from './RightDrawer';
+import { CheckCircle2, Search, Tag, X } from 'lucide-react';
 import { Button } from './Button';
 import { Input } from './Input';
-import '../pages/SellerCategories.css';
-
-const buildCategoryTree = (categories) => {
-  const map = new Map();
-  const roots = [];
-
-  categories.forEach((category) => {
-    map.set(category.id, { ...category, children: [] });
-  });
-
-  categories.forEach((category) => {
-    const item = map.get(category.id);
-    if (category.parent_id && map.has(category.parent_id)) {
-      map.get(category.parent_id).children.push(item);
-      return;
-    }
-
-    roots.push(item);
-  });
-
-  return roots;
+import { SellerModalBackdrop, SellerSelect, SellerTextarea } from './seller-workspace';
+const defaultForm = {
+  id: '',
+  name: '',
+  type: 'product',
+  parent_id: '',
+  description: '',
+  image: '',
+  is_active: true
 };
-
-const countChildren = (category) => (
-  (category.children || []).reduce((total, child) => total + 1 + countChildren(child), 0)
-);
-
-const CategoryTree = ({ categories, depth = 0, onEdit, onDelete }) => (
-  <div className={depth === 0 ? 'seller-category-tree' : 'seller-category-children'}>
-    {categories.map((category) => (
-      <article className="seller-category-row" key={category.id} style={{ '--depth': depth }}>
-        <div className="seller-category-row-main" style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-          <h3 style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0, fontSize: '15px' }}>{category.name}</h3>
-          <span className="seller-category-slug" style={{ flexShrink: 0 }}>{category.slug || 'No slug'}</span>
-        </div>
-        <div style={{ display: 'flex', gap: '6px', flexShrink: 0, alignItems: 'center' }}>
-          <button type="button" onClick={() => onEdit(category)} style={{ background: 'var(--color-surface-container)', padding: '6px', borderRadius: '6px', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Edit">
-            <Edit2 size={14} />
-          </button>
-          <button type="button" onClick={() => onDelete(category)} style={{ background: 'var(--color-error-container)', padding: '6px', borderRadius: '6px', border: 'none', cursor: 'pointer', color: 'var(--color-error)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Delete">
-            <Trash size={14} />
-          </button>
-        </div>
-        {category.children?.length > 0 && <CategoryTree categories={category.children} depth={depth + 1} onEdit={onEdit} onDelete={onDelete} />}
-      </article>
-    ))}
-  </div>
-);
-
-export const CategoryDrawer = ({ isOpen, onClose }) => {
-  const { props } = usePage();
-  // Always keep categories in sync with the latest inertia props
+const ChoiceButton = ({
+  active,
+  children,
+  ...props
+}) => <button type="button" {...props}>
+    {children}
+  </button>;
+export const CategoryDrawer = ({
+  isOpen,
+  onClose,
+  editingCategory = null,
+  parentCategory = null,
+  mode = 'create'
+}) => {
+  const {
+    props
+  } = usePage();
   const categories = props.categories || [];
-  
-  const [form, setForm] = useState({ name: '', parent_id: '' });
-  const [editId, setEditId] = useState(null);
+  const imageInputRef = useRef(null);
+  const [form, setForm] = useState(defaultForm);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
+  const isEditing = Boolean(editingCategory?.id || form.id);
   useEffect(() => {
     if (!isOpen) {
-      setSuccess('');
+      setForm(defaultForm);
       setError('');
-      setEditId(null);
-      setForm({ name: '', parent_id: '' });
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (success) {
-      const timer = setTimeout(() => setSuccess(''), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [success]);
-
-  const tree = useMemo(() => buildCategoryTree(categories), [categories]);
-  const rootCount = tree.length;
-  const childCount = categories.length - rootCount;
-
-  const submitCategory = (event) => {
-    event.preventDefault();
-    setError('');
-    setSuccess('');
-
-    if (!form.name.trim()) {
-      setError('Add a category name first.');
+      setSubmitting(false);
       return;
     }
-
-    setSubmitting(true);
-    
+    if (editingCategory) {
+      setForm({
+        id: editingCategory.id,
+        name: editingCategory.name || '',
+        type: editingCategory.type || (/service/i.test(`${editingCategory.name || ''} ${editingCategory.slug || ''}`) ? 'service' : 'product'),
+        parent_id: editingCategory.parent_id || '',
+        description: editingCategory.description || '',
+        image: editingCategory.image || '',
+        is_active: editingCategory.is_active !== false
+      });
+      setError('');
+      return;
+    }
+    setForm({
+      ...defaultForm,
+      parent_id: parentCategory?.id || '',
+      type: parentCategory?.type || 'product'
+    });
+    setError('');
+  }, [editingCategory, isOpen, parentCategory]);
+  if (!isOpen) return null;
+  const setField = (field, value) => {
+    setForm(current => ({
+      ...current,
+      [field]: value
+    }));
+  };
+  const submitCategory = event => {
+    event.preventDefault();
+    setError('');
+    if (!form.name.trim()) {
+      setError('Category name is required.');
+      return;
+    }
     const payload = {
       name: form.name.trim(),
+      type: form.type,
       parent_id: form.parent_id ? parseInt(form.parent_id, 10) : null,
+      description: form.description || null,
+      image: form.image || null,
+      is_active: form.is_active
     };
-    
     const options = {
       preserveScroll: true,
       preserveState: true,
       only: ['categories', 'flash'],
       onSuccess: () => {
-        setForm({ name: '', parent_id: '' });
-        setEditId(null);
-        setSuccess(`Category ${editId ? 'updated' : 'saved'} successfully.`);
+        onClose?.();
+        router.reload({
+          only: ['categories'],
+          preserveScroll: true,
+          preserveState: true
+        });
       },
-      onError: (errors) => setError(Object.values(errors)[0] || `Category could not be ${editId ? 'updated' : 'saved'}.`),
-      onFinish: () => setSubmitting(false),
+      onError: errors => setError(Object.values(errors)[0] || 'Category could not be saved.'),
+      onFinish: () => setSubmitting(false)
     };
-
-    if (editId) {
-      router.put(`/categories/${editId}`, payload, options);
-    } else {
-      router.post('/categories', payload, options);
+    setSubmitting(true);
+    if (isEditing) {
+      router.put(`/categories/${form.id}`, payload, options);
+      return;
     }
+    router.post('/categories', payload, options);
   };
-
-  const handleEdit = (category) => {
-    setEditId(category.id);
-    setForm({
-      name: category.name,
-      parent_id: category.parent_id || '',
-    });
-    setError('');
-    setSuccess('');
-    
-    // Scroll to top of drawer
-    const formElement = document.querySelector('.seller-category-form');
-    if (formElement) formElement.scrollIntoView({ behavior: 'smooth' });
+  const handleImageFile = file => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setField('image', String(reader.result || ''));
+    reader.readAsDataURL(file);
   };
-
-  const handleDelete = (category) => {
-    if (window.confirm(`Are you sure you want to delete the category "${category.name}"?\nAny subcategories will be moved up a level.`)) {
-      router.delete(`/categories/${category.id}`, {
-        preserveScroll: true,
-        preserveState: true,
-        only: ['categories', 'flash'],
-        onSuccess: () => {
-          setSuccess('Category deleted successfully.');
-          if (editId === category.id) {
-            setEditId(null);
-            setForm({ name: '', parent_id: '' });
-          }
-        },
-        onError: () => setError('Category could not be deleted.'),
-      });
-    }
-  };
-
-  return (
-    <RightDrawer isOpen={isOpen} onClose={onClose} title="Manage Categories" wide>
-        <p className="body-md" style={{ color: 'var(--color-outline)', marginBottom: 12 }}>
-          Build your category tree and organize your products.
-        </p>
-
-        {(error || success) && (
-          <div style={{ color: error ? 'var(--color-error)' : '#2e7d32', fontSize: '14px', fontWeight: 600, marginBottom: 16 }}>
-            {error || success}
-          </div>
-        )}
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-          {/* Add Form */}
-          <form className="seller-category-form" onSubmit={submitCategory} style={{ position: 'static', padding: 24, gap: 16, boxShadow: 'none', border: '1px solid rgba(26,28,26,0.08)' }}>
-            <div className="seller-category-form-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: 16 }}>{editId ? 'Edit Category' : 'Add New Category'}</h3>
-                <p style={{ margin: 0, fontSize: 13, color: 'var(--color-outline)' }}>
-                  {editId ? 'Update the category details.' : 'Create a top-level category or a subcategory.'}
-                </p>
+  return <SellerModalBackdrop onClose={onClose}>
+      <div className="w-full max-w-2xl border border-neutral-200 bg-neutral-50 p-6 shadow-sm" onMouseDown={event => event.stopPropagation()}>
+        <form onSubmit={submitCategory} className="flex flex-col">
+          <header className="mb-6 flex items-start justify-between gap-4 border-b border-neutral-200 pb-5">
+            <div className="flex items-start gap-4">
+              <span className="inline-flex h-11 w-11 items-center justify-center border border-neutral-200 bg-white text-neutral-950">
+                <Tag size={18} />
+              </span>
+              <div className="min-w-0">
+                <h3 className="text-2xl font-bold text-neutral-950">{isEditing ? 'Edit Category' : mode === 'child' ? 'Add Subcategory' : 'Add Category'}</h3>
+                <p className="mt-1 text-sm leading-6 text-neutral-500">Create and organize categories with hierarchy, imagery, and visibility controls.</p>
               </div>
-              {editId && (
-                <button 
-                  type="button" 
-                  onClick={() => { setEditId(null); setForm({ name: '', parent_id: '' }); }}
-                  style={{ background: 'var(--color-surface-container)', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
-                >
-                  Cancel Edit
+            </div>
+            <button type="button" className="inline-flex h-11 w-11 items-center justify-center border border-neutral-200 bg-white text-neutral-600 transition hover:border-neutral-950 hover:text-neutral-950" onClick={onClose} aria-label="Close category dialog">
+              <X size={18} />
+            </button>
+          </header>
+  
+          <div className="space-y-5">
+            {error && <div className="rounded-none border border-red-200 bg-red-50 p-4 text-sm text-red-600">{error}</div>}
+  
+            <label className="block space-y-2">
+              <span className="block text-sm font-semibold text-neutral-950">Name <span className="text-red-500">*</span></span>
+              <input className="min-h-12 w-full rounded-none border border-neutral-200 bg-white px-4 text-sm text-neutral-950 outline-none transition placeholder:text-neutral-400 focus:border-neutral-950 focus:ring-0" value={form.name} placeholder="Software" onChange={event => setField('name', event.target.value)} />
+            </label>
+  
+            <div className="space-y-2">
+              <span className="block text-sm font-semibold text-neutral-950">Type <span className="text-red-500">*</span></span>
+              <div className="flex flex-wrap gap-2">
+                {['product', 'service'].map(type => <ChoiceButton key={type} className={`inline-flex min-h-10 items-center justify-center border px-4 text-sm font-semibold transition ${form.type === type ? 'border-neutral-950 bg-neutral-950 text-white' : 'border-neutral-200 bg-white text-neutral-950 hover:border-neutral-950'}`} active={form.type === type} onClick={() => setField('type', type)}>
+                    {type === 'product' ? 'Product' : 'Service'}
+                  </ChoiceButton>)}
+              </div>
+            </div>
+  
+            <label className="block space-y-2">
+              <span className="flex items-center gap-2 text-sm font-semibold text-neutral-950">
+                <Search size={15} className="text-neutral-500" />
+                Parent Category
+              </span>
+              <SellerSelect className="min-h-12 w-full rounded-none border border-neutral-200 bg-white px-4 text-sm text-neutral-950 outline-none transition focus:border-neutral-950 focus:ring-0" value={form.parent_id} onChange={event => setField('parent_id', event.target.value)}>
+                <option value="">Select parent category</option>
+                {categories.filter(category => String(category.id) !== String(form.id || '')).map(category => <option key={category.id} value={category.id}>
+                      {category.parent ? `${category.parent.name} / ` : ''}{category.name}
+                    </option>)}
+              </SellerSelect>
+              <small className="block text-xs text-neutral-500">Leave empty to create a root category, or select a parent to create a subcategory.</small>
+            </label>
+  
+            <label className="block space-y-2">
+              <span className="block text-sm font-semibold text-neutral-950">Description</span>
+              <SellerTextarea className="w-full rounded-none border border-neutral-200 bg-white px-4 py-3 text-sm leading-6 text-neutral-950 outline-none transition placeholder:text-neutral-400 focus:border-neutral-950 focus:ring-0" value={form.description} placeholder="Brief description of this category..." onChange={event => setField('description', event.target.value)} />
+            </label>
+  
+            <div className="border border-neutral-200 bg-white p-5">
+              <div className="flex items-center gap-4">
+                <button type="button" className="inline-flex h-16 w-16 items-center justify-center overflow-hidden border border-neutral-200 bg-neutral-50 text-neutral-400 transition hover:border-neutral-950" onClick={() => imageInputRef.current?.click()}>
+                  {form.image ? <img src={form.image} alt="" className="h-full w-full object-cover" /> : 'IMG'}
                 </button>
-              )}
-            </div>
-
-            <Input
-              label="Category Name *"
-              placeholder="E.g. Electronics, Women's Clothing"
-              value={form.name}
-              onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-            />
-
-            <div className="input-container">
-              <label className="input-label label-md">Parent Category</label>
-              <select
-                className="input-field"
-                value={form.parent_id}
-                onChange={(event) => setForm((current) => ({ ...current, parent_id: event.target.value }))}
-              >
-                <option value="">Top-level category</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.parent ? `${category.parent.name} / ` : ''}{category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <Button type="submit" disabled={submitting} className="seller-category-submit" style={{ width: '100%', justifyContent: 'center' }}>
-              {submitting ? 'Saving...' : editId ? 'Update Category' : 'Save Category'}
-            </Button>
-          </form>
-
-          {/* Tree Display */}
-          <div className="seller-category-panel" style={{ padding: 24, boxShadow: 'none', border: '1px solid rgba(26,28,26,0.08)' }}>
-            <div className="seller-category-panel-head" style={{ marginBottom: 16 }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: 16 }}>Category Hierarchy</h3>
+                <div className="min-w-0 flex-1 space-y-1">
+                  <strong className="block text-sm font-semibold text-neutral-950">Category Image</strong>
+                  <span className="block text-xs leading-5 text-neutral-500">Upload an image for this category.</span>
+                  <div className="mt-3 flex items-center gap-3">
+                    <Button type="button" variant="outline" className="h-9 whitespace-nowrap rounded-none border border-neutral-200 px-3 text-xs" onClick={() => imageInputRef.current?.click()}>
+                      Choose File
+                    </Button>
+                    <small className="truncate text-xs text-neutral-500">{form.image ? 'Image selected' : 'No file chosen'}</small>
+                  </div>
+                </div>
+                <input ref={imageInputRef} type="file" className="hidden" accept="image/*" onChange={event => handleImageFile(event.target.files?.[0])} />
               </div>
             </div>
-
-            <div style={{ padding: 24 }}>
-              {tree.length > 0 ? (
-                <CategoryTree categories={tree} onEdit={handleEdit} onDelete={handleDelete} />
-              ) : (
-                <div className="seller-category-empty" style={{ minHeight: 150 }}>
-                  <FolderTree size={32} />
-                  <h3 style={{ fontSize: 15, margin: '8px 0 4px' }}>No categories yet</h3>
-                  <p style={{ fontSize: 13, margin: 0 }}>Add your first top-level category above.</p>
-                </div>
-              )}
-            </div>
+  
+            <label className="flex items-center gap-3">
+              <input type="checkbox" className="h-4 w-4 rounded-none border-neutral-300 text-neutral-950 focus:ring-neutral-950 focus:ring-offset-0" checked={form.is_active} onChange={event => setField('is_active', event.target.checked)} />
+              <span className="text-sm font-semibold text-neutral-950">Active</span>
+            </label>
           </div>
-        </div>
-    </RightDrawer>
-  );
+  
+          <footer className="mt-6 flex justify-end gap-3 border-t border-neutral-200 pt-5">
+            <Button type="button" variant="outline" className="rounded-none border border-neutral-200 px-4" onClick={onClose}>
+              <X size={15} />
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" className="rounded-none border border-neutral-200 px-4" disabled={submitting}>
+              <CheckCircle2 size={15} />
+              {submitting ? 'Saving...' : isEditing ? 'Update Category' : 'Create Category'}
+            </Button>
+          </footer>
+        </form>
+      </div>
+    </SellerModalBackdrop>;
 };
+export default CategoryDrawer;
