@@ -775,42 +775,42 @@ export const SellerProfile = () => {
     </Card> : null}
   </SectionStack>;
   const renderApprovedVerificationSummary = () => approvedVerification ? <Card title="Verified Business Record" extra={<ShieldCheck size={18} />}>
-      <SectionStack>
-        <div className="border border-emerald-200 bg-emerald-50 p-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-emerald-900">
-            <CheckCircle2 size={16} />
-            Seller verification approved
-          </div>
-          <p className="mt-2 text-sm leading-6 text-emerald-900/80">
-            These business details came from the approved onboarding submission and are now active for the seller account.
-          </p>
+    <SectionStack>
+      <div className="border border-emerald-200 bg-emerald-50 p-4">
+        <div className="flex items-center gap-2 text-sm font-medium text-emerald-900">
+          <CheckCircle2 size={16} />
+          Seller verification approved
         </div>
+        <p className="mt-2 text-sm leading-6 text-emerald-900/80">
+          These business details came from the approved onboarding submission and are now active for the seller account.
+        </p>
+      </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <StatusLine label="Legal Business Name" value={approvedVerification.legal_name || 'N/A'} />
-          <StatusLine label="Business Type" value={approvedVerification.business_type || 'N/A'} />
-          <StatusLine label="Business Country" value={approvedVerification.business_country || 'N/A'} />
-          <StatusLine label="Tax Registration" value={approvedVerification.tax_id || 'N/A'} />
-          <StatusLine label="Secondary Tax / ID" value={approvedVerification.pan_number || 'N/A'} />
-          <StatusLine label="Registration Number" value={approvedVerification.registration_number || 'N/A'} />
-          <StatusLine label="Representative" value={approvedVerification.contact_person_name || 'N/A'} />
-          <StatusLine label="Representative ID Type" value={approvedVerification.contact_person_id_type || 'N/A'} />
-          <StatusLine label="Representative ID Number" value={approvedVerification.contact_person_id_number || 'N/A'} />
-          <StatusLine label="Bank Account Holder" value={approvedVerification.bank_account_holder_name || 'N/A'} />
-          <StatusLine label="Bank Name" value={approvedVerification.bank_name || 'N/A'} />
-          <StatusLine label="Bank Account Number" value={approvedVerification.bank_account_number || 'N/A'} />
-          <StatusLine label="Bank Code" value={approvedVerification.bank_ifsc_code || 'N/A'} />
-          <StatusLine label="Business City" value={approvedVerification.business_city || 'N/A'} />
-          <StatusLine label="Business State" value={approvedVerification.business_state || 'N/A'} />
-          <StatusLine label="Postal Code" value={approvedVerification.business_postal_code || 'N/A'} />
-        </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <StatusLine label="Legal Business Name" value={approvedVerification.legal_name || 'N/A'} />
+        <StatusLine label="Business Type" value={approvedVerification.business_type || 'N/A'} />
+        <StatusLine label="Business Country" value={approvedVerification.business_country || 'N/A'} />
+        <StatusLine label="Tax Registration" value={approvedVerification.tax_id || 'N/A'} />
+        <StatusLine label="Secondary Tax / ID" value={approvedVerification.pan_number || 'N/A'} />
+        <StatusLine label="Registration Number" value={approvedVerification.registration_number || 'N/A'} />
+        <StatusLine label="Representative" value={approvedVerification.contact_person_name || 'N/A'} />
+        <StatusLine label="Representative ID Type" value={approvedVerification.contact_person_id_type || 'N/A'} />
+        <StatusLine label="Representative ID Number" value={approvedVerification.contact_person_id_number || 'N/A'} />
+        <StatusLine label="Bank Account Holder" value={approvedVerification.bank_account_holder_name || 'N/A'} />
+        <StatusLine label="Bank Name" value={approvedVerification.bank_name || 'N/A'} />
+        <StatusLine label="Bank Account Number" value={approvedVerification.bank_account_number || 'N/A'} />
+        <StatusLine label="Bank Code" value={approvedVerification.bank_ifsc_code || 'N/A'} />
+        <StatusLine label="Business City" value={approvedVerification.business_city || 'N/A'} />
+        <StatusLine label="Business State" value={approvedVerification.business_state || 'N/A'} />
+        <StatusLine label="Postal Code" value={approvedVerification.business_postal_code || 'N/A'} />
+      </div>
 
-        <div className="border border-neutral-200 bg-neutral-50 px-4 py-3">
-          <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-500">Business Address</span>
-          <strong className="mt-2 block text-sm font-semibold text-neutral-950">{approvedVerification.business_address || 'N/A'}</strong>
-        </div>
-      </SectionStack>
-    </Card> : null;
+      <div className="border border-neutral-200 bg-neutral-50 px-4 py-3">
+        <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-500">Business Address</span>
+        <strong className="mt-2 block text-sm font-semibold text-neutral-950">{approvedVerification.business_address || 'N/A'}</strong>
+      </div>
+    </SectionStack>
+  </Card> : null;
   const renderBusinessStep = () => {
     switch (activeBusinessStep) {
       case 'address':
@@ -928,9 +928,9 @@ export const SellerProfile = () => {
             {['Active', 'Vacation Mode', 'Temporarily Closed'].map(status => {
               const isActive = settings.storeStatus === status || (!settings.storeStatus && status === 'Active');
               return (
-                <button 
-                  key={status} 
-                  type="button" 
+                <button
+                  key={status}
+                  type="button"
                   onClick={() => updateSetting('storeStatus', status)}
                   className={`flex items-center justify-between border p-4 text-sm font-medium transition ${isActive ? 'border-neutral-950 bg-neutral-950 text-white' : 'border-neutral-200 bg-white text-neutral-950 hover:bg-neutral-50 hover:border-neutral-300'}`}
                 >
@@ -985,7 +985,13 @@ export const SellerProfile = () => {
             <div className="space-y-4">
               <FormGrid className="gap-4">
                 <SettingsInput label="Contact Person Name *" value={name} onChange={event => setName(event.target.value)} required />
-                <SettingsInput label="Login Email Address *" type="email" value={email} onChange={event => setEmail(event.target.value)} required />
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+                  <SettingsInput label="Login Email Address *" type="email" value={email} onChange={event => setEmail(event.target.value)} required />
+                  <div className="border border-neutral-200 bg-neutral-50 px-4 py-3">
+                    <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-500">Seller ID</span>
+                    <strong className="mt-2 block break-all text-sm font-semibold text-neutral-950">{user?.seller_id || 'Pending'}</strong>
+                  </div>
+                </div>
               </FormGrid>
               <FormGrid className="items-start gap-y-4 gap-x-2 xl:grid-cols-3">
                 <LabeledField label="Primary Phone">

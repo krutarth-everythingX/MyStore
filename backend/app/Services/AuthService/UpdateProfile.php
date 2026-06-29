@@ -23,6 +23,7 @@ class UpdateProfile
             'name' => $fields['name'] ?? $user->name,
             'email' => $fields['email'] ?? $user->email,
             'phone' => $nextPhone,
+            'avatar' => $fields['avatar'] ?? $user->avatar,
             'brand_name' => $user->role === 'seller'
                 ? seller_brand_name($fields['brand_name'] ?? null, $fields['name'] ?? $user->name)
                 : $user->brand_name,

@@ -12,7 +12,7 @@ import { DismissibleAlert } from '../components/DismissibleAlert';
 import SellerProfile from './SellerProfile';
 import { formatDateTime, formatMoney, formatProductMoney, formatStoredMoney } from '../utils/localization';
 import { codeActionLabel, codeMinutesLeft, codeStatus, verificationActionLabel, verificationCodeStatus, verificationMinutesLeft } from '../utils/emailVerification';
-import { AlertTriangle, Calendar, CheckCircle2, Clock, CreditCard, Edit3, Heart, HelpCircle, LogOut, MailCheck, MapPin, MessageSquare, Package, Phone, Settings, ShoppingBag, Star, Truck } from 'lucide-react';
+import { AlertTriangle, Calendar, Camera, CheckCircle2, Clock, CreditCard, Edit3, Heart, HelpCircle, LogOut, MailCheck, MapPin, MessageSquare, Package, Phone, Settings, ShoppingBag, Star, Truck } from 'lucide-react';
 import { cn } from '../utils/cn';
 
 const BUYER_SECTIONS = [
@@ -43,6 +43,17 @@ const ORDER_STATUS_CLASS = {
 };
 
 const getOrderSellerCount = (order) => new Set((order?.items || []).map((item) => item.product?.user?.id).filter(Boolean)).size;
+const readFileAsDataUrl = (file) => new Promise((resolve, reject) => {
+  if (!file) {
+    resolve('');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => resolve(String(reader.result || ''));
+  reader.onerror = reject;
+  reader.readAsDataURL(file);
+});
 
 export const Profile = () => {
   const { props, url } = usePage();
@@ -80,6 +91,8 @@ export const Profile = () => {
   const [addrSuccess, setAddrSuccess] = useState('');
   const [addrLoading, setAddrLoading] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState('');
+  const [avatarSaving, setAvatarSaving] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -94,6 +107,7 @@ export const Profile = () => {
     setCountryCode(user.country_code || '');
     setVerificationSentAt(user.verification_code_sent_at || null);
     setPhoneVerificationSentAt(user.phone_verification_code_sent_at || null);
+    setAvatarPreview(user.avatar || '');
   }, [user?.id]);
 
   useEffect(() => {
@@ -252,6 +266,24 @@ export const Profile = () => {
     router.visit('/');
   };
 
+  const handleAvatarChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setAvatarSaving(true);
+      const avatar = await readFileAsDataUrl(file);
+      await updateProfile({ avatar });
+      setAvatarPreview(avatar);
+      showToast('Profile image updated successfully!', 'success');
+    } catch (error) {
+      showToast(error.message || 'Failed to update profile image', 'error');
+    } finally {
+      setAvatarSaving(false);
+      event.target.value = '';
+    }
+  };
+
   if (user?.role === 'seller') {
     return <SellerProfile />;
   }
@@ -266,31 +298,57 @@ export const Profile = () => {
 
           <section className="mt-6 space-y-6">
             <div className="border-2 border-neutral-950 bg-white p-5 shadow-[8px_8px_0_#171717] sm:p-6 lg:p-8">
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                  <div className="inline-flex h-20 w-20 items-center justify-center border-2 border-neutral-950 bg-neutral-950 text-3xl font-semibold uppercase text-white sm:h-24 sm:w-24">
-                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                  </div>
-                  <div className="min-w-0">
-                    <h1 className="max-w-4xl text-2xl font-semibold tracking-tight text-neutral-950 sm:text-3xl">
-                      {user?.name || 'My Account'}
-                    </h1>
-                    <p className="mt-2 max-w-7xl break-all text-sm text-neutral-600 sm:text-base">{user?.email}</p>
-                    <button
-                      type="button"
-                      onClick={() => setShowLogoutConfirm(true)}
-                      className="mt-4 inline-flex items-center gap-2 border-2 border-neutral-950 bg-white px-4 py-3 text-sm font-medium text-neutral-950 transition hover:-translate-y-0.5"
-                    >
-                      <LogOut size={16} />
-                      <span>Log Out</span>
-                    </button>
-                  </div>
+              <div className="flex flex-col gap-6">
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowLogoutConfirm(true)}
+                    className="inline-flex items-center gap-2 border-2 border-rose-700 bg-rose-600 px-4 py-3 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:bg-rose-700"
+                  >
+                    <LogOut size={16} />
+                    <span>Log Out</span>
+                  </button>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[24rem]">
-                  <ProfileMetric label="Orders" value={orders.length} />
-                  <ProfileMetric label="Wishlist" value={wishlist.length} />
-                  <ProfileMetric label="Profile Ready" value={`${completionCount}/8`} />
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <div className="flex flex-col items-start gap-2">
+                      <label className="group relative inline-flex h-20 w-20 cursor-pointer items-center justify-center overflow-hidden border-2 border-neutral-950 bg-neutral-950 text-3xl font-semibold uppercase text-white sm:h-24 sm:w-24">
+                        {avatarPreview ? (
+                          <img src={avatarPreview} alt={user?.name || 'Profile'} className="h-full w-full object-cover" />
+                        ) : (
+                          <span>{user?.name?.charAt(0)?.toUpperCase() || 'U'}</span>
+                        )}
+                        <span className="absolute inset-0 flex items-center justify-center bg-neutral-950/70 text-white opacity-0 transition group-hover:opacity-100">
+                          <Camera size={22} />
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleAvatarChange}
+                          disabled={avatarSaving}
+                        />
+                      </label>
+                      <p className="text-xs text-neutral-500">{avatarSaving ? 'Uploading profile image...' : 'Click to change image'}</p>
+                    </div>
+                    <div className="min-w-0">
+                      <h1 className="max-w-4xl text-2xl font-semibold tracking-tight text-neutral-950 sm:text-3xl">
+                        {user?.name || 'My Account'}
+                      </h1>
+                      <p className="mt-2 max-w-7xl break-all text-sm text-neutral-600 sm:text-base">{user?.email}</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500">Buyer ID</span>
+                        <span className="break-all font-semibold text-neutral-950 sm:text-base">{user?.customer_id || 'Pending'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[24rem]">
+                    <ProfileMetric label="Orders" value={orders.length} />
+                    <ProfileMetric label="Wishlist" value={wishlist.length} />
+                    <ProfileMetric label="Profile Ready" value={`${completionCount}/8`} />
+                  </div>
                 </div>
               </div>
             </div>

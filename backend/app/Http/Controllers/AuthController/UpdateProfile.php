@@ -21,6 +21,7 @@ class UpdateProfile extends Controller
             'email' => 'sometimes|required|string|email|unique:users,email,' . $user->id,
             'phone' => 'nullable|string|max:20',
             'password' => 'nullable|string|min:6',
+            'avatar' => 'nullable|string',
             'brand_name' => 'nullable|string',
             'address' => 'nullable|string',
             'city' => 'nullable|string|max:100',

@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Traits\StoresUtcTimestamps;
 use Database\Factories\UserFactory;
+use RuntimeException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -37,6 +38,8 @@ class User extends Authenticatable
         'verification_code',
         'verification_code_sent_at',
         'role',
+        'customer_id',
+        'seller_id',
         'brand_name',
         'address',
         'city',
@@ -89,6 +92,63 @@ class User extends Authenticatable
             'handling_time_business_days' => 'integer',
             'seller_settings' => 'array',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $user): void {
+            $user->role = $user->role ?: 'buyer';
+            $user->ensureRoleIdentifier();
+        });
+
+        static::updating(function (self $user): void {
+            if ($user->isDirty('role')) {
+                $user->ensureRoleIdentifier();
+            }
+        });
+    }
+
+    private function ensureRoleIdentifier(): void
+    {
+        if ($this->role === 'seller' && ! $this->seller_id) {
+            $this->seller_id = self::generateUniqueIdentifier('seller_id', 'S-');
+        }
+
+        if ($this->role !== 'seller' && ! $this->customer_id) {
+            $this->customer_id = self::generateUniqueIdentifier('customer_id', 'B-');
+        }
+    }
+
+    private static function generateUniqueIdentifier(string $column, string $prefix): string
+    {
+        for ($attempt = 0; $attempt < 50; $attempt++) {
+            $identifier = self::buildIdentifier($prefix);
+
+            if (! self::query()->where($column, $identifier)->exists()) {
+                return $identifier;
+            }
+        }
+
+        throw new RuntimeException("Unable to generate a unique {$column}.");
+    }
+
+    private static function buildIdentifier(string $prefix): string
+    {
+        $digits = '';
+        $letters = '';
+
+        for ($index = 0; $index < 6; $index++) {
+            $digits .= (string) random_int(1, 9);
+            $letters .= chr(random_int(65, 90));
+        }
+
+        $identifier = $prefix;
+
+        for ($index = 0; $index < 6; $index++) {
+            $identifier .= $digits[$index] . $letters[$index];
+        }
+
+        return $identifier;
     }
 
     public function brands()
